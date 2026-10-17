@@ -16,10 +16,6 @@ import Logging
 import OrderedCollections
 import SwiftUI
 
-// TODO: instead of just signing in duplicate user, send event for alert
-//       to override existing user access token?
-//       - won't require deleting and re-signing in user for password changes
-//       - account for local device auth required
 // TODO: ignore NSURLErrorDomain Code=-999 cancelled error on sign in
 //       - need to make NSError wrappers anyways
 
@@ -98,20 +94,26 @@ final class UserSignInViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     let server: ServerState
+    let profile: UserSignInProfile?
 
-    init(server: ServerState) {
+    init(server: ServerState, profile: UserSignInProfile? = nil) {
         self.server = server
+        self.profile = profile
     }
 
     @Function(\Action.Cases.getPublicData)
     private func _getPublicData() async throws {
-        async let isQuickConnectEnabled = try retrieveIsQuickConnectEnabled()
-        async let publicUsers = try retrievePublicUsers()
-        async let serverDisclaimer = try retrieveServerDisclaimer()
+        // Optional server metadata must not prevent password entry or make one
+        // feature depend on a different public endpoint being available.
+        async let isQuickConnectEnabled = try? retrieveIsQuickConnectEnabled()
+        async let serverDisclaimer = try? retrieveServerDisclaimer()
+        #if os(iOS)
+        async let publicUsers = try? retrievePublicUsers()
+        self.publicUsers = await publicUsers ?? []
+        #endif
 
-        self.isQuickConnectEnabled = try await isQuickConnectEnabled
-        self.publicUsers = try await publicUsers
-        self.serverDisclaimer = try await serverDisclaimer
+        self.isQuickConnectEnabled = await isQuickConnectEnabled ?? false
+        self.serverDisclaimer = await serverDisclaimer
     }
 
     @Function(\Action.Cases.signIn)
@@ -119,7 +121,7 @@ final class UserSignInViewModel: ObservableObject {
         _ username: String,
         _ password: String
     ) async throws {
-        let username = username
+        let username = (profile?.username ?? username)
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: .objectReplacement)
 
@@ -128,27 +130,7 @@ final class UserSignInViewModel: ObservableObject {
             .trimmingCharacters(in: .objectReplacement)
 
         let response = try await server.client.signIn(username: username, password: password)
-
-        guard let accessToken = response.accessToken,
-              let userData = response.user,
-              let id = userData.id,
-              let username = userData.name
-        else {
-            logger.critical("Missing user data from network call")
-            throw ErrorMessage(L10n.unknownError)
-        }
-
-        if let existingUser = existingUser(id: id) {
-            events.send(.existingUser(((existingUser, accessToken), userData)))
-        } else {
-            let newUserState = UserState(
-                id: id,
-                serverID: server.id,
-                username: username
-            )
-
-            events.send(.connected(((newUserState, accessToken), userData)))
-        }
+        try handleAuthentication(response)
     }
 
     @Function(\Action.Cases.signInQuickConnect)
@@ -156,6 +138,11 @@ final class UserSignInViewModel: ObservableObject {
         _ secret: String
     ) async throws {
         let response = try await server.client.signIn(quickConnectSecret: secret)
+        try handleAuthentication(response)
+    }
+
+    private func handleAuthentication(_ response: AuthenticationResult) throws {
+        try Task.checkCancellation()
 
         guard let accessToken = response.accessToken,
               let userData = response.user,
@@ -164,6 +151,12 @@ final class UserSignInViewModel: ObservableObject {
         else {
             logger.error("Missing user data from network call")
             throw ErrorMessage(L10n.unknownError)
+        }
+
+        if let profile, profile.id != id {
+            throw ErrorMessage(String(localized:
+                "This sign-in is for a different profile. Go back to choose that profile, or sign in as \(profile.username)."
+            ))
         }
 
         if let existingUser = existingUser(id: id) {
@@ -271,6 +264,8 @@ final class UserSignInViewModel: ObservableObject {
     }
 
     private func retrievePublicUsers() async throws -> [UserDto] {
+        guard profile == nil else { return [] }
+
         let request = Paths.getPublicUsers
         let response = try await server.client.send(request)
 

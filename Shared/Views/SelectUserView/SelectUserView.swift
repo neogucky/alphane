@@ -132,7 +132,7 @@ struct SelectUserView: View {
         if user.requiresServerSignIn {
             guard let server = viewModel.servers.keys.first(where: { $0.id == user.serverID }) else { return }
 
-            router.route(to: .userSignIn(server: server, username: user.username))
+            router.route(to: .userSignIn(server: server, profile: UserSignInProfile(savedUser: user)))
             return
         }
         Task { @MainActor in

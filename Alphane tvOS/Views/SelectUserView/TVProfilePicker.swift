@@ -151,7 +151,7 @@ extension SelectUserView {
 
         private func publicProfile(_ profile: PublicProfile) -> some View {
             Button {
-                router.route(to: .userSignIn(server: profile.server, username: profile.user.name))
+                router.route(to: .userSignIn(server: profile.server, profile: UserSignInProfile(user: profile.user)))
             } label: {
                 profileLabel(
                     userID: profile.user.id,
