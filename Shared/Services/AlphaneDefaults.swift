@@ -100,7 +100,11 @@ extension Defaults.Keys {
     /// The accent color default for user contexts.
     /// Only use for `set`, use `accentColor` for `get`.
     static var userAccentColor: Key<Color> {
-        UserKey("userAccentColor", default: .defaultClientAccent)
+        userAccentColor(in: .currentUserSuite)
+    }
+
+    static func userAccentColor(in suite: UserDefaults) -> Key<Color> {
+        Key("userAccentColor", default: .defaultClientAccent, suite: suite)
     }
 
     /// The appearance default for user contexts.

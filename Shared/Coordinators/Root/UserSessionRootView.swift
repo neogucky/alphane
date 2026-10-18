@@ -18,30 +18,58 @@ struct UserSessionRootView: View {
     @InjectedObject(\.userSessionManager)
     private var userSessionManager
 
+    #if os(tvOS)
+    @StateObject
+    private var onboarding = TVOnboardingModel()
+    #endif
+
+    @ViewBuilder
+    private var sessionContent: some View {
+        switch userSessionManager.state {
+        case .initial:
+            ProgressView()
+
+        case .signedOut:
+            NavigationInjectionView(coordinator: .init()) {
+                SelectUserView()
+            }
+
+        case .signedIn:
+            PosterPreferencesEnvironment {
+                MainTabView()
+            }
+            // A real session replacement resets retained collections, even for the same user ID.
+            .id(userSessionManager.currentSession.map { ObjectIdentifier($0) })
+        }
+    }
+
     var body: some View {
         ZStack {
-            switch userSessionManager.state {
-            case .initial:
-                ProgressView()
-
-            case .signedOut:
+            #if os(tvOS)
+            if userSessionManager.state != .initial, onboarding.step != .complete {
                 NavigationInjectionView(coordinator: .init()) {
-                    SelectUserView()
+                    TVOnboardingView(model: onboarding)
                 }
-
-            case .signedIn:
-                PosterPreferencesEnvironment {
-                    MainTabView()
-                }
-                // A real session replacement invalidates its collections, even
-                // when the user ID is unchanged (for example after re-login).
-                .id(userSessionManager.currentSession.map { ObjectIdentifier($0) })
+            } else {
+                sessionContent
             }
+            #else
+            sessionContent
+            #endif
         }
         .animation(.linear(duration: 0.1), value: userSessionManager.state)
         .task {
             await userSessionManager.start()
+            #if os(tvOS)
+            finishSetupIfSignedIn()
+            #endif
         }
+        #if os(tvOS)
+        .onChange(of: userSessionManager.currentSession.map { ObjectIdentifier($0) }) {
+            finishSetupIfSignedIn()
+        }
+        .onChange(of: onboarding.step) { finishSetupIfSignedIn() }
+        #endif
         .onOpenURL { url in
             guard let authenticationAction else { return }
 
@@ -53,6 +81,14 @@ struct UserSessionRootView: View {
             }
         }
     }
+
+    #if os(tvOS)
+    private func finishSetupIfSignedIn() {
+        if let user = userSessionManager.currentSession?.user {
+            onboarding.finish(user: user)
+        }
+    }
+    #endif
 }
 
 private struct PosterPreferencesEnvironment<Content: View>: View {

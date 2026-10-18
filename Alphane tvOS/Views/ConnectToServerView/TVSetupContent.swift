@@ -17,6 +17,7 @@ extension ConnectToServerView {
         let isURLFocused: FocusState<Bool>.Binding
         @ObservedObject
         var viewModel: ConnectToServerViewModel
+        var isOnboarding = false
 
         private func connect() {
             isURLFocused.wrappedValue = false
@@ -55,15 +56,17 @@ extension ConnectToServerView {
             GeometryReader { proxy in
                 ScrollView {
                     VStack(spacing: 36) {
-                        Image(.alphaneMark)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 96, height: 96)
-                            .accessibilityHidden(true)
+                        if !isOnboarding {
+                            Image(.alphaneMark)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 96, height: 96)
+                                .accessibilityHidden(true)
 
-                        Text(L10n.connectToServer)
-                            .font(.system(size: 44, weight: .medium))
-                            .foregroundStyle(.white)
+                            Text(L10n.connectToServer)
+                                .font(.system(size: 44, weight: .medium))
+                                .foregroundStyle(.white)
+                        }
 
                         VStack(spacing: 22) {
                             addressField
@@ -97,25 +100,27 @@ extension ConnectToServerView {
                             .focusSection()
                         }
                     }
-                    .frame(minHeight: max(proxy.size.height - 120, 0))
+                    .frame(minHeight: max(proxy.size.height - (isOnboarding ? 48 : 120), 0))
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 96)
-                    .padding(.vertical, 60)
+                    .padding(.vertical, isOnboarding ? 24 : 60)
                 }
                 .scrollIndicators(.hidden)
                 .scrollClipDisabled()
             }
             .background {
-                AlphaneTheme.background
-                    .overlay {
-                        RadialGradient(
-                            colors: [.white.opacity(0.04), .clear],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 700
-                        )
-                    }
-                    .ignoresSafeArea()
+                if !isOnboarding {
+                    AlphaneTheme.background
+                        .overlay {
+                            RadialGradient(
+                                colors: [.white.opacity(0.04), .clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 700
+                            )
+                        }
+                        .ignoresSafeArea()
+                }
             }
             .defaultFocus(isURLFocused, true, priority: .userInitiated)
         }

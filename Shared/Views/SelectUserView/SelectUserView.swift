@@ -14,6 +14,8 @@ import SwiftUI
 
 struct SelectUserView: View {
 
+    var isOnboarding = false
+
     typealias UserItem = (user: UserState, server: ServerState)
 
     @Default(.accentColor)
@@ -287,7 +289,8 @@ struct SelectUserView: View {
                         servers: viewModel.servers.keys,
                         serverSelection: serverSelection,
                         action: { select(user: $0) },
-                        onDelete: { delete(user: $0) }
+                        onDelete: { delete(user: $0) },
+                        showsChrome: !isOnboarding
                     )
                     #else
                     contentView
@@ -379,16 +382,18 @@ struct SelectUserView: View {
         }
         .background {
             #if os(tvOS)
-            AlphaneTheme.background
-                .overlay {
-                    RadialGradient(
-                        colors: [.white.opacity(0.04), .clear],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 700
-                    )
-                }
-                .ignoresSafeArea()
+            if !isOnboarding {
+                AlphaneTheme.background
+                    .overlay {
+                        RadialGradient(
+                            colors: [.white.opacity(0.04), .clear],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 700
+                        )
+                    }
+                    .ignoresSafeArea()
+            }
             #else
             splashScreenBackground
                 .ignoresSafeArea()

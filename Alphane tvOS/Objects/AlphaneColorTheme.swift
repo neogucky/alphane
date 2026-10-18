@@ -62,6 +62,10 @@ enum AlphaneColorTheme: String, CaseIterable, Defaults.Serializable {
 extension Defaults.Keys {
     static let colorTheme = Key<AlphaneColorTheme>("currentColorTheme", default: .cold, suite: .appSuite)
     static var userColorTheme: Key<AlphaneColorTheme?> {
-        Key("userColorTheme", default: nil, suite: .currentUserSuite)
+        userColorTheme(in: .currentUserSuite)
+    }
+
+    static func userColorTheme(in suite: UserDefaults) -> Key<AlphaneColorTheme?> {
+        Key("userColorTheme", default: nil, suite: suite)
     }
 }

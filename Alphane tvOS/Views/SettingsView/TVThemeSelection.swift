@@ -14,19 +14,36 @@ struct TVThemeSelection: View {
     private var storedTheme
     @Default(.userAccentColor)
     private var customColor
-    @State
-    private var showsCustomPicker = false
     let focus: FocusState<String?>.Binding
 
     private var selected: AlphaneColorTheme {
         .resolved(stored: storedTheme, custom: customColor)
     }
 
+    var body: some View {
+        TVThemeChoices(
+            selection: Binding(get: { selected }, set: { storedTheme = $0 }),
+            customColor: $customColor,
+            focus: focus
+        )
+    }
+}
+
+/// Shared by Appearance and setup so saved/focused states stay identical.
+struct TVThemeChoices: View {
+    @Binding
+    var selection: AlphaneColorTheme
+    @Binding
+    var customColor: Color
+    let focus: FocusState<String?>.Binding
+    @State
+    private var showsCustomPicker = false
+
     private func row(_ theme: AlphaneColorTheme) -> some View {
         HStack(spacing: 14) {
             Text(theme.title).lineLimit(1)
             Spacer(minLength: 12)
-            if theme == selected {
+            if theme == selection {
                 Image(systemName: "checkmark").font(.system(size: 18, weight: .semibold))
             }
             if theme == .custom {
@@ -40,24 +57,24 @@ struct TVThemeSelection: View {
     var body: some View {
         VStack(spacing: 18) {
             ForEach(AlphaneColorTheme.presets, id: \.self) { theme in
-                Button { storedTheme = theme } label: { row(theme) }
+                Button { selection = theme } label: { row(theme) }
                     .focused(focus, equals: "theme-" + theme.rawValue)
-                    .isSelected(selected == theme)
+                    .isSelected(selection == theme)
                     .accessibilityIdentifier("settings-theme-" + theme.rawValue)
             }
             Button { showsCustomPicker = true } label: { row(.custom) }
                 .focused(focus, equals: "accent")
-                .isSelected(selected == .custom)
+                .isSelected(selection == .custom)
                 .accessibilityIdentifier("settings-accent")
         }
         .buttonStyle(CapsuleButtonStyle(isSelectionActive: false, fillsAvailableWidth: true))
-        .activeSelectionFocus(focus, selection: selected == .custom ? "accent" : "theme-" + selected.rawValue)
+        .activeSelectionFocus(focus, selection: selection == .custom ? "accent" : "theme-" + selection.rawValue)
         .sheet(isPresented: $showsCustomPicker) {
             StateAdapter(initialValue: customColor) { draft in
                 ColorPicker.Sheet(title: L10n.accentColor, value: draft, supportsOpacity: false)
                     .onDisappear {
                         customColor = draft.wrappedValue
-                        storedTheme = .custom
+                        selection = .custom
                     }
             }
         }

@@ -12,6 +12,9 @@ import SwiftUI
 
 struct ConnectToServerView: View {
 
+    var isOnboarding = false
+    var onConnected: ((ServerState) -> Void)?
+
     @Default(.accentColor)
     private var accentColor
 
@@ -37,7 +40,11 @@ struct ConnectToServerView: View {
         case let .connected(server):
             UIDevice.feedback(.success)
             Notifications[.didConnectToServer].post(server)
-            router.dismiss()
+            if let onConnected {
+                onConnected(server)
+            } else {
+                router.dismiss()
+            }
 
         case let .duplicateServer(server):
             UIDevice.feedback(.warning)
@@ -142,7 +149,8 @@ struct ConnectToServerView: View {
         TVSetupContent(
             url: $url,
             isURLFocused: $isURLFocused,
-            viewModel: viewModel
+            viewModel: viewModel,
+            isOnboarding: isOnboarding
         )
         #endif
     }
@@ -163,6 +171,11 @@ struct ConnectToServerView: View {
                 viewModel.searchForServers()
             }
             .onReceive(viewModel.events, perform: onEvent)
+            .onDisappear {
+                if isOnboarding {
+                    viewModel.cancel()
+                }
+            }
             .onReceive(viewModel.$error) { error in
                 guard error != nil else { return }
 
@@ -182,7 +195,11 @@ struct ConnectToServerView: View {
                 DuplicateServerConnectionView(server: server) {
                     viewModel.addConnection(serverState: server)
                     duplicateServer = nil
-                    router.dismiss()
+                    if let onConnected {
+                        onConnected(server)
+                    } else {
+                        router.dismiss()
+                    }
                 }
             }
             .errorMessage($viewModel.error)
