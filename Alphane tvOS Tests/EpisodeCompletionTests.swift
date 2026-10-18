@@ -20,10 +20,13 @@ import XCTest
 final class EpisodeCompletionTests: XCTestCase {
 
     func testRetainedDetailPageFocusesNextAfterCompletionAndResumeAfterPartialRewatch() async throws {
+        // Finish the host app's session initialization before overriding its
+        // factories; a later startup reset would otherwise discard this fixture.
+        await FactoryKit.Container.shared.userSessionManager().start()
         let factories = FactoryKit.Container.shared.manager
         factories.push()
         defer { factories.pop() }
-        let session = makeStubSession()
+        let session = makeStubSession(userID: "focus-\(UUID().uuidString)")
         let previousUserData = session.user.data
         session.user.data = UserDto(id: session.user.id, policy: UserPolicy(
             authenticationProviderID: "test", enableMediaPlayback: true, passwordResetProviderID: "test"
@@ -353,11 +356,11 @@ final class EpisodeCompletionTests: XCTestCase {
         return (manager, observer)
     }
 
-    private func makeStubSession() -> UserSession {
+    private func makeStubSession(userID: String = "user") -> UserSession {
         let url = URL(string: "https://completion.example")!
         let session = UserSession(
-            server: ServerState(urls: [url], currentURL: url, name: "Test", id: "server", userIDs: ["user"]),
-            user: UserState(id: "user", serverID: "server", username: "User")
+            server: ServerState(urls: [url], currentURL: url, name: "Test", id: "server", userIDs: [userID]),
+            user: UserState(id: userID, serverID: "server", username: "User")
         )
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CompletionProtocol.self]

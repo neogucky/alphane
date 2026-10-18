@@ -46,18 +46,25 @@ struct ItemView: View {
     private var navigationCoordinator: NavigationCoordinator
     @State
     private var restoredPlaybackStopRevision = 0
+    @State
+    private var isPlaybackFocusPending = false
 
     private var preferredPlaybackFocus: String {
         provider.shouldFocusNextEpisode ? Component.nextEpisode : Component.play
     }
 
-    private func restorePlaybackFocus() {
+    private func restorePlaybackFocus(when focusedIDs: Set<String>) {
+        // Dismissal can complete before UIKit restores the covered page's focus.
+        // Wait for that focus event, otherwise UIKit can overwrite our request.
+        guard isPlaybackFocusPending, !focusedIDs.subtracting([Component.header]).isEmpty else { return }
+
+        isPlaybackFocusPending = false
+        restoredPlaybackStopRevision = provider.playbackStopRevision
         let target = preferredPlaybackFocus
         initialFocusSelection = target
-        // Request only after the full-screen player finishes dismissing;
-        // tvOS otherwise restores the old focus over this preference.
         focusCoordinator.focus(target)
     }
+
     #endif
 
     @StateObject
@@ -240,18 +247,18 @@ struct ItemView: View {
         .onChange(of: navigationCoordinator.fullScreenDismissalRevision) { _, _ in
             guard provider.playbackStopRevision != restoredPlaybackStopRevision else { return }
 
-            Task { @MainActor in
-                // Let tvOS finish restoring the presentation's old focus first.
-                await Task.yield()
-                restorePlaybackFocus()
-                restoredPlaybackStopRevision = provider.playbackStopRevision
-            }
+            isPlaybackFocusPending = true
+            restorePlaybackFocus(when: focusCoordinator.focusedIDs)
+        }
+        .onReceive(focusCoordinator.$focusedIDs) { ids in
+            restorePlaybackFocus(when: ids)
         }
         .onChange(of: provider.shouldFocusNextEpisode) { _, _ in
             if provider.playbackStopRevision > 0,
                provider.playbackStopRevision == restoredPlaybackStopRevision
             {
-                restorePlaybackFocus()
+                isPlaybackFocusPending = true
+                restorePlaybackFocus(when: focusCoordinator.focusedIDs)
             }
         }
         #else

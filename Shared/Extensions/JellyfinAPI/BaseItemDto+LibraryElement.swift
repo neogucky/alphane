@@ -43,31 +43,29 @@ extension BaseItemDto: LibraryElement {
         }
     }
 
-    @ViewBuilder
     func makeBody(
         libraryStyle: LibraryStyle,
         action: (() -> Void)?
     ) -> some View {
         switch libraryStyle.displayType {
         case .grid:
-            BaseItemDtoLibraryGridElement(item: self, libraryStyle: libraryStyle)
+            BaseItemDtoLibraryGridElement(item: self, libraryStyle: libraryStyle, action: action)
         case .list:
-            BaseItemDtoLibraryListElement(item: self, libraryStyle: libraryStyle)
+            BaseItemDtoLibraryListElement(item: self, libraryStyle: libraryStyle, action: action)
         }
     }
 }
 
 private struct BaseItemDtoLibraryGridElement: View {
 
-    @Namespace
-    private var namespace
-
     @Router
     private var router
 
     @SharedBaseItem
     var item: BaseItemDto
+
     let libraryStyle: LibraryStyle
+    let action: (() -> Void)?
 
     private var resolvedLibraryStyle: LibraryStyle {
         item.resolvedLibraryStyle(libraryStyle)
@@ -78,7 +76,11 @@ private struct BaseItemDtoLibraryGridElement: View {
             item: item,
             displayType: resolvedLibraryStyle.posterDisplayType
         ) { namespace in
-            item.libraryDidSelectElement(router: router, in: namespace)
+            if let action {
+                action()
+            } else {
+                item.libraryDidSelectElement(router: router, in: namespace)
+            }
         }
     }
 }
@@ -93,10 +95,69 @@ private struct BaseItemDtoLibraryListElement: View {
 
     @SharedBaseItem
     var item: BaseItemDto
+
     let libraryStyle: LibraryStyle
+    let action: (() -> Void)?
 
     private var resolvedLibraryStyle: LibraryStyle {
         item.resolvedLibraryStyle(libraryStyle)
+    }
+
+    @ViewBuilder
+    private func currentProgramView(_ program: BaseItemDto) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if program.id != item.id {
+                Text(program.displayTitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+
+            if let progress = program.progressPercentage {
+                ProgressView(value: progress)
+                    .progressViewStyle(.playback)
+                    .frame(height: 4)
+                    .foregroundStyle(Color.accentColor)
+            }
+
+            if let start = program.startDate, let end = program.endDate {
+                DotHStack {
+                    if !Calendar.current.isDateInToday(start) {
+                        Text(start, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
+                    }
+
+                    Text(start, style: .time)
+
+                    Text(end, style: .time)
+
+                    if program.isRecording && program.isAiring {
+                        Text(L10n.recording)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var accessoryView: some View {
+        DotHStack {
+            if item.type == .episode, let seasonEpisodeLocator = item.seasonEpisodeLabel {
+                Text(seasonEpisodeLocator)
+            } else if let premiereYear = item.premiereDateYear {
+                Text(premiereYear)
+            }
+
+            if let runtime = item.runtime {
+                Text(runtime, format: .runtime)
+            }
+
+            if let officialRating = item.officialRating {
+                Text(officialRating)
+            }
+        }
     }
 
     var body: some View {
@@ -129,7 +190,11 @@ private struct BaseItemDtoLibraryListElement: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         } action: {
-            item.libraryDidSelectElement(router: router, in: namespace)
+            if let action {
+                action()
+            } else {
+                item.libraryDidSelectElement(router: router, in: namespace)
+            }
         }
         #if !os(tvOS)
         .matchedTransitionSource(id: "item", in: namespace)
@@ -139,59 +204,4 @@ private struct BaseItemDtoLibraryListElement: View {
         #endif
     }
 
-    @ViewBuilder
-    private func currentProgramView(_ program: BaseItemDto) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if program.id != item.id {
-                Text(program.displayTitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-            }
-
-            if let progress = program.progressPercentage {
-                ProgressView(value: progress)
-                    .progressViewStyle(.playback)
-                    .frame(height: 4)
-                    .foregroundStyle(Color.accentColor)
-            }
-
-            if let start = program.startDate, let end = program.endDate {
-                DotHStack {
-                    if !Calendar.current.isDateInToday(start) {
-                        Text(start, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
-                    }
-
-                    Text(start, style: .time)
-                    Text(end, style: .time)
-
-                    if program.isRecording && program.isAiring {
-                        Text(L10n.recording)
-                            .foregroundStyle(.red)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var accessoryView: some View {
-        DotHStack {
-            if item.type == .episode, let seasonEpisodeLocator = item.seasonEpisodeLabel {
-                Text(seasonEpisodeLocator)
-            } else if let premiereYear = item.premiereDateYear {
-                Text(premiereYear)
-            }
-
-            if let runtime = item.runtime {
-                Text(runtime, format: .runtime)
-            }
-
-            if let officialRating = item.officialRating {
-                Text(officialRating)
-            }
-        }
-    }
 }
