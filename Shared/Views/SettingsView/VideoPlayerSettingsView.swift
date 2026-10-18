@@ -123,16 +123,21 @@ struct VideoPlayerSettingsView: View {
                 subtitleSettings
             }
         }
+        #if os(tvOS)
+        .if(page != .all) { form in
+            form.playbackSettingsStyle()
+        }
+        #endif
         .onFirstAppear {
-            viewModel.refresh()
-        }
-        .toolbarTitleDisplayMode(.inline)
-        .navigationTitle(page == .audioAndSubtitles ? "Audio & subtitles" : L10n.videoPlayer.localizedCapitalized)
-        .topBarTrailing {
-            if viewModel.background.is(.updating) || viewModel.background.is(.refreshing) {
-                ProgressView()
+                viewModel.refresh()
             }
-        }
+            .toolbarTitleDisplayMode(.inline)
+            .navigationTitle(page == .audioAndSubtitles ? "Audio & subtitles" : L10n.videoPlayer.localizedCapitalized)
+            .topBarTrailing {
+                if viewModel.background.is(.updating) || viewModel.background.is(.refreshing) {
+                    ProgressView()
+                }
+            }
     }
 
     // MARK: - Engine Settings
@@ -252,7 +257,7 @@ struct VideoPlayerSettingsView: View {
             Stepper(L10n.resumeOffset, value: $resumeOffset, in: 0 ... 30, step: 1) {
                 LabeledContent(L10n.resumeOffset) {
                     Text(resumeOffset, format: SecondFormatter())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(UIDevice.isTV && page != .all ? .primary : .secondary)
                 }
             }
 
@@ -266,6 +271,7 @@ struct VideoPlayerSettingsView: View {
             Text(L10n.resume)
         } footer: {
             Text(L10n.resumeOffsetDescription)
+                .playbackSettingsFooter()
         }
     }
 
@@ -372,6 +378,7 @@ struct VideoPlayerSettingsView: View {
             )
         } footer: {
             Text(L10n.forceSubtitleBurnInMessage)
+                .playbackSettingsFooter()
         } learnMore: {
             LabeledContent(
                 SubtitlePlaybackMode.default.displayTitle,
@@ -407,7 +414,7 @@ struct VideoPlayerSettingsView: View {
             Stepper(L10n.subtitleSize, value: $subtitleConfiguration.size, in: 1 ... 20, step: 1) {
                 LabeledContent(L10n.subtitleSize) {
                     Text(subtitleConfiguration.size.description)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(UIDevice.isTV && page != .all ? .primary : .secondary)
                 }
             }
 
@@ -415,6 +422,7 @@ struct VideoPlayerSettingsView: View {
         } footer: {
             // TODO: better wording
             Text(L10n.subtitlesDisclaimer)
+                .playbackSettingsFooter()
         }
     }
 }

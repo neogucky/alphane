@@ -60,8 +60,11 @@ final class ContentGroupViewModel<Provider: ContentGroupProvider>: ViewModel {
             }
             .store(in: &cancellables)
 
-        Notifications[.didSendStopReport].publisher
+        Notifications[.didSendStopReport]
+            .publisher
             .sink { [weak self] _ in
+                guard self?.provider.refreshesGroupsAfterPlayback == true else { return }
+
                 self?.needsPlaybackRefresh = true
             }
             .store(in: &cancellables)

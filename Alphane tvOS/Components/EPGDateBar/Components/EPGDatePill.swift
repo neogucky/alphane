@@ -10,57 +10,18 @@ import Defaults
 import SwiftUI
 
 extension EPGDateBar {
-
     struct DatePill: View {
-
-        @Default(.accentColor)
-        private var accentColor
-
-        @Environment(\.isSelected)
-        private var isSelected
-
-        @FocusState
-        private var isFocused: Bool
-
-        private let title: String
-        private let action: () -> Void
-
-        init(date: Date, action: @escaping () -> Void) {
-            self.title = date.formatted(.dateTime.weekday(.abbreviated).day())
-            self.action = action
-        }
-
-        private var tint: Color? {
-            if isFocused {
-                .white
-            } else if isSelected {
-                accentColor.opacity(0.5)
-            } else {
-                nil
-            }
-        }
+        let date: Date
+        let action: () -> Void
 
         var body: some View {
             Button(action: action) {
-                Text(title)
-                    .font(.footnote)
-                    .fontWeight(.semibold)
+                Text(date.formatted(.dateTime.weekday(.abbreviated).day()))
+                    .font(.system(size: 22, weight: .medium))
                     .lineLimit(1)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .backport
-                    .glassEffect(
-                        .regular.selection(
-                            tint: tint,
-                            foregroundColor: isFocused ? .black : .primary
-                        )
-                        .interactive(),
-                        in: .capsule
-                    )
+                    .padding(.vertical, 8)
             }
-            .focused($isFocused)
-            .tvFocusBorder(isFocused: isFocused, shape: Capsule())
-            .animation(.easeInOut(duration: 0.1), value: isFocused)
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .buttonStyle(.capsule(isSelectionActive: false))
         }
     }
 }

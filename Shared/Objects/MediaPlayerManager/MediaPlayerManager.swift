@@ -107,6 +107,7 @@ final class MediaPlayerManager: ViewModel {
     @Published
     var playbackItem: MediaPlayerItem? = nil {
         didSet {
+            completedPlaybackItemID = nil
             if let playbackItem {
                 if oldValue?.baseItem.id != playbackItem.baseItem.id || oldValue == nil {
                     resetPlaybackOffsets()
@@ -223,6 +224,9 @@ final class MediaPlayerManager: ViewModel {
     /// The current seconds media playback is set to.
     let secondsBox: PublishedBox<Duration> = .init(initialValue: .zero)
 
+    /// Latched at EOF so an engine clock reset cannot restore an old resume point.
+    private(set) var completedPlaybackItemID: String?
+
     var seconds: Duration {
         get { secondsBox.value }
         set { secondsBox.value = newValue }
@@ -281,22 +285,13 @@ final class MediaPlayerManager: ViewModel {
 
     @Function(\Action.Cases.ended)
     private func _ended() async throws {
-        // TODO: change to observe given seconds against runtime
-        //       instead of sent action?
+        // All proxies send this only for a natural EOF. Their final clock can
+        // lag or reset, so it must not veto completion or the final stop report.
+        guard !item.isLiveStream else { return }
 
-        // Ended should represent natural ending of playback, which
-        // is verifiable by given seconds being near item runtime.
-        // VLC proxy will send ended early.
-        guard let runtime = item.runtime else {
-            await self.stop()
-            return
-        }
-
-        let isNearEnd = (runtime - seconds) <= .seconds(1)
-
-        guard isNearEnd else {
-            // If not near end, ignore.
-            return
+        completedPlaybackItemID = playbackItem?.baseItem.id
+        if let runtime = item.runtime {
+            seconds = runtime
         }
 
         if let nextItem = queue?.nextItem, try authenticatedUser.data.configuration?.enableNextEpisodeAutoPlay == true {

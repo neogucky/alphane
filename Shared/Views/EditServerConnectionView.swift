@@ -24,6 +24,8 @@ struct EditServerConnectionView: View {
 
     @State
     private var draft: ServerConnectionDraft
+    @State
+    private var saveError: String?
 
     #if os(iOS)
     @State
@@ -180,6 +182,85 @@ struct EditServerConnectionView: View {
     }
 
     var body: some View {
+        #if os(tvOS)
+        tvOSContent
+        #else
+        legacyContent
+        #endif
+    }
+
+    #if os(tvOS)
+    private var tvOSContent: some View {
+        TVManagementPage(title: L10n.connection, width: 1080) {
+            Button(L10n.cancel) { router.dismiss() }
+            Button(L10n.save) {
+                Task {
+                    do { try await save() }
+                    catch { saveError = error.localizedDescription }
+                }
+            }
+            .disabled(isSaveDisabled || (try? draft.connection()) == nil)
+        } content: {
+            VStack(spacing: 24) {
+                TVManagementField(title: L10n.name, text: $draft.name)
+                    .focused($isNameFocused)
+                TVManagementField(title: L10n.url, text: $draft.urlString, isURL: true)
+            }
+            .disabled(isTesting)
+            if isNameEmpty {
+                TVManagementNote(text: L10n.required)
+            }
+            if isDuplicateConnection {
+                TVManagementNote(text: L10n.connectionAlreadyExists)
+            }
+            if (try? draft.connection()) == nil, !isNameEmpty {
+                TVManagementNote(text: L10n.invalidURL)
+            }
+            HStack(spacing: 28) {
+                Button(action: testDraft) {
+                    HStack(spacing: 12) {
+                        Text(L10n.test)
+                        if isTesting {
+                            ProgressView().scaleEffect(0.65).frame(width: 24, height: 24)
+                        }
+                    }
+                }
+                .disabled(isTesting || (try? draft.connection()) == nil)
+                if isCurrentConnection {
+                    Label(L10n.active, systemImage: "checkmark.circle")
+                        .font(.system(size: 20))
+                        .foregroundStyle(AlphaneTheme.secondaryText)
+                } else if isExistingConnection {
+                    Button(L10n.use) {
+                        Task { await viewModel.setActiveConnectionIfValid(connection) }
+                    }
+                    .disabled(isTesting || hasChanges)
+                }
+                Spacer()
+                if isExistingConnection {
+                    Button(L10n.delete, role: .destructive) {
+                        viewModel.deleteConnection(connection)
+                        router.dismiss()
+                    }
+                    .disabled(isTesting || viewModel.connections.count <= 1 || isCurrentConnection)
+                }
+            }
+            if case .success = testState {
+                TVManagementNote(text: L10n.success)
+            }
+            if case let .failure(message) = testState {
+                TVManagementNote(text: message.nilIfBlank ?? L10n.connectionFailed)
+            }
+            if let saveError {
+                TVManagementNote(text: saveError)
+            }
+        }
+        .defaultFocus($isNameFocused, true, priority: .userInitiated)
+        .onExitCommand { router.dismiss() }
+    }
+    #endif
+
+    private var legacyContent: some View {
         Form(systemImage: "network") {
             Section {
                 TextField(L10n.name, text: $draft.name)
@@ -195,11 +276,11 @@ struct EditServerConnectionView: View {
 
             Section {
                 TextField(L10n.url, text: $draft.urlString)
-                    #if !os(tvOS)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                    #endif
+                #if !os(tvOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    .autocorrectionDisabled()
+                #endif
             } header: {
                 Text(L10n.url)
             } footer: {

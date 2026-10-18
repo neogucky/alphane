@@ -42,6 +42,78 @@ struct CustomDeviceProfilesView: View {
     }
 
     var body: some View {
+        #if os(tvOS)
+        tvOSContent
+        #else
+        legacyContent
+        #endif
+    }
+
+    #if os(tvOS)
+    private var tvOSContent: some View {
+        TVManagementPage(title: L10n.profiles) {
+            Button(L10n.add, systemImage: "plus") { router.route(to: .createDeviceProfile) }
+        } content: {
+            VStack(alignment: .leading, spacing: 16) {
+                ListRowMenu(L10n.behavior, selection: $customDeviceProfileAction)
+                TVManagementNote(text: customDeviceProfileAction == .add ? L10n.customDeviceProfileAdd : L10n.customDeviceProfileReplace)
+                if !isValid {
+                    TVManagementNote(text: L10n.noDeviceProfileWarning)
+                }
+            }
+            TVManagementSection(title: L10n.custom) {
+                if customProfiles.isEmpty {
+                    TVManagementNote(text: L10n.none)
+                }
+                ForEach($customProfiles, id: \.self) { $profile in
+                    Button {
+                        router.route(to: .editDeviceProfile(profile: $profile))
+                    } label: {
+                        HStack(spacing: 24) {
+                            TVDeviceProfileSummary(
+                                transcoding: profile.useAsTranscodingProfile,
+                                audio: profile.audio.map(\.displayTitle).joined(separator: ", "),
+                                video: profile.video.map(\.displayTitle).joined(separator: ", "),
+                                containers: profile.container.map(\.displayTitle).joined(separator: ", ")
+                            )
+                            Image(systemName: "chevron.right").font(.system(size: 16))
+                        }
+                    }
+                    .contextMenu { deleteButton(profile: profile) }
+                }
+            }
+            if customDeviceProfileAction == .add {
+                TVManagementSection(title: L10n.default) {
+                    ForEach(Array(videoPlayerType.directPlayProfiles.enumerated()), id: \.offset) { _, profile in
+                        TVDeviceProfileSummary(
+                            transcoding: false,
+                            audio: profile.audioCodec.components(of: AudioCodec.self).map(\.displayTitle).joined(separator: ", "),
+                            video: profile.videoCodec.components(of: VideoCodec.self).map(\.displayTitle).joined(separator: ", "),
+                            containers: profile.container.components(of: MediaContainer.self).map(\.displayTitle).joined(separator: ", ")
+                        )
+                        .foregroundStyle(AlphaneTheme.secondaryText)
+                        .padding(22)
+                        .background(AlphaneTheme.surface, in: RoundedRectangle(cornerRadius: 24))
+                    }
+                    ForEach(Array(videoPlayerType.transcodingProfiles.enumerated()), id: \.offset) { _, profile in
+                        TVDeviceProfileSummary(
+                            transcoding: true,
+                            audio: profile.audioCodec.components(of: AudioCodec.self).map(\.displayTitle).joined(separator: ", "),
+                            video: profile.videoCodec.components(of: VideoCodec.self).map(\.displayTitle).joined(separator: ", "),
+                            containers: profile.container.components(of: MediaContainer.self).map(\.displayTitle).joined(separator: ", ")
+                        )
+                        .foregroundStyle(AlphaneTheme.secondaryText)
+                        .padding(22)
+                        .background(AlphaneTheme.surface, in: RoundedRectangle(cornerRadius: 24))
+                    }
+                }
+            }
+        }
+        .onExitCommand { router.dismiss() }
+    }
+    #endif
+
+    private var legacyContent: some View {
         Form(systemImage: "doc.on.doc") {
             behaviorView
             customProfileView
@@ -51,11 +123,11 @@ struct CustomDeviceProfilesView: View {
         .topBarTrailing {
             if customProfiles.isNotEmpty {
                 addButton
-                    #if os(iOS)
-                        .backport
-                        .buttonStyle(.glassProminent)
-                        .controlSize(.small)
-                    #endif
+                #if os(iOS)
+                .backport
+                .buttonStyle(.glassProminent)
+                .controlSize(.small)
+                #endif
             }
         }
     }
@@ -107,10 +179,10 @@ struct CustomDeviceProfilesView: View {
                 }
                 #if os(iOS)
                 .swipeActions {
-                        deleteButton(profile: profile)
-                    }
+                    deleteButton(profile: profile)
+                }
                 #else
-                    .contextMenu {
+                .contextMenu {
                         deleteButton(profile: profile)
                     }
                 #endif

@@ -152,34 +152,79 @@ class MediaProgressObserver: ViewModel, MediaPlayerObserver {
 
     private func sendStopReport(for item: MediaPlayerItem, seconds: Duration?) {
 
+        let didReachEnd = manager?.completedPlaybackItemID != nil
+            && manager?.completedPlaybackItemID == item.baseItem.id
+        var info = PlaybackStopInfo()
+        info.itemID = item.baseItem.id
+        info.liveStreamID = item.mediaSource.liveStreamID
+        info.mediaSourceID = item.mediaSource.id
+        info.playSessionID = item.playSessionID
+        info.positionTicks = didReachEnd
+            ? item.baseItem.runTimeTicks ?? seconds?.ticks : seconds?.ticks
+        info.sessionID = item.playSessionID
+
+        // Deliver the captured final position while the player still covers
+        // its detail page; server acknowledgement must not delay the UI.
+        let completionID = UUID()
+        var completionEntry: ItemEntry?
+        if let userSession {
+            do {
+                let entry = try ItemEntry(item: userSession.items.record(for: item.baseItem))
+                try PlaybackCompletion.applyStop(info, didReachEnd: didReachEnd, to: entry, in: userSession.items)
+                if didReachEnd {
+                    entry.item.beginPlaybackCompletion(id: completionID)
+                    completionEntry = entry
+                }
+            } catch {
+                logger.debug("Unable to update local playback state: \(error.localizedDescription)")
+            }
+        }
+        Notifications[.didStopPlayback].post(.init(report: info, didReachEnd: didReachEnd))
+
         #if DEBUG
-        guard Defaults[.sendProgressReports] else { return }
+        guard Defaults[.sendProgressReports] else {
+            completionEntry?.item.endPlaybackCompletion(id: completionID)
+            return
+        }
 
         #endif
 
         enqueueReport {
-            var info = PlaybackStopInfo()
-            info.itemID = item.baseItem.id
-            info.liveStreamID = item.mediaSource.liveStreamID
-            info.mediaSourceID = item.mediaSource.id
-            info.playSessionID = item.playSessionID
-            info.positionTicks = seconds?.ticks
-            info.sessionID = item.playSessionID
-
+            defer {
+                if let entry = completionEntry {
+                    try? PlaybackCompletion.applyStop(info, didReachEnd: true, to: entry, in: self.userSession?.items)
+                    entry.item.endPlaybackCompletion(id: completionID)
+                }
+            }
             let request = Paths.reportPlaybackStopped(info)
             try await self.send(request)
 
-            await self.settlePlaybackState(for: item.baseItem, stoppedAt: info.positionTicks)
+            await self.settlePlaybackState(for: item.baseItem, stoppedAt: info.positionTicks, didReachEnd: didReachEnd)
             Notifications[.didSendStopReport].post(info)
         }
     }
 
-    func settlePlaybackState(for item: BaseItemDto, stoppedAt positionTicks: Int?) async {
-        guard PlaybackCompletion.reachedEnd(of: item, at: positionTicks), let userSession else { return }
+    func settlePlaybackState(for item: BaseItemDto, stoppedAt positionTicks: Int?, didReachEnd: Bool = false) async {
+        guard didReachEnd || PlaybackCompletion.reachedEnd(of: item, at: positionTicks), let userSession else { return }
+
         do {
-            _ = try await PlaybackCompletion.refreshedItem(stoppedAt: positionTicks) {
-                try await userSession.getFullItem(item).snapshot
+            let entry = try ItemEntry(item: userSession.items.record(for: item))
+            var serverStillResumable = false
+            _ = try await PlaybackCompletion.refreshedItem(stoppedAt: positionTicks, didReachEnd: didReachEnd) {
+                // Stale reads must not overwrite the locally completed shared
+                // record while Jellyfin settles the stop report.
+                let response = try await userSession.client.send(Paths.getItem(itemID: entry.itemID, userID: userSession.user.id))
+                serverStillResumable = response.value.userData?.isPlayed != true
+                    || (response.value.userData?.playbackPositionTicks ?? 0) != 0
+                return response.value
             }
+            if serverStillResumable {
+                try await userSession.setPlayed(entry, to: true)
+            }
+            var report = PlaybackStopInfo()
+            report.itemID = entry.itemID
+            report.positionTicks = positionTicks
+            try PlaybackCompletion.applyStop(report, didReachEnd: didReachEnd, to: entry, in: userSession.items)
         } catch {
             logger.debug("Unable to read final playback state: \(error.localizedDescription)")
         }

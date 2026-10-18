@@ -68,6 +68,14 @@ struct ServerConnectionView: View {
     }
 
     var body: some View {
+        #if os(tvOS)
+        TVServerConnectionContent(viewModel: viewModel, editMode: $editMode)
+        #else
+        legacyContent
+        #endif
+    }
+
+    private var legacyContent: some View {
         Form(systemImage: "network") {
             if isAutoSwitchFeatureEnabled {
                 Section {
@@ -125,8 +133,8 @@ struct ServerConnectionView: View {
                 }
                 #if os(iOS)
                 .backport
-                    .buttonStyle(.glass)
-                    .controlSize(.small)
+                .buttonStyle(.glass)
+                .controlSize(.small)
                 #endif
             }
         }

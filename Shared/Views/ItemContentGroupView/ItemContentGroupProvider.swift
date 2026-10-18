@@ -31,23 +31,71 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
     var isPresentingDeleteConfirmation = false
 
     let id: String
-    private var reportedStopPosition: Int?
+    private var lastPlaybackReachedEnd = false
     @Published
     private(set) var lastPlaybackStopPosition: Int?
+    @Published
+    private(set) var playbackStopRevision = 0
 
     var shouldFocusNextEpisode: Bool {
         PlaybackCompletion.shouldPreferNextEpisode(
             after: item,
             stoppedAt: lastPlaybackStopPosition,
+            didReachEnd: lastPlaybackReachedEnd,
             nextEpisode: nextEpisodeItemProvider?.item
         )
     }
 
-    func prepareForPlaybackStop(_ report: PlaybackStopInfo) -> Bool {
+    func prepareForPlaybackStop(_ report: PlaybackStopInfo, didReachEnd: Bool = false) -> Bool {
         guard report.itemID == id else { return false }
-        reportedStopPosition = report.positionTicks
+
+        do {
+            try PlaybackCompletion.applyStop(report, didReachEnd: didReachEnd, to: $item, in: userSession?.items)
+        } catch {
+            logger.debug("Unable to update episode playback state: \(error.localizedDescription)")
+        }
+        lastPlaybackReachedEnd = didReachEnd
         lastPlaybackStopPosition = report.positionTicks
+        playbackStopRevision += 1
         return true
+    }
+
+    // Movie/episode playback updates shared user data and the header directly.
+    // The loaded metadata/cast/recommendation groups do not need rebuilding.
+    var refreshesGroupsAfterPlayback: Bool {
+        #if os(tvOS)
+        item.type != .episode && item.type != .movie
+        #else
+        true
+        #endif
+    }
+
+    private func observePlaybackStops() {
+        Notifications[.didStopPlayback]
+            .publisher
+            .sink { [weak self] event in
+                self?.prepareForPlaybackStop(event.report, didReachEnd: event.didReachEnd)
+            }
+            .store(in: &cancellables)
+
+        Notifications[.didSendStopReport]
+            .publisher
+            .sink { [weak self] report in
+                guard let self, report.itemID == self.id,
+                      self.item.userData?.isPlayed == true,
+                      self.nextEpisodeItemProvider == nil
+                else { return }
+
+                // Retry a failed initial lookup without reloading the page.
+                Task { [weak self] in
+                    guard let self, let session = self.userSession,
+                          let next = try? await self.nextEpisode(for: self.item)
+                    else { return }
+
+                    self.nextEpisodeItemProvider = next.getPlaybackItemProvider(userSession: session)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     var displayTitle: String {
@@ -85,24 +133,20 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         self.id = item.id ?? "Unknown"
         self.item = item
         super.init()
+        observePlaybackStops()
     }
 
     init(id: String) {
         self.id = id
         self.item = .init(id: id)
         super.init()
+        observePlaybackStops()
     }
 
     func makeGroups(environment: Empty) async throws -> [any ContentGroup] {
         let userSession = try requireUserSession()
-        let stopPosition = reportedStopPosition
-        reportedStopPosition = nil
-        var refreshedEntry: ItemEntry?
-        let fullItem = try await PlaybackCompletion.refreshedItem(stoppedAt: stopPosition) {
-            let entry = try await userSession.getFullItem(self.item)
-            refreshedEntry = entry
-            return entry.snapshot
-        }
+        let refreshedEntry = try await userSession.getFullItem(item)
+        let fullItem = refreshedEntry.snapshot
         let newMediaPlayerItemProvider = try await resolveMediaPlayerItemProvider(
             for: fullItem,
             userSession: userSession
@@ -111,15 +155,15 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         let newLocalTrailers = try? await localTrailers(for: fullItem)
         let newRandomBackdropItem = try? await randomBackdropItem(for: fullItem)
 
-        guard let entry = refreshedEntry, $item.value != nil, entry.value != nil else { throw ItemStore.StoreError.itemUnavailable }
+        guard $item.value != nil, refreshedEntry.value != nil else { throw ItemStore.StoreError.itemUnavailable }
 
-        $item = entry
+        $item = refreshedEntry
         localTrailers = newLocalTrailers ?? []
         mediaPlayerItemProvider = newMediaPlayerItemProvider
         nextEpisodeItemProvider = nextEpisode?
             .getPlaybackItemProvider(userSession: userSession)
         episodeSeasons = if fullItem.type == .episode {
-            (try? await seasons(for: fullItem)) ?? season(for: fullItem).map { [$0] } ?? []
+            await (try? seasons(for: fullItem)) ?? season(for: fullItem).map { [$0] } ?? []
         } else {
             []
         }
@@ -136,7 +180,10 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
 
         #if !os(tvOS)
         if item.type == .episode {
-            EpisodeNavigationContentGroup(nextEpisode: nextEpisodeItemProvider?.item, seasons: episodeSeasons)
+            EpisodeNavigationContentGroup(
+                nextEpisode: item.userData?.isPlayed == true ? nextEpisodeItemProvider?.item : nil,
+                seasons: episodeSeasons
+            )
         }
         #endif
 
@@ -423,7 +470,6 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
 
     private func nextEpisode(for item: BaseItemDto) async throws -> BaseItemDto? {
         guard item.type == .episode,
-              item.userData?.isPlayed == true,
               item.id != nil,
               item.seriesID != nil
         else { return nil }
@@ -435,6 +481,7 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
 
     private func seasons(for item: BaseItemDto) async throws -> [BaseItemDto] {
         guard let seriesID = item.seriesID else { return season(for: item).map { [$0] } ?? [] }
+
         let session = try requireUserSession()
         let series = BaseItemDto(id: seriesID, name: item.seriesName, type: .series)
         let patches = try await SeasonLibrary(parent: series).retrievePage(
@@ -446,6 +493,7 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
 
     private func season(for item: BaseItemDto) -> BaseItemDto? {
         guard let seasonID = item.seasonID else { return nil }
+
         return BaseItemDto(
             id: seasonID,
             imageTags: item.parentPrimaryImageItemID == seasonID

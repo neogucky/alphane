@@ -79,6 +79,43 @@ struct EPGChannelButton: View {
     }
 
     var body: some View {
+        #if os(tvOS)
+        Button(action: action) {
+            Group {
+                if hasPrimaryImage {
+                    PosterImage(item: channel, type: .square, contentMode: .fill)
+                } else {
+                    VStack(spacing: 8) {
+                        if let number = channel.channelNumber, number.isNotEmpty {
+                            Text(number).font(.system(size: 22, weight: .medium)).lineLimit(1)
+                        }
+                        Text(channel.displayTitle)
+                            .font(.system(size: 18))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundStyle(isFocused ? Color.white : AlphaneTheme.secondaryText)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AlphaneTheme.surface)
+                }
+            }
+            .frame(width: posterSize - 20, height: posterSize - 20)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(.white.opacity(isSelected && !isFocused ? 0.8 : 0), lineWidth: 2)
+            }
+            .tvFocusBorder(isFocused: isFocused, shape: RoundedRectangle(cornerRadius: 14))
+            .frame(width: layout.channelColumnWidth, height: layout.rowHeight)
+        }
+        .buttonStyle(EPGButtonStyle())
+        .focused($isFocused)
+        #else
+        legacyContent
+        #endif
+    }
+
+    private var legacyContent: some View {
         Button(action: action) {
             channelContent
                 .frame(width: posterSize, height: posterSize)

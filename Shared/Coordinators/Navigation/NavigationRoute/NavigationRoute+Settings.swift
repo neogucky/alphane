@@ -34,35 +34,52 @@ extension NavigationRoute {
 
     static func actionBarButtonSelector(selectedButtonsBinding: Binding<[VideoPlayerActionButton]>) -> NavigationRoute {
         NavigationRoute(id: "actionBarButtonSelector") {
-            OrderedSectionSelectorView(selection: selectedButtonsBinding, sources: VideoPlayerActionButton.allCases)
-                .navigationTitle(L10n.barButtons.localizedCapitalized)
+            OrderedSectionSelectorView(
+                title: L10n.barButtons.localizedCapitalized,
+                selection: selectedButtonsBinding,
+                sources: VideoPlayerActionButton.allCases
+            )
+            .navigationTitle(L10n.barButtons.localizedCapitalized)
         }
     }
 
     static func actionMenuButtonSelector(selectedButtonsBinding: Binding<[VideoPlayerActionButton]>) -> NavigationRoute {
         NavigationRoute(id: "actionMenuButtonSelector") {
-            OrderedSectionSelectorView(selection: selectedButtonsBinding, sources: VideoPlayerActionButton.allCases)
-                .navigationTitle(L10n.menuButtons.localizedCapitalized)
+            OrderedSectionSelectorView(
+                title: L10n.menuButtons.localizedCapitalized,
+                selection: selectedButtonsBinding,
+                sources: VideoPlayerActionButton.allCases
+            )
+            .navigationTitle(L10n.menuButtons.localizedCapitalized)
         }
     }
 
     static func itemActionBarButtonSelector(selectedButtonsBinding: Binding<[ItemActionButton]>) -> NavigationRoute {
         NavigationRoute(id: "itemActionBarButtonSelector") {
-            OrderedSectionSelectorView(selection: selectedButtonsBinding, sources: ItemActionButton.allCases)
-                .navigationTitle(L10n.barButtons.localizedCapitalized)
+            OrderedSectionSelectorView(
+                title: L10n.barButtons.localizedCapitalized,
+                selection: selectedButtonsBinding,
+                sources: ItemActionButton.allCases
+            )
+            .navigationTitle(L10n.barButtons.localizedCapitalized)
         }
     }
 
     static func itemActionMenuButtonSelector(selectedButtonsBinding: Binding<[ItemActionButton]>) -> NavigationRoute {
         NavigationRoute(id: "itemActionMenuButtonSelector") {
-            OrderedSectionSelectorView(selection: selectedButtonsBinding, sources: ItemActionButton.allCases)
-                .navigationTitle(L10n.menuButtons.localizedCapitalized)
+            OrderedSectionSelectorView(
+                title: L10n.menuButtons.localizedCapitalized,
+                selection: selectedButtonsBinding,
+                sources: ItemActionButton.allCases
+            )
+            .navigationTitle(L10n.menuButtons.localizedCapitalized)
         }
     }
 
     static func supplementSelector(selectedSupplementsBinding: Binding<[VideoPlayerSupplement]>) -> NavigationRoute {
         NavigationRoute(id: "supplementSelector") {
             OrderedSectionSelectorView(
+                title: L10n.supplements.localizedCapitalized,
                 selection: selectedSupplementsBinding,
                 sources: VideoPlayerSupplement.allCases,
                 removable: VideoPlayerSupplement.allCases.subtracting(VideoPlayerSupplement.supportedCases)
@@ -129,21 +146,26 @@ extension NavigationRoute {
 
     static func editDeviceProfileAudio(selection: Binding<[AudioCodec]>) -> NavigationRoute {
         NavigationRoute(id: "editDeviceProfileAudio") {
-            OrderedSectionSelectorView(systemImage: "waveform", selection: selection, sources: AudioCodec.allCases)
+            OrderedSectionSelectorView(systemImage: "waveform", title: L10n.audio, selection: selection, sources: AudioCodec.allCases)
                 .navigationTitle(L10n.audio)
         }
     }
 
     static func editDeviceProfileContainer(selection: Binding<[MediaContainer]>) -> NavigationRoute {
         NavigationRoute(id: "editDeviceProfileContainer") {
-            OrderedSectionSelectorView(systemImage: "archivebox", selection: selection, sources: MediaContainer.allCases)
-                .navigationTitle(L10n.containers)
+            OrderedSectionSelectorView(
+                systemImage: "archivebox",
+                title: L10n.containers,
+                selection: selection,
+                sources: MediaContainer.allCases
+            )
+            .navigationTitle(L10n.containers)
         }
     }
 
     static func editDeviceProfileVideo(selection: Binding<[VideoCodec]>) -> NavigationRoute {
         NavigationRoute(id: "editDeviceProfileVideo") {
-            OrderedSectionSelectorView(systemImage: "play.rectangle", selection: selection, sources: VideoCodec.allCases)
+            OrderedSectionSelectorView(systemImage: "play.rectangle", title: L10n.video, selection: selection, sources: VideoCodec.allCases)
                 .navigationTitle(L10n.video)
         }
     }
@@ -240,15 +262,25 @@ extension NavigationRoute {
 
     static func itemFilterDrawerSelector(selection: Binding<[ItemFilterType]>) -> NavigationRoute {
         NavigationRoute(id: "itemFilterDrawerSelector") {
-            OrderedSectionSelectorView(systemImage: "line.3.horizontal.decrease", selection: selection, sources: ItemFilterType.allCases)
-                .navigationTitle(L10n.filters)
+            OrderedSectionSelectorView(
+                systemImage: "line.3.horizontal.decrease",
+                title: L10n.filters,
+                selection: selection,
+                sources: ItemFilterType.allCases
+            )
+            .navigationTitle(L10n.filters)
         }
     }
 
     static func itemViewAttributes(selection: Binding<[ItemViewAttribute]>) -> NavigationRoute {
         NavigationRoute(id: "itemViewAttributes") {
-            OrderedSectionSelectorView(systemImage: "tag", selection: selection, sources: ItemViewAttribute.allCases)
-                .navigationTitle(L10n.mediaAttributes.localizedCapitalized)
+            OrderedSectionSelectorView(
+                systemImage: "tag",
+                title: L10n.mediaAttributes.localizedCapitalized,
+                selection: selection,
+                sources: ItemViewAttribute.allCases
+            )
+            .navigationTitle(L10n.mediaAttributes.localizedCapitalized)
         }
     }
 

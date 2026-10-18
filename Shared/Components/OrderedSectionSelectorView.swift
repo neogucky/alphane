@@ -16,16 +16,21 @@ struct OrderedSectionSelectorView<Element: Displayable & Hashable>: View {
     @StateObject
     private var selection: PublishedBox<[Element]>
 
+    private let binding: Binding<[Element]>
+    private let title: String
     private let data: [Element]
     private let removable: [Element]
     private let systemImage: String
 
     init(
         systemImage: String = "filemenu.and.selection",
+        title: String = L10n.options,
         selection: Binding<[Element]>,
         sources: [Element],
         removable: [Element]? = nil
     ) {
+        self.binding = selection
+        self.title = title
         self._selection = StateObject(wrappedValue: PublishedBox(source: selection))
         self.data = sources
         self.removable = removable ?? sources
@@ -58,8 +63,8 @@ struct OrderedSectionSelectorView<Element: Displayable & Hashable>: View {
         }
         #if os(iOS)
         .backport
-            .buttonStyle(.glass)
-            .controlSize(.small)
+        .buttonStyle(.glass)
+        .controlSize(.small)
         #endif
     }
 
@@ -85,6 +90,14 @@ struct OrderedSectionSelectorView<Element: Displayable & Hashable>: View {
     }
 
     var body: some View {
+        #if os(tvOS)
+        TVOrderedOptions(title: title, selection: binding, sources: data, removable: removable)
+        #else
+        legacyContent
+        #endif
+    }
+
+    private var legacyContent: some View {
         Form(systemImage: systemImage) {
             Section(L10n.enabled) {
                 if selection.value.isEmpty {

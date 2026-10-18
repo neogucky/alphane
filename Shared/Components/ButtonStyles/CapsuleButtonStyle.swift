@@ -90,6 +90,8 @@ struct CapsuleButtonStyle: ButtonStyle {
     var selectionTint: Color = .white
     var focusTint: Color?
     var isSelectionActive: Bool = true
+    /// Option grids need flexible cells; other capsules retain their intrinsic width.
+    var fillsAvailableWidth = false
 
     private var metrics: CapsuleControlMetrics {
         CapsuleControlMetrics(controlSize)
@@ -160,7 +162,7 @@ struct CapsuleButtonStyle: ButtonStyle {
                 .frame(minHeight: metrics.minimumHeight)
                 .blendMode(isHighlighted ? .destinationOut : .normal)
         }
-        .fixedSize()
+        .fixedSize(horizontal: !fillsAvailableWidth, vertical: true)
         .compositingGroup()
         .contentShape(.capsule)
         .opacity(opacity(isPressed: configuration.isPressed))

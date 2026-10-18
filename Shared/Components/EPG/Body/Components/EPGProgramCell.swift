@@ -49,6 +49,9 @@ struct EPGProgramCell: View {
     }
 
     private var backgroundColor: Color {
+        #if os(tvOS)
+        isFocused ? .white : AlphaneTheme.surface
+        #else
         if isFocused {
             .white
         } else if isCurrent {
@@ -56,14 +59,39 @@ struct EPGProgramCell: View {
         } else {
             Color.secondarySystemFill.opacity(0.5)
         }
+        #endif
     }
 
     private var primaryColor: Color {
+        #if os(tvOS)
+        isFocused ? .black : .white.opacity(0.8)
+        #else
         isFocused ? .black : .primary
+        #endif
     }
 
     private var secondaryColor: Color {
+        #if os(tvOS)
+        isFocused ? .black.opacity(0.8) : .white.opacity(0.8)
+        #else
         isFocused ? .black.opacity(0.6) : .secondary
+        #endif
+    }
+
+    private var titleFont: Font {
+        #if os(tvOS)
+        .system(size: 22, weight: isCurrent ? .medium : .regular)
+        #else
+        .footnote.weight(isCurrent ? .semibold : .regular)
+        #endif
+    }
+
+    private var timeFont: Font {
+        #if os(tvOS)
+        .system(size: 18)
+        #else
+        .caption2
+        #endif
     }
 
     private var stickyOffsetPublisher: AnyPublisher<CGFloat, Never> {
@@ -80,21 +108,35 @@ struct EPGProgramCell: View {
             ) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(presentation.title)
-                        .font(.footnote.weight(isCurrent ? .semibold : .regular))
+                        .font(titleFont)
                         .foregroundStyle(primaryColor)
 
                     Text(presentation.time)
-                        .font(.caption2)
+                        .font(timeFont)
                         .foregroundStyle(secondaryColor)
                 }
                 .lineLimit(1)
             }
+            #if os(tvOS)
+            .background(backgroundColor, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(alignment: .bottomLeading) {
+                if isCurrent {
+                    Capsule()
+                        .fill(accentColor.opacity(isFocused ? 1 : 0.6))
+                        .frame(width: 36, height: 3)
+                        .padding(12)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 14))
+            .padding(6)
+            #else
             .background(backgroundColor)
             .overlay {
                 Rectangle()
                     .strokeBorder(Color.secondarySystemFill.opacity(0.5), lineWidth: isFocused ? 0 : 1)
             }
             .contentShape(Rectangle())
+            #endif
         }
         .buttonStyle(EPGButtonStyle())
         .accessibilityValue(isCurrent ? L10n.onNow : "")

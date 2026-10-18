@@ -24,6 +24,9 @@ struct TVSignInKeyboard: UIViewRepresentable {
     let secure: Bool
     let password: Bool
     let submit: () -> Void
+    var contentType: UITextContentType? = .username
+    var keyboardType: UIKeyboardType = .default
+    var returnKeyType: UIReturnKeyType?
 
     func makeUIView(context: Context) -> TVSignInKeyboardField {
         let field = TVSignInKeyboardField()
@@ -41,8 +44,9 @@ struct TVSignInKeyboard: UIViewRepresentable {
             field.text = text
         }
         field.placeholder = title
-        field.textContentType = password ? .password : .username
-        field.returnKeyType = password ? .go : .next
+        field.textContentType = password ? .password : contentType
+        field.keyboardType = keyboardType
+        field.returnKeyType = returnKeyType ?? (password ? .go : .next)
         field.isEnabled = isEnabled
         field.accessibilityElementsHidden = true
         if isPresented, isEnabled, !field.isFirstResponder {

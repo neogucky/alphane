@@ -43,7 +43,7 @@ struct ItemView: View {
     @FocusState
     private var initialFocusSelection: String?
     @State
-    private var shouldRestorePlaybackFocus = false
+    private var restoredPlaybackStopRevision = 0
 
     private var preferredPlaybackFocus: String {
         provider.shouldFocusNextEpisode ? Component.nextEpisode : Component.play
@@ -67,14 +67,8 @@ struct ItemView: View {
     }
 
     private func contentDidLoad() {
-        #if os(tvOS)
-        if shouldRestorePlaybackFocus {
-            shouldRestorePlaybackFocus = false
-            initialFocusSelection = preferredPlaybackFocus
-        }
-        #endif
-
         guard shouldStartPlayback, let playbackProvider = provider.mediaPlayerItemProvider else { return }
+
         // Keep the following episode's details beneath its player, so finishing
         // it returns to the correct episode and offers its own Next action.
         shouldStartPlayback = false
@@ -208,6 +202,12 @@ struct ItemView: View {
         }
         .sinceLastDisappear { _ in
             viewModel.refreshIfPendingChanges()
+            #if os(tvOS)
+            if provider.playbackStopRevision != restoredPlaybackStopRevision {
+                initialFocusSelection = preferredPlaybackFocus
+                restoredPlaybackStopRevision = provider.playbackStopRevision
+            }
+            #endif
         }
         .environmentObject(focusCoordinator)
         #if os(tvOS)
@@ -232,14 +232,22 @@ struct ItemView: View {
                 router.dismiss()
             }
         }
+        #if os(tvOS)
+        .onChange(of: provider.playbackStopRevision) { _, _ in
+            initialFocusSelection = preferredPlaybackFocus
+        }
+        .onChange(of: provider.shouldFocusNextEpisode) { _, _ in
+            if provider.playbackStopRevision > 0 {
+                initialFocusSelection = preferredPlaybackFocus
+            }
+        }
+        #else
         .onNotification(.didSendStopReport) { report in
-            guard provider.prepareForPlaybackStop(report) else { return }
-            // Rebuild the header and navigation after final progress settles.
-            #if os(tvOS)
-            shouldRestorePlaybackFocus = true
-            #endif
+            guard report.itemID == provider.id else { return }
+
             viewModel.refresh()
         }
+        #endif
         .onChange(of: viewModel.state) { _, state in
             if state == .content {
                 contentDidLoad()

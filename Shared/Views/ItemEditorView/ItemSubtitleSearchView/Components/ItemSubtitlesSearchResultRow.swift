@@ -20,6 +20,54 @@ extension ItemSubtitleSearchView {
         let action: () -> Void
 
         var body: some View {
+            #if os(tvOS)
+            tvOSContent
+            #else
+            legacyContent
+            #endif
+        }
+
+        #if os(tvOS)
+        private var tvOSContent: some View {
+            Button(action: action) {
+                HStack(spacing: 28) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(subtitle.name ?? L10n.unknown)
+                            .font(.system(size: 22, weight: .medium))
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: 22) {
+                            Text(subtitle.threeLetterISOLanguageName?.localizedUppercase ?? L10n.unknown)
+                            if let format = subtitle.format {
+                                Text(format.localizedUppercase)
+                            }
+                            if let count = subtitle.downloadCount {
+                                Label(count.formatted(), systemImage: "arrow.down")
+                                    .accessibilityLabel("\(L10n.downloads): \(count)")
+                            }
+                            if let rating = subtitle.communityRating {
+                                Label(String(format: "%.1f", rating), systemImage: "star")
+                                    .accessibilityLabel("\(L10n.communityRating): \(rating)")
+                            }
+                            if let author = subtitle.author {
+                                Text(author).lineLimit(1)
+                            }
+                        }
+                        .font(.system(size: 18))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 22, weight: .semibold))
+                        .opacity(isSelected ? 1 : 0)
+                        .frame(width: 28)
+                }
+                .padding(.vertical, 18)
+            }
+            .buttonStyle(CapsuleButtonStyle(isSelectionActive: false, fillsAvailableWidth: true))
+        }
+        #endif
+
+        private var legacyContent: some View {
             Button(action: action) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {

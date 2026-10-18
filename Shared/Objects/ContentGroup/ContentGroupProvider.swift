@@ -17,12 +17,17 @@ protocol ContentGroupProvider: Displayable, Identifiable {
     var id: String { get }
 
     var refreshRequests: AnyPublisher<Void, Never> { get }
+    var refreshesGroupsAfterPlayback: Bool { get }
 
     @ContentGroupBuilder
     func makeGroups(environment: Environment) async throws -> [any ContentGroup]
 }
 
 extension ContentGroupProvider {
+
+    var refreshesGroupsAfterPlayback: Bool {
+        true
+    }
 
     var refreshRequests: AnyPublisher<Void, Never> {
         Combine.Empty().eraseToAnyPublisher()

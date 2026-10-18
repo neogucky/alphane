@@ -49,6 +49,7 @@ struct PlaybackQualitySettingsView: View {
                 )
             } footer: {
                 Text(L10n.playbackQualityDescription)
+                    .playbackSettingsFooter()
             } learnMore: {
                 LabeledContent(
                     L10n.auto,
@@ -71,6 +72,7 @@ struct PlaybackQualitySettingsView: View {
                     Text(L10n.bitrateTest)
                 } footer: {
                     Text(L10n.bitrateTestDisclaimer)
+                        .playbackSettingsFooter()
                 }
             }
 
@@ -87,6 +89,7 @@ struct PlaybackQualitySettingsView: View {
                 }
             } footer: {
                 Text(L10n.deviceProfileDescription)
+                    .playbackSettingsFooter()
             } learnMore: {
                 LabeledContent(
                     L10n.auto,
@@ -125,8 +128,12 @@ struct PlaybackQualitySettingsView: View {
                             .labelStyle(.sectionFooterWithImage(imageStyle: .orange))
                     }
                 }
+                .playbackSettingsFooter()
             }
         }
+        #if os(tvOS)
+        .playbackSettingsStyle()
+        #endif
         .animation(.linear, value: appMaximumBitrate)
         .animation(.linear, value: compatibilityMode)
         .navigationTitle(L10n.playbackQuality.localizedCapitalized)

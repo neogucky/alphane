@@ -52,10 +52,10 @@ struct ItemSubtitleSearchView: View {
             router.dismiss()
         }
         .topBarTrailing {
+            #if os(iOS)
             if viewModel.background.states.isNotEmpty {
                 ProgressView()
             }
-            #if os(iOS)
             if #available(iOS 26, *) {
                 Button(L10n.save, role: .confirm, action: save)
                     .disabled(selectedSubtitles.isEmpty)
@@ -76,6 +76,55 @@ struct ItemSubtitleSearchView: View {
 
     @ViewBuilder
     private var contentView: some View {
+        #if os(tvOS)
+        tvOSContent
+        #else
+        legacyContent
+        #endif
+    }
+
+    #if os(tvOS)
+    private var tvOSContent: some View {
+        TVManagementPage(title: L10n.subtitles) {
+            if viewModel.background.states.isNotEmpty {
+                ProgressView().scaleEffect(0.65).frame(width: 28, height: 28)
+            }
+            Button(L10n.save, action: save)
+                .disabled(selectedSubtitles.isEmpty || viewModel.background.is(.updating))
+        } content: {
+            HStack(spacing: 48) {
+                CulturePicker(L10n.language, threeLetterISOLanguageName: $viewModel.language)
+                Toggle(L10n.perfectMatch, isOn: $isPerfectMatch)
+            }
+            .padding(16)
+            .background(AlphaneTheme.surface, in: RoundedRectangle(cornerRadius: 24))
+            .disabled(viewModel.background.is(.updating))
+
+            if viewModel.results.isEmpty {
+                if viewModel.background.is(.searching) {
+                    ProgressView().frame(maxWidth: .infinity, minHeight: 180)
+                } else {
+                    TVManagementNote(text: L10n.none)
+                }
+            } else {
+                LazyVStack(spacing: 16) {
+                    ForEach(viewModel.results) { subtitle in
+                        SearchResultRow(subtitle: subtitle) {
+                            guard let id = subtitle.id else { return }
+
+                            selectedSubtitles.toggle(value: id)
+                        }
+                        .isSelected(subtitle.id.map { selectedSubtitles.contains($0) } == true)
+                        .disabled(subtitle.id == nil || viewModel.background.is(.updating))
+                    }
+                }
+            }
+        }
+        .onExitCommand { router.dismiss() }
+    }
+    #endif
+
+    private var legacyContent: some View {
         Form(systemImage: "textformat") {
 
             Section(L10n.options) {
@@ -83,22 +132,6 @@ struct ItemSubtitleSearchView: View {
 
                 Toggle(L10n.perfectMatch, isOn: $isPerfectMatch)
             }
-
-            #if os(tvOS)
-            Section {
-                Button(action: save) {
-                    Text(L10n.save)
-                        .frame(maxWidth: .infinity)
-                }
-                .disabled(selectedSubtitles.isEmpty)
-                .listRowInsets(.zero)
-                .listRowBackground(Color.clear)
-                .fontWeight(.semibold)
-                .backport
-                .buttonStyle(.glassProminent.shadow(false))
-                .tint(accentColor)
-            }
-            #endif
 
             Section(L10n.search) {
 

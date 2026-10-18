@@ -34,7 +34,6 @@ These UI mockups use fictional climbing and bouldering films and series to avoid
 
 ![Chalk up! paused with the Audio control focused](./readme/video-ui.png)
 
-The [fictional media catalog, artwork, prompts, and preview renderer](./readme/preview_video_mocks/README.md) are included in the repository.
 
 ## Build
 

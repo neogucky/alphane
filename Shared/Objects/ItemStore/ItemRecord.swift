@@ -22,6 +22,7 @@ final class ItemRecord: Identifiable {
     private var currentProgram: ItemRecord?
     // Pending writes overlay confirmed data until each write finishes
     private var optimisticChanges: [(id: UUID, field: ItemUserDataField, value: Bool)] = []
+    private var pendingPlaybackCompletions: Set<UUID> = []
 
     @ObservationIgnored
     private var metadataRevisions = FieldRevisions()
@@ -47,6 +48,16 @@ final class ItemRecord: Identifiable {
             value.userData = data
         }
 
+        // An older progress report can generate a socket update after EOF.
+        // Keep the completed timeline visible until the final write settles.
+        if !pendingPlaybackCompletions.isEmpty {
+            var data = value.userData ?? UserItemDataDto(key: id)
+            data.isPlayed = true
+            data.playbackPositionTicks = 0
+            data.playedPercentage = 100
+            value.userData = data
+        }
+
         return value
     }
 
@@ -64,6 +75,14 @@ final class ItemRecord: Identifiable {
 
     func endChange(id: UUID) {
         optimisticChanges.removeAll { $0.id == id }
+    }
+
+    func beginPlaybackCompletion(id: UUID) {
+        pendingPlaybackCompletions.insert(id)
+    }
+
+    func endPlaybackCompletion(id: UUID) {
+        pendingPlaybackCompletions.remove(id)
     }
 
     /// Accepts an initial snapshot for presentation-only records
@@ -166,6 +185,7 @@ final class ItemRecord: Identifiable {
     func invalidate() {
         metadata = nil
         currentProgram = nil
+        pendingPlaybackCompletions.removeAll()
         metadataRevisions = .init()
         userDataRevisions = .init()
         programRevision = 0
