@@ -9,13 +9,88 @@
 @testable import Alphane
 import Combine
 import Defaults
+import FactoryKit
 import Get
 import JellyfinAPI
 import SwiftUI
+import UIKit
 import XCTest
 
 @MainActor
 final class EpisodeCompletionTests: XCTestCase {
+
+    func testRetainedDetailPageFocusesNextAfterCompletionAndResumeAfterPartialRewatch() async throws {
+        let factories = FactoryKit.Container.shared.manager
+        factories.push()
+        defer { factories.pop() }
+        let session = makeStubSession()
+        let previousUserData = session.user.data
+        session.user.data = UserDto(id: session.user.id, policy: UserPolicy(
+            authenticationProviderID: "test", enableMediaPlayback: true, passwordResetProviderID: "test"
+        ))
+        defer { session.user.data = previousUserData }
+        FactoryKit.Container.shared.currentUserSession.register { session }
+        let provider = ItemContentGroupProvider(item: episode("episode"))
+        provider.userSession = session
+        let coordinator = NavigationCoordinator(usesNavigationStack: true)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        window.rootViewController = UIHostingController(rootView:
+            NavigationInjectionView(coordinator: coordinator) { ItemView(provider: provider) }
+                .preferredColorScheme(.dark))
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previous?.makeKeyAndVisible()
+        }
+        for _ in 0 ..< 60 {
+            if provider.mediaPlayerItemProvider != nil, provider.nextEpisodeItemProvider != nil {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertNotNil(provider.mediaPlayerItemProvider)
+        XCTAssertNotNil(provider.nextEpisodeItemProvider)
+        XCTAssertTrue(provider.item.presentPlayButton)
+        let initialItemRecord = provider.$item.item
+
+        for finished in [true, false, true] {
+            // The real player uses this same full-screen route. No stream,
+            // server progress report or real watch history is needed here.
+            coordinator.push(NavigationRoute(id: "focus-test-player", style: .fullscreen) {
+                Color.black.ignoresSafeArea().focusable()
+            })
+            try await Task.sleep(for: .milliseconds(700))
+            var report = PlaybackStopInfo()
+            report.itemID = "episode"
+            report.positionTicks = Duration.seconds(finished ? 120 : 38).ticks
+            XCTAssertTrue(provider.prepareForPlaybackStop(report, didReachEnd: finished))
+            XCTAssertEqual(provider.shouldFocusNextEpisode, finished)
+            coordinator.presentedFullScreen = nil
+            try await Task.sleep(for: .milliseconds(900))
+            let focus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
+            let rect = focus.focusItemContainer?.coordinateSpace.convert(focus.frame, to: window) ?? focus.frame
+            let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
+            let capture = renderer.image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+            let attachment = XCTAttachment(image: capture)
+            attachment.name = finished ? "completed-next-focus" : "unfinished-resume-focus"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            if finished {
+                XCTAssertGreaterThan(rect.minX, 1400, "The next-episode thumbnail must actually receive native focus after dismissal")
+                XCTAssertEqual(provider.mediaPlayerItemProvider?.item.playButtonLabel, L10n.playAgain)
+            } else {
+                XCTAssertLessThan(rect.maxX, 1000, "An unfinished rewatch must focus Resume instead of Next")
+                XCTAssertGreaterThan(rect.width, 160, "Focus must be on Resume, not the watched/liked icons")
+                XCTAssertNotNil(provider.mediaPlayerItemProvider?.item.progressLabel)
+            }
+            XCTAssertTrue(provider.$item.item === initialItemRecord, "Focus restoration must not reload the detail page")
+        }
+    }
 
     func testAutomaticEndingPreparesNextBeforeAcknowledgementWithoutReloadingThePage() async {
         let previous = Defaults[.sendProgressReports]

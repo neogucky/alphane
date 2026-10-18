@@ -26,7 +26,6 @@ jobs:
     strategy:
       matrix:
         scheme:
-          - "Alphane"
           - "Alphane tvOS"
 
     runs-on: macos-26

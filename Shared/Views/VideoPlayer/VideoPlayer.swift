@@ -16,6 +16,11 @@ struct VideoPlayer: View {
     @Environment(\.presentationCoordinator)
     private var presentationCoordinator
 
+    #if os(tvOS)
+    @Environment(\.accessibilityReduceMotion)
+    private var reduceMotion
+    #endif
+
     @InjectedObject(\.mediaPlayerManager)
     private var manager: MediaPlayerManager
 
@@ -60,6 +65,23 @@ struct VideoPlayer: View {
         } playbackControls: {
             PlaybackControls()
         }
+        #if os(tvOS)
+        .overlay {
+            // The video surface is mounted after presentation. Keep startup at the
+            // presentation root so it also covers the opening animation.
+            ZStack {
+                if manager.loadingPresentation == .startup {
+                    PlaybackStartupView(item: manager.item)
+                        .transition(.opacity)
+                }
+            }
+            .allowsHitTesting(false)
+            .animation(
+                reduceMotion ? nil : .easeOut(duration: 0.35),
+                value: manager.loadingPresentation == .startup
+            )
+        }
+        #endif
         .onAppear {
             manager.proxy = proxy
             manager.start()

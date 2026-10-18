@@ -36,8 +36,12 @@ struct TVThemeChoices: View {
     @Binding
     var customColor: Color
     let focus: FocusState<String?>.Binding
+    var onPreview: ((AlphaneColorTheme) -> Void)? = nil
+    var onConfirm: (() -> Void)? = nil
     @State
     private var showsCustomPicker = false
+    @State
+    private var draftCustomColor: Color = .white
 
     private func row(_ theme: AlphaneColorTheme) -> some View {
         HStack(spacing: 14) {
@@ -57,26 +61,37 @@ struct TVThemeChoices: View {
     var body: some View {
         VStack(spacing: 18) {
             ForEach(AlphaneColorTheme.presets, id: \.self) { theme in
-                Button { selection = theme } label: { row(theme) }
+                Button {
+                    selection = theme
+                    onConfirm?()
+                } label: { row(theme) }
                     .focused(focus, equals: "theme-" + theme.rawValue)
                     .isSelected(selection == theme)
                     .accessibilityIdentifier("settings-theme-" + theme.rawValue)
             }
-            Button { showsCustomPicker = true } label: { row(.custom) }
+            Button {
+                draftCustomColor = customColor
+                showsCustomPicker = true
+            } label: { row(.custom) }
                 .focused(focus, equals: "accent")
                 .isSelected(selection == .custom)
                 .accessibilityIdentifier("settings-accent")
         }
         .buttonStyle(CapsuleButtonStyle(isSelectionActive: false, fillsAvailableWidth: true))
         .activeSelectionFocus(focus, selection: selection == .custom ? "accent" : "theme-" + selection.rawValue)
-        .sheet(isPresented: $showsCustomPicker) {
-            StateAdapter(initialValue: customColor) { draft in
-                ColorPicker.Sheet(title: L10n.accentColor, value: draft, supportsOpacity: false)
-                    .onDisappear {
-                        customColor = draft.wrappedValue
-                        selection = .custom
-                    }
+        .onChange(of: focus.wrappedValue) {
+            if let theme = AlphaneColorTheme.allCases.first(where: {
+                focus.wrappedValue == ($0 == .custom ? "accent" : "theme-" + $0.rawValue)
+            }) {
+                onPreview?(theme)
             }
+        }
+        .sheet(isPresented: $showsCustomPicker, onDismiss: {
+            customColor = draftCustomColor
+            selection = .custom
+            onConfirm?()
+        }) {
+            ColorPicker.Sheet(title: L10n.accentColor, value: $draftCustomColor, supportsOpacity: false)
         }
     }
 }

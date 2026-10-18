@@ -20,6 +20,10 @@ extension ConnectToServerView {
         var isOnboarding = false
 
         private func connect() {
+            guard viewModel.state != .connecting,
+                  !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else { return }
+
             isURLFocused.wrappedValue = false
             viewModel.connect(url: url)
         }
@@ -32,6 +36,7 @@ extension ConnectToServerView {
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
                 .focused(isURLFocused)
+                .onSubmit(connect)
                 .frame(height: 76)
                 .disabled(viewModel.state == .connecting)
         }

@@ -57,6 +57,26 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(TVOnboardingModel(preferences: preferences, servers: []).step, .complete)
     }
 
+    func testFocusPreviewsWithoutSavingOrAdvancing() {
+        let model = TVOnboardingModel(preferences: preferences, servers: [])
+        model.preview(.warm)
+        XCTAssertEqual(Defaults[.colorTheme], .warm)
+        assertColor(Defaults[.accentColor], AlphaneColorTheme.warm.color(custom: .white))
+        XCTAssertEqual(model.theme, .noAccent)
+        XCTAssertEqual(model.step, .style)
+
+        let restored = TVOnboardingModel(preferences: preferences, servers: [])
+        XCTAssertEqual(restored.theme, .noAccent, "An unconfirmed focus preview must not become the saved choice")
+        model.choose(.cold)
+        model.continueFromStyle()
+        model.preview(.warm)
+        XCTAssertEqual(model.step, .server)
+        XCTAssertEqual(model.theme, .cold)
+        XCTAssertEqual(Defaults[.colorTheme], .cold, "Focus changes during dismissal must not replace the confirmed style")
+        model.back()
+        XCTAssertEqual(model.theme, .cold)
+    }
+
     func testConnectedServerDoesNotMarkAnInterruptedSetupComplete() {
         let model = TVOnboardingModel(preferences: preferences, servers: [])
         model.continueFromStyle()

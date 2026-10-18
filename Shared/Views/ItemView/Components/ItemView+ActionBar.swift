@@ -15,19 +15,6 @@ extension ItemView {
         @FocusState
         private var focusedButton: String?
 
-        #if os(tvOS)
-        @Environment(\.initialFocusSelection)
-        private var initialFocusSelection
-        #endif
-
-        private var defaultFocusSelection: FocusState<String?>.Binding {
-            #if os(tvOS)
-            initialFocusSelection ?? $focusedButton
-            #else
-            $focusedButton
-            #endif
-        }
-
         @ObservedObject
         var provider: ItemContentGroupProvider
 
@@ -48,9 +35,6 @@ extension ItemView {
 
         var body: some View {
             let (visible, overflow, menu) = buttonConfiguration.resolvedButtons(for: provider)
-            let defaultFocusedButton = provider.item.presentPlayButton ?
-                ItemView.Component.play : visible.first?.id ?? ItemView.Component.menu
-
             #if os(tvOS)
             let layout = stacksPlaybackControls
                 ? AnyLayout(VStackLayout(alignment: alignment, spacing: 20))
@@ -70,12 +54,10 @@ extension ItemView {
             }
             .frame(height: stacksPlaybackControls ? 140 : 64)
             .focusSection()
-            .defaultFocus(
-                defaultFocusSelection,
-                provider.shouldFocusNextEpisode ? nil : defaultFocusedButton,
-                priority: .userInitiated
-            )
             #else
+            let defaultFocusedButton = provider.item.presentPlayButton ?
+                ItemView.Component.play : visible.first?.id ?? ItemView.Component.menu
+
             VStack(alignment: alignment, spacing: UIDevice.isTV ? 24 : 8) {
                 if provider.item.presentPlayButton {
                     PlayButton(provider: provider)
@@ -93,7 +75,7 @@ extension ItemView {
             }
             .focusSection()
             .defaultFocus(
-                defaultFocusSelection,
+                $focusedButton,
                 defaultFocusedButton,
                 priority: .userInitiated
             )

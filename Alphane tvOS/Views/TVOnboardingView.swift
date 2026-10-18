@@ -13,6 +13,16 @@ struct TVOnboardingView: View {
     var model: TVOnboardingModel
     @FocusState
     private var focus: String?
+    @State
+    private var previewTheme: AlphaneColorTheme?
+
+    private var displayedTheme: AlphaneColorTheme {
+        model.step == .style ? (previewTheme ?? model.theme) : model.theme
+    }
+
+    private var displayedColor: Color {
+        displayedTheme.color(custom: model.customColor)
+    }
 
     private let steps: [(TVOnboardingModel.Step, String)] = [
         (.style, String(localized: "Style")),
@@ -31,7 +41,7 @@ struct TVOnboardingView: View {
 
     private var subtitle: String {
         switch model.step {
-        case .style: String(localized: "Choose a look. You can change it later in Settings.")
+        case .style: String(localized: "Browse styles to preview. Select one to continue.")
         case .server: String(localized: "Enter an address or choose a server on your network.")
         case .profile: model.selectedServer?.name ?? ""
         case .complete: ""
@@ -87,11 +97,19 @@ struct TVOnboardingView: View {
             TVThemeChoices(
                 selection: Binding(get: { model.theme }, set: { model.choose($0) }),
                 customColor: Binding(get: { model.customColor }, set: { model.chooseCustomColor($0) }),
-                focus: $focus
+                focus: $focus,
+                onPreview: {
+                    previewTheme = $0
+                    model.preview($0)
+                },
+                onConfirm: model.continueFromStyle
             )
             .frame(width: 360)
-            .onAppear { focus = model.theme == .custom ? "accent" : "theme-" + model.theme.rawValue }
-            TVOnboardingPreview(theme: model.theme, color: model.color)
+            .onAppear {
+                previewTheme = model.theme
+                focus = model.theme == .custom ? "accent" : "theme-" + model.theme.rawValue
+            }
+            TVOnboardingPreview(theme: displayedTheme, color: displayedColor)
                 .frame(maxWidth: 960)
                 .accessibilityLabel(String(localized: "Preview of the selected style"))
         }
@@ -134,16 +152,7 @@ struct TVOnboardingView: View {
                     .accessibilityIdentifier("setup-back")
             }
             Spacer()
-            if model.step == .style {
-                Button(action: model.continueFromStyle) {
-                    HStack(spacing: 16) {
-                        Text(L10n.continue)
-                        Image(systemName: "arrow.right")
-                    }
-                }
-                .focused($focus, equals: "continue")
-                .accessibilityIdentifier("setup-continue")
-            } else if model.step == .profile {
+            if model.step == .profile {
                 Label(String(localized: "Sign in to start watching"), systemImage: "lock")
                     .font(.system(size: 18))
                     .foregroundStyle(AlphaneTheme.secondaryText)
@@ -170,12 +179,14 @@ struct TVOnboardingView: View {
             stepContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .id(model.step)
-            footer
+            if model.step != .style {
+                footer
+            }
         }
         .padding(.horizontal, 72)
         .padding(.vertical, 40)
         .background(AlphaneTheme.background.ignoresSafeArea())
-        .tint(model.color)
+        .tint(displayedColor)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { model.applyPreview() }
         .if(model.step != .style) { view in

@@ -76,11 +76,6 @@ extension VideoPlayer {
             @Environment(ViewState.self)
             private var viewState
 
-            #if os(tvOS)
-            @EnvironmentObject
-            private var manager: MediaPlayerManager
-            #endif
-
             let player: (VideoLayout) -> AnyView
             let videoSize: PublishedBox<CGSize>
 
@@ -114,13 +109,6 @@ extension VideoPlayer {
                 .overlay {
                         VideoZoomBorder(isVisible: viewState.zoom.isFillBorderPresented)
                     }
-                #endif
-                #if os(tvOS)
-                .overlay {
-                    if viewState.loadingPresentation == .startup {
-                        PlaybackStartupView(item: manager.item)
-                    }
-                }
                 #endif
             }
         }

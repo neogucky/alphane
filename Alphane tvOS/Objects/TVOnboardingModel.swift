@@ -73,6 +73,14 @@ final class TVOnboardingModel: ObservableObject {
         choose(.custom)
     }
 
+    /// Focus previews a style without saving it or advancing the wizard.
+    func preview(_ theme: AlphaneColorTheme) {
+        guard step == .style else { return }
+
+        Defaults[.colorTheme] = theme
+        Defaults[.accentColor] = theme.color(custom: customColor)
+    }
+
     func applyPreview() {
         guard step != .complete else { return }
 

@@ -85,7 +85,8 @@ struct NavigationInjectionView: View {
                 .background(.regularMaterial)
             }
             .fullScreenCover(
-                item: $coordinator.presentedFullScreen
+                item: $coordinator.presentedFullScreen,
+                onDismiss: coordinator.fullScreenDidDismiss
             ) { presentedRoute in
                 NavigationInjectionView(coordinator: presentedRoute.coordinator) {
                     presentedRoute.route.destination

@@ -1250,6 +1250,8 @@ internal enum L10n {
   internal static let pixelFormat = L10n.tr("Localizable", "pixelFormat", fallback: "Pixel format")
   /// Play
   internal static let play = L10n.tr("Localizable", "play", fallback: "Play")
+  /// Play again
+  internal static let playAgain = L10n.tr("Localizable", "playAgain", fallback: "Play again")
   /// Play / Pause
   internal static let playAndPause = L10n.tr("Localizable", "playAndPause", fallback: "Play / Pause")
   /// Playback

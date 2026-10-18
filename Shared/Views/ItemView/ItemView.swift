@@ -42,11 +42,21 @@ struct ItemView: View {
     #if os(tvOS)
     @FocusState
     private var initialFocusSelection: String?
+    @EnvironmentObject
+    private var navigationCoordinator: NavigationCoordinator
     @State
     private var restoredPlaybackStopRevision = 0
 
     private var preferredPlaybackFocus: String {
         provider.shouldFocusNextEpisode ? Component.nextEpisode : Component.play
+    }
+
+    private func restorePlaybackFocus() {
+        let target = preferredPlaybackFocus
+        initialFocusSelection = target
+        // Request only after the full-screen player finishes dismissing;
+        // tvOS otherwise restores the old focus over this preference.
+        focusCoordinator.focus(target)
     }
     #endif
 
@@ -202,12 +212,6 @@ struct ItemView: View {
         }
         .sinceLastDisappear { _ in
             viewModel.refreshIfPendingChanges()
-            #if os(tvOS)
-            if provider.playbackStopRevision != restoredPlaybackStopRevision {
-                initialFocusSelection = preferredPlaybackFocus
-                restoredPlaybackStopRevision = provider.playbackStopRevision
-            }
-            #endif
         }
         .environmentObject(focusCoordinator)
         #if os(tvOS)
@@ -233,12 +237,21 @@ struct ItemView: View {
             }
         }
         #if os(tvOS)
-        .onChange(of: provider.playbackStopRevision) { _, _ in
-            initialFocusSelection = preferredPlaybackFocus
+        .onChange(of: navigationCoordinator.fullScreenDismissalRevision) { _, _ in
+            guard provider.playbackStopRevision != restoredPlaybackStopRevision else { return }
+
+            Task { @MainActor in
+                // Let tvOS finish restoring the presentation's old focus first.
+                await Task.yield()
+                restorePlaybackFocus()
+                restoredPlaybackStopRevision = provider.playbackStopRevision
+            }
         }
         .onChange(of: provider.shouldFocusNextEpisode) { _, _ in
-            if provider.playbackStopRevision > 0 {
-                initialFocusSelection = preferredPlaybackFocus
+            if provider.playbackStopRevision > 0,
+               provider.playbackStopRevision == restoredPlaybackStopRevision
+            {
+                restorePlaybackFocus()
             }
         }
         #else

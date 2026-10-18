@@ -36,6 +36,13 @@ final class NavigationCoordinator: ObservableObject {
 
     #if os(tvOS)
     let focusStore = NavigationFocusStore()
+
+    @Published
+    private(set) var fullScreenDismissalRevision = 0
+
+    func fullScreenDidDismiss() {
+        fullScreenDismissalRevision += 1
+    }
     #endif
 
     @Published
