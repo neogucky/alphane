@@ -14,6 +14,10 @@ struct PosterIndicatorsOverlay: View {
 
     @Default(.accentColor)
     private var accentColor
+    #if os(tvOS)
+    @Default(.colorTheme)
+    private var colorTheme
+    #endif
 
     @Environment(\.isSelected)
     private var isSelected
@@ -36,6 +40,15 @@ struct PosterIndicatorsOverlay: View {
         AlphaneTheme.surface
         #else
         accentColor
+        #endif
+    }
+
+    private var favoriteBadgeColor: Color {
+        #if os(tvOS)
+        // Neutral badges share the watched badge surface; the filled heart carries state.
+        colorTheme == .noAccent ? AlphaneTheme.surface : accentColor
+        #else
+        .pink
         #endif
     }
 
@@ -91,7 +104,7 @@ struct PosterIndicatorsOverlay: View {
         }
 
         if showsFavoriteIndicator {
-            QuadrantItem(color: .pink) {
+            QuadrantItem(color: favoriteBadgeColor) {
                 Text(Image(systemName: "heart.fill"))
                     .accessibilityLabel(L10n.favorited)
             }

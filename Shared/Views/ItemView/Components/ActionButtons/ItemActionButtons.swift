@@ -324,6 +324,8 @@ private struct TVAccentItemActionButtonStyle: ButtonStyle {
 
     @Default(.accentColor)
     private var accentColor
+    @Default(.colorTheme)
+    private var colorTheme
 
     @Environment(\.isFocused)
     private var isFocused
@@ -335,6 +337,7 @@ private struct TVAccentItemActionButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let hasFocus = isEnabled && isFocused
         let tint: Color = isSelected ? accentColor : .white
+        let unfocusedOpacity: Double = colorTheme == .noAccent && isSelected ? 1 : 0.8
 
         ZStack {
             Capsule()
@@ -342,7 +345,7 @@ private struct TVAccentItemActionButtonStyle: ButtonStyle {
 
             configuration.label
                 .symbolRenderingMode(.monochrome)
-                .foregroundStyle(hasFocus ? Color.black : tint.opacity(0.8))
+                .foregroundStyle(hasFocus ? Color.black : tint.opacity(unfocusedOpacity))
                 .padding(.horizontal, 24)
                 .padding(.vertical, 6)
                 .frame(minHeight: 36)

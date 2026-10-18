@@ -7,6 +7,7 @@
 //
 
 import Combine
+import Defaults
 import JellyfinAPI
 import SwiftUI
 
@@ -36,6 +37,10 @@ struct CinematicSelectionContentGroup: ContentGroup {
     }
 
     private struct SelectionView: View {
+        @Default(.accentColor)
+        private var accentColor
+        @Default(.colorTheme)
+        private var colorTheme
 
         @ObservedObject
         var viewModel: CinematicSelectionContentGroupViewModel
@@ -46,9 +51,11 @@ struct CinematicSelectionContentGroup: ContentGroup {
         private func itemInformation(_ item: BaseItemDto) -> some View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(AlphaneTheme.accent)
-                        .frame(width: 3, height: 18)
+                    if colorTheme != .noAccent {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(accentColor)
+                            .frame(width: 3, height: 18)
+                    }
 
                     Text(viewModel.hasResumeItems ? L10n.continue : L10n.recentlyAdded.localizedCapitalized)
                         .font(.caption)

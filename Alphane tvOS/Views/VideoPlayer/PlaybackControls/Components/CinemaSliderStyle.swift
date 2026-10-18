@@ -6,10 +6,13 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Defaults
 import SwiftUI
 
 /// A constant-sized focus target with a slim track and an always-visible playhead.
 struct CinemaSliderStyle: SliderContainerStyle {
+    @Default(.accentColor)
+    private var accentColor
 
     func makeBody(configuration: SliderContainerStyleConfiguration) -> some View {
         GeometryReader { geometry in
@@ -18,7 +21,7 @@ struct CinemaSliderStyle: SliderContainerStyle {
             let committed = min(progress, origin ?? progress)
             let playheadSize: CGFloat = 16
             let trackHeight: CGFloat = 4
-            let accent = AlphaneTheme.accent
+            let accent = accentColor
 
             ZStack(alignment: .leading) {
                 Capsule().fill(accent.opacity(configuration.isFocused ? 0.4 : 0.16))

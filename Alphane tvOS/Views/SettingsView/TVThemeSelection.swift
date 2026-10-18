@@ -1,0 +1,65 @@
+//
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
+//
+
+import Defaults
+import SwiftUI
+
+struct TVThemeSelection: View {
+    @Default(.userColorTheme)
+    private var storedTheme
+    @Default(.userAccentColor)
+    private var customColor
+    @State
+    private var showsCustomPicker = false
+    let focus: FocusState<String?>.Binding
+
+    private var selected: AlphaneColorTheme {
+        .resolved(stored: storedTheme, custom: customColor)
+    }
+
+    private func row(_ theme: AlphaneColorTheme) -> some View {
+        HStack(spacing: 14) {
+            Text(theme.title).lineLimit(1)
+            Spacer(minLength: 12)
+            if theme == selected {
+                Image(systemName: "checkmark").font(.system(size: 18, weight: .semibold))
+            }
+            if theme == .custom {
+                Image(systemName: "chevron.right").font(.system(size: 16))
+            }
+        }
+        .font(.system(size: 22, weight: .medium))
+        .frame(minHeight: 46)
+    }
+
+    var body: some View {
+        VStack(spacing: 18) {
+            ForEach(AlphaneColorTheme.presets, id: \.self) { theme in
+                Button { storedTheme = theme } label: { row(theme) }
+                    .focused(focus, equals: "theme-" + theme.rawValue)
+                    .isSelected(selected == theme)
+                    .accessibilityIdentifier("settings-theme-" + theme.rawValue)
+            }
+            Button { showsCustomPicker = true } label: { row(.custom) }
+                .focused(focus, equals: "accent")
+                .isSelected(selected == .custom)
+                .accessibilityIdentifier("settings-accent")
+        }
+        .buttonStyle(CapsuleButtonStyle(isSelectionActive: false, fillsAvailableWidth: true))
+        .activeSelectionFocus(focus, selection: selected == .custom ? "accent" : "theme-" + selected.rawValue)
+        .sheet(isPresented: $showsCustomPicker) {
+            StateAdapter(initialValue: customColor) { draft in
+                ColorPicker.Sheet(title: L10n.accentColor, value: draft, supportsOpacity: false)
+                    .onDisappear {
+                        customColor = draft.wrappedValue
+                        storedTheme = .custom
+                    }
+            }
+        }
+    }
+}

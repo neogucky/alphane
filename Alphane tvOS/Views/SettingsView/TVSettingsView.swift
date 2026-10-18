@@ -282,16 +282,13 @@ struct TVSettingsAppearanceColumn: View {
     var showsTitle = true
     let focus: FocusState<String?>.Binding
 
-    @Default(.userAccentColor)
-    private var accentColor
     @Default(.Customization.Poster.configuration)
     private var posterConfiguration
 
     var body: some View {
         TVSettingsColumn(title: L10n.appearance, showsTitle: showsTitle) {
-            ColorPicker(L10n.accentColor, selection: $accentColor, supportsOpacity: false)
-                .focused(focus, equals: "accent")
-                .accessibilityIdentifier("settings-accent")
+            TVThemeSelection(focus: focus)
+                .padding(.bottom, 8)
             indicatorButton("Watched badges", indicator: .played)
                 .focused(focus, equals: "watched")
                 .accessibilityIdentifier("settings-watched")

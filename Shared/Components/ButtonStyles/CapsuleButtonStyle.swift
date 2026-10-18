@@ -144,9 +144,9 @@ struct CapsuleButtonStyle: ButtonStyle {
     private func tvOSBody(configuration: Configuration) -> some View {
         let hasFocus = isEnabled && isFocused
         let isHighlighted = isSelected || hasFocus
-        let pillOpacity: Double = isSelected
-            ? (hasFocus || isSelectionActive ? 1 : 0.8)
-            : (hasFocus ? 0.8 : 0)
+        let pillOpacity: Double = hasFocus
+            ? 1
+            : (isSelected ? (isSelectionActive ? 1 : 0.8) : 0)
 
         return ZStack {
             Capsule()

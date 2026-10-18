@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Defaults
 import SwiftUI
 
 enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiable, Storable, SystemImageable {
@@ -99,7 +100,7 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
         switch self {
         case .played:
             #if os(tvOS)
-            AlphaneTheme.accent
+            Defaults[.accentColor]
             #else
             .jellyfinPurple
             #endif
