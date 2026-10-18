@@ -193,6 +193,9 @@ extension MPVMediaPlayerProxy {
                 loadedSubtitleIndexes.removeAll()
 
             case .playing:
+                if let item = loadedItem {
+                    manager.videoFramePresented(for: item)
+                }
                 manager.setPlaybackRequestStatus(status: .playing)
 
             case .paused:
@@ -231,6 +234,12 @@ extension MPVMediaPlayerProxy {
                     }
                     .onDisappear {
                         textSubtitles.clear()
+                    }
+                    .onChange(of: player.playbackDiagnostics.startLatencySeconds) {
+                        // playback-restart also delivers the first frame when loaded paused.
+                        if loadedItem === item, player.playbackDiagnostics.startLatencySeconds != nil {
+                            manager.videoFramePresented(for: item)
+                        }
                     }
                     .onChange(of: player.position) {
                         if !viewState.isScrubbing {

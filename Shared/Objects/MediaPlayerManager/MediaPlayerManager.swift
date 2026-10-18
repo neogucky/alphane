@@ -107,6 +107,9 @@ final class MediaPlayerManager: ViewModel {
     @Published
     var playbackItem: MediaPlayerItem? = nil {
         didSet {
+            if oldValue !== playbackItem {
+                hasPresentedVideoFrame = false
+            }
             completedPlaybackItemID = nil
             if let playbackItem {
                 if oldValue?.baseItem.id != playbackItem.baseItem.id || oldValue == nil {
@@ -147,6 +150,28 @@ final class MediaPlayerManager: ViewModel {
 
     @Published
     private(set) var playbackRequestStatus: PlaybackRequestStatus = .playing
+
+    @Published
+    private(set) var hasPresentedVideoFrame = false
+    @Published
+    private(set) var isBuffering = false
+
+    var loadingPresentation: PlaybackLoadingPresentation {
+        .init(
+            state: state,
+            hasPresentedVideoFrame: hasPresentedVideoFrame,
+            isBuffering: isBuffering,
+            playbackRequestStatus: playbackRequestStatus
+        )
+    }
+
+    /// Ignore late renderer callbacks belonging to a replaced episode or stream.
+    func videoFramePresented(for playbackItem: MediaPlayerItem) {
+        guard self.playbackItem === playbackItem, !hasPresentedVideoFrame else { return }
+
+        hasPresentedVideoFrame = true
+    }
+
     @Published
     var rate: Double = Defaults[.VideoPlayer.Playback.playbackRate] {
         didSet {
@@ -239,11 +264,19 @@ final class MediaPlayerManager: ViewModel {
     /// Holds a weak reference to the current media player proxy.
     weak var proxy: (any MediaPlayerProxy)? {
         didSet {
+            bufferingCancellable?.cancel()
+            isBuffering = proxy?.isBuffering.value ?? false
             if var proxy {
                 proxy.manager = self
+                bufferingCancellable = proxy.isBuffering
+                    .$value
+                    .removeDuplicates()
+                    .sink { [weak self] in self?.isBuffering = $0 }
             }
         }
     }
+
+    private var bufferingCancellable: AnyCancellable?
 
     private var initialMediaPlayerItemProvider: MediaPlayerItemProvider?
 

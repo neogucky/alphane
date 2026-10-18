@@ -257,6 +257,11 @@ extension VideoPlayer {
         var visibleElements: Set<Element> {
             guard !isGestureLocked else { return [] }
 
+            #if os(tvOS)
+            guard loadingPresentation != .startup else { return [] }
+
+            #endif
+
             if isScrubbing {
                 return [.progress]
             }
@@ -311,6 +316,11 @@ extension VideoPlayer {
         private var cancellables: Set<AnyCancellable> = []
         @ObservationIgnored
         private var playbackStatusCancellable: AnyCancellable?
+        #if os(tvOS)
+        private(set) var loadingPresentation: PlaybackLoadingPresentation = .none
+        @ObservationIgnored
+        private var loadingCancellable: AnyCancellable?
+        #endif
         @ObservationIgnored
         private var playbackItemCancellable: AnyCancellable?
         @ObservationIgnored
@@ -411,6 +421,34 @@ extension VideoPlayer {
                     self.manager = manager
                 }
             }
+            #if os(tvOS)
+            loadingPresentation = manager.loadingPresentation
+            loadingCancellable = Publishers.CombineLatest4(
+                manager.$state,
+                manager.$hasPresentedVideoFrame,
+                manager.$isBuffering,
+                manager.$playbackRequestStatus
+            )
+            .map { state, hasFrame, isBuffering, status in
+                PlaybackLoadingPresentation(
+                    state: state,
+                    hasPresentedVideoFrame: hasFrame,
+                    isBuffering: isBuffering,
+                    playbackRequestStatus: status
+                )
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] presentation in
+                guard let self else { return }
+
+                self.loadingPresentation = presentation
+                if presentation == .buffering, self.presentation == .hidden {
+                    showProgress()
+                }
+                refreshAutoDismiss()
+            }
+            #endif
             observeSupplementActions()
             supplementsCancellable = manager.$supplements
                 .dropFirst()
@@ -553,6 +591,8 @@ extension VideoPlayer {
                   manager?.playbackRequestStatus != .paused else { return false }
 
             #if os(tvOS)
+            guard loadingPresentation != .buffering else { return false }
+
             // Menus take focus out of the player, including nested system menus.
             // Resume the countdown only after focus returns to our controls.
             guard !isPresentingCloseConfirmation,

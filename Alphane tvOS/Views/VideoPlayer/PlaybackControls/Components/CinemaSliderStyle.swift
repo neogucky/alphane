@@ -14,17 +14,25 @@ struct CinemaSliderStyle: SliderContainerStyle {
     @Default(.accentColor)
     private var accentColor
 
+    var isBuffering = false
+
     func makeBody(configuration: SliderContainerStyleConfiguration) -> some View {
         GeometryReader { geometry in
             let progress = configuration.progress
             let origin = configuration.originProgress
             let committed = min(progress, origin ?? progress)
-            let playheadSize: CGFloat = 16
-            let trackHeight: CGFloat = 4
+            let playheadSize = CinemaTrackAppearance.playheadSize
+            let trackHeight = CinemaTrackAppearance.height
             let accent = accentColor
 
             ZStack(alignment: .leading) {
-                Capsule().fill(accent.opacity(configuration.isFocused ? 0.4 : 0.16))
+                StreamingTrack(
+                    color: accent.opacity(CinemaTrackAppearance.unplayedOpacity(isFocused: configuration.isFocused)),
+                    isActive: isBuffering && origin == nil,
+                    direction: .towardStart,
+                    startProgress: progress
+                )
+                .frame(height: trackHeight)
 
                 if let origin {
                     Capsule()
