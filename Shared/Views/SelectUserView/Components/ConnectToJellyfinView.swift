@@ -34,9 +34,6 @@ extension SelectUserView {
                 .backport
                 .buttonStyle(.glassProminent.shadow(false))
                 .tint(accentColor)
-                #if os(iOS)
-                .controlSize(.large)
-                #endif
                 .frame(
                     height: UIDevice.isTV ? 75 : 44
                 )

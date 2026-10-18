@@ -11,15 +11,13 @@ import SwiftUI
 struct ContentGroupVStack: View {
 
     let groups: [any ContentGroup]
-    var interGroupSpacing: CGFloat? = nil
+    var interGroupSpacing: CGFloat?
 
     private var spacing: CGFloat {
-        if let interGroupSpacing { return interGroupSpacing }
-        #if os(tvOS)
+        if let interGroupSpacing {
+            return interGroupSpacing
+        }
         return 60
-        #else
-        return 20
-        #endif
     }
 
     @ViewBuilder

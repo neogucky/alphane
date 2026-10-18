@@ -175,19 +175,11 @@ private struct UserViewLibraryGridElement: View {
     let element: UserViewLibraryElement
 
     private var titleColor: Color {
-        #if os(tvOS)
         isFocused ? .white : AlphaneTheme.secondaryText
-        #else
-        .primary
-        #endif
     }
 
     private var placeholderColor: Color {
-        #if os(tvOS)
         AlphaneTheme.surface
-        #else
-        Color.secondarySystemFill.opacity(0.75)
-        #endif
     }
 
     private var isTitleLabelVisible: Bool {
@@ -240,12 +232,8 @@ private struct UserViewLibraryGridElement: View {
         .onChange(of: useRandomImage) {
             setImageSources()
         }
-        #if os(tvOS)
         .buttonStyle(.focusBorder)
         .focused($isFocused)
-        #else
-        .buttonStyle(.card)
-        #endif
     }
 
     @ViewBuilder
@@ -308,9 +296,6 @@ private struct UserViewLibraryListElement: View {
         } action: {
             element.libraryDidSelectElement(router: router, in: namespace)
         }
-        #if !os(tvOS)
-        .matchedTransitionSource(id: "item", in: namespace)
-        #endif
         .onFirstAppear(perform: setImageSources)
         .onChange(of: useRandomImage) {
             setImageSources()

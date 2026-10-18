@@ -26,12 +26,6 @@ extension UIInterfaceOrientationMask: @retroactive CustomDebugStringConvertible 
 
 public extension View {
 
-    #if os(iOS)
-    func keyCommands(@KeyCommandsBuilder _ commands: @escaping () -> [KeyCommandAction]) -> some View {
-        preference(key: KeyCommandsPreferenceKey.self, value: commands())
-    }
-    #endif
-
     #if os(tvOS)
     func pressCommands(@PressCommandsBuilder _ commands: @escaping () -> [PressCommandAction]) -> some View {
         preference(key: PressCommandsPreferenceKey.self, value: commands())
@@ -40,11 +34,7 @@ public extension View {
 
     /// - Important: This does nothing on tvOS.
     func supportedOrientations(_ supportedOrientations: UIInterfaceOrientationMask) -> some View {
-        #if os(tvOS)
         self
-        #else
-        preference(key: SupportedOrientationsPreferenceKey.self, value: supportedOrientations)
-        #endif
     }
 }
 

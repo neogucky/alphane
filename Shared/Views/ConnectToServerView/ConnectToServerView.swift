@@ -38,7 +38,7 @@ struct ConnectToServerView: View {
     private func onEvent(_ event: ConnectToServerViewModel._Event) {
         switch event {
         case let .connected(server):
-            UIDevice.feedback(.success)
+
             Notifications[.didConnectToServer].post(server)
             if let onConnected {
                 onConnected(server)
@@ -47,7 +47,7 @@ struct ConnectToServerView: View {
             }
 
         case let .duplicateServer(server):
-            UIDevice.feedback(.warning)
+
             duplicateServer = server
         }
     }
@@ -77,15 +77,9 @@ struct ConnectToServerView: View {
             }
             .listRowInsets(.zero)
             .listRowBackground(Color.clear)
-            #if os(iOS)
-            .listRowSeparator(.hidden)
-            #endif
             .fontWeight(.semibold)
             .backport
             .buttonStyle(.glassProminent.shadow(false))
-            #if os(iOS)
-            .controlSize(.large)
-            #endif
             .frame(maxHeight: 75)
         } else {
             Button {
@@ -97,16 +91,10 @@ struct ConnectToServerView: View {
             }
             .listRowInsets(.zero)
             .listRowBackground(Color.clear)
-            #if os(iOS)
-            .listRowSeparator(.hidden)
-            #endif
             .fontWeight(.semibold)
             .backport
             .buttonStyle(.glassProminent.shadow(false))
             .tint(accentColor)
-            #if os(iOS)
-            .controlSize(.large)
-            #endif
             .frame(maxHeight: 75)
             .disabled(url.isEmpty)
         }
@@ -135,24 +123,12 @@ struct ConnectToServerView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        #if os(iOS)
-        List {
-            connectSection
-
-            localServersSection
-        }
-        .toolbarTitleDisplayMode(.inline)
-        .navigationBarCloseButton(disabled: viewModel.state == .connecting) {
-            router.dismiss()
-        }
-        #else
         TVSetupContent(
             url: $url,
             isURLFocused: $isURLFocused,
             viewModel: viewModel,
             isOnboarding: isOnboarding
         )
-        #endif
     }
 
     // MARK: - Body
@@ -179,18 +155,9 @@ struct ConnectToServerView: View {
             .onReceive(viewModel.$error) { error in
                 guard error != nil else { return }
 
-                UIDevice.feedback(.error)
                 isURLFocused = true
             }
-            #if os(tvOS)
             .toolbarVisibility(.hidden, for: .navigationBar)
-            #else
-            .topBarTrailing {
-                if viewModel.state == .connecting {
-                    ProgressView()
-                }
-            }
-            #endif
             .sheet(item: $duplicateServer) { server in
                 DuplicateServerConnectionView(server: server) {
                     viewModel.addConnection(serverState: server)

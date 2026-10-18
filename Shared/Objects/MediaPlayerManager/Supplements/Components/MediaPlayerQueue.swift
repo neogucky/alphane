@@ -7,6 +7,7 @@
 //
 
 import Combine
+import SwiftUI
 
 @MainActor
 protocol MediaPlayerQueue: ObservableObject, MediaPlayerObserver, MediaPlayerSupplement {
@@ -83,7 +84,7 @@ class AnyMediaPlayerQueue: MediaPlayerQueue {
             .assign(to: &$previousItem)
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         wrapped
             .videoPlayerBody
             .eraseToAnyView()

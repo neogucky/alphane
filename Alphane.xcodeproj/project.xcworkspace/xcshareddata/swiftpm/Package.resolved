@@ -1,5 +1,5 @@
 {
-  "originHash" : "172fa81da963fb365f44b7771b055ebb784420e1a02316cadc96e02e818d401f",
+  "originHash" : "ebe2e16b87110b2e00e09fb774c257ecb070133cdf719772b1da3a8ea87140dc",
   "pins" : [
     {
       "identity" : "blurhashkit",
@@ -116,42 +116,6 @@
       "state" : {
         "revision" : "5e1b02b6a9dac2a759a1d5dbc175c86bd192a608",
         "version" : "24.0.0"
-      }
-    },
-    {
-      "identity" : "lnpopupcontroller",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LeoNatan/LNPopupController.git",
-      "state" : {
-        "revision" : "e14712b8077f9d25c2b70d23241e922537673338",
-        "version" : "3.0.7"
-      }
-    },
-    {
-      "identity" : "lnpopupui",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LeoNatan/LNPopupUI/",
-      "state" : {
-        "revision" : "aa9c813f2b47d055b648628b738e1b115c5e9fad",
-        "version" : "2.0.2"
-      }
-    },
-    {
-      "identity" : "lnswiftuiutils",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LeoNatan/LNSwiftUIUtils.git",
-      "state" : {
-        "revision" : "181a95b992f84d99a14c562c86e8ebef3cbcdca9",
-        "version" : "1.1.5"
-      }
-    },
-    {
-      "identity" : "mantis",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/guoyingtao/Mantis",
-      "state" : {
-        "revision" : "b3c237aff54b8307440157a2f5956bdea2e76791",
-        "version" : "2.31.2"
       }
     },
     {

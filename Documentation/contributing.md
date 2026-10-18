@@ -78,7 +78,7 @@ Documentation for advanced or complex features and other implementation reasonin
 
 ## Architecture
 
-Alphane is developed using SwiftUI and maintains the tvOS app. `Shared` contains its models, services and reusable views; `Alphane tvOS` contains the Apple TV presentation. An inherited iOS target, platform branches and resources remain in the source tree, but they are outside the maintained build/release scope.
+Alphane is developed using SwiftUI and maintains the tvOS app. `Shared` contains its models, services and reusable views; `Alphane tvOS` contains the Apple TV presentation. The iOS app and its unused platform-specific code have been removed; keep new code focused on tvOS, following the upstream-update rules in `AGENTS.md`.
 
 The VLC player uses [SwiftVLC](https://github.com/harflabs/SwiftVLC) for its great codec support. Becoming familiar with SwiftVLC will be necessary for video playback development and debugging.
 

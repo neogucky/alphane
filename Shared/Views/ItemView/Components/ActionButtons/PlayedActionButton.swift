@@ -20,11 +20,7 @@ extension ItemActionButtons {
         }
 
         private var systemImage: String {
-            #if os(tvOS)
             isPlayed ? "checkmark.circle.fill" : ItemActionButton.played.systemImage
-            #else
-            ItemActionButton.played.systemImage
-            #endif
         }
 
         var body: some View {

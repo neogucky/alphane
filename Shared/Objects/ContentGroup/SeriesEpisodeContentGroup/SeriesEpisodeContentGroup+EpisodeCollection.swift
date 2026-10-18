@@ -150,26 +150,11 @@ extension SeriesEpisodeContentGroup {
         }
 
         private static var layout: CollectionHStackLayout {
-            #if os(tvOS)
             .grid(
                 columns: 3.5,
                 rows: 1,
                 columnTrailingInset: 0
             )
-            #else
-            if UIDevice.isPad {
-                .minimumWidth(
-                    columnWidth: 300,
-                    rows: 1
-                )
-            } else {
-                .grid(
-                    columns: 1.5,
-                    rows: 1,
-                    columnTrailingInset: 0
-                )
-            }
-            #endif
         }
 
         var body: some View {
@@ -180,9 +165,9 @@ extension SeriesEpisodeContentGroup {
                 ) { element in
                     content(element)
                         .focused($focusedElement, equals: element.id)
-                        #if os(tvOS)
+                    #if os(tvOS)
                         .ignoresSafeArea()
-                        #endif
+                    #endif
                 }
                 .initialElement(id: preferredElementID)
                 .clipsToBounds(false)

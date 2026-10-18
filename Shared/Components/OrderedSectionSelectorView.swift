@@ -53,7 +53,6 @@ struct OrderedSectionSelectorView<Element: Displayable & Hashable>: View {
         guard isRemovable(element) else { return }
 
         selection.value.toggle(element)
-        UIDevice.impact(.light)
     }
 
     @ViewBuilder
@@ -61,11 +60,6 @@ struct OrderedSectionSelectorView<Element: Displayable & Hashable>: View {
         Button(isReordering ? L10n.done : L10n.edit) {
             editMode?.wrappedValue = isReordering ? .inactive : .active
         }
-        #if os(iOS)
-        .backport
-        .buttonStyle(.glass)
-        .controlSize(.small)
-        #endif
     }
 
     @ViewBuilder
@@ -90,11 +84,7 @@ struct OrderedSectionSelectorView<Element: Displayable & Hashable>: View {
     }
 
     var body: some View {
-        #if os(tvOS)
         TVOrderedOptions(title: title, selection: binding, sources: data, removable: removable)
-        #else
-        legacyContent
-        #endif
     }
 
     private var legacyContent: some View {

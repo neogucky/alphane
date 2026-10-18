@@ -68,20 +68,14 @@ struct CulturePicker: View {
     }
 
     var body: some View {
-        Group {
-            #if os(tvOS)
-            ListRowMenu(
-                title,
-                subtitle: currentCulture?.displayTitle
-            ) {
-                picker
-            }
-            .menuStyle(.borderlessButton)
-            .listRowInsets(.zero)
-            #else
+        ListRowMenu(
+            title,
+            subtitle: currentCulture?.displayTitle
+        ) {
             picker
-            #endif
         }
+        .menuStyle(.borderlessButton)
+        .listRowInsets(.zero)
         .enabled(viewModel.state == .content)
         .onFirstAppear {
             viewModel.refresh()

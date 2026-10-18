@@ -6,7 +6,6 @@ import PackageDescription
 let package = Package(
     name: "AlphaneMacros",
     platforms: [
-        .iOS(.v16),
         .tvOS(.v16),
         .macOS(.v13),
     ],

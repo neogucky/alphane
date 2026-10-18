@@ -37,7 +37,7 @@ final class TVOnboardingModel: ObservableObject {
     init(preferences: UserDefaults = .appSuite, servers: [ServerState] = StoredValues[.Server.servers]) {
         stepKey = .init("setupStep", default: nil, suite: preferences)
         themeKey = .init("setupTheme", default: .noAccent, suite: preferences)
-        customKey = .init("setupCustomColor", default: AlphaneTheme.accent, suite: preferences)
+        customKey = .init("setupCustomColor", default: Color(hex: "BE96E8"), suite: preferences)
         serverKey = .init("setupServerID", default: nil, suite: preferences)
         self.servers = servers
         theme = Defaults[themeKey]

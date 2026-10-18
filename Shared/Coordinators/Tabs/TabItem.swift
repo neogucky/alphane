@@ -41,20 +41,6 @@ struct TabItem: Displayable, @MainActor Identifiable, @MainActor Hashable {
 
 extension TabItem {
 
-    static var adminDashboard: TabItem {
-        TabItem(
-            id: "admin-dashboard",
-            title: L10n.dashboard,
-            systemImage: "server.rack"
-        ) {
-            #if os(iOS)
-            AdminDashboardView()
-            #else
-            EmptyView()
-            #endif
-        }
-    }
-
     static func contentGroup(
         provider: some ContentGroupProvider
     ) -> TabItem {

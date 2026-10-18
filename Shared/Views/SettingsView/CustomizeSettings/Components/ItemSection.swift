@@ -11,11 +11,7 @@ import SwiftUI
 
 extension CustomizeSettingsView {
 
-    #if os(tvOS)
     typealias PlatformPicker = ListRowMenu
-    #else
-    typealias PlatformPicker = Picker
-    #endif
 
     struct ItemSection: View {
 
@@ -42,13 +38,6 @@ extension CustomizeSettingsView {
 
         var body: some View {
             Form(systemImage: "gear") {
-                #if !os(tvOS)
-                Section {
-                    PlatformPicker(L10n.style, selection: $itemViewType)
-                } header: {
-                    Text(L10n.itemView.localizedCapitalized)
-                }
-                #endif
 
                 Section {
                     PlatformPicker(L10n.enabledTrailers, selection: $enabledTrailers)

@@ -13,7 +13,6 @@ extension View {
     /// Draw outside the existing bounds without changing the layout or hit target.
     @ViewBuilder
     func tvFocusBorder(isFocused: Bool, shape: some InsettableShape, lineWidth: CGFloat = 6) -> some View {
-        #if os(tvOS)
         overlay {
             shape
                 .inset(by: -lineWidth / 2)
@@ -24,9 +23,6 @@ extension View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        #else
-        self
-        #endif
     }
 }
 

@@ -39,39 +39,22 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
                 using: \.collectionType
             )
 
-        #if os(tvOS)
         return TVHomeRows.makeGroups(userSession: userSession, libraries: resolvedUserViews)
-        #else
-        return _makeGroups(userViews: resolvedUserViews)
-        #endif
     }
 
     private var isHomeHeaderButtonEnabled: Bool {
-        #if os(tvOS)
         false
-        #else
-        true
-        #endif
     }
 
     @ContentGroupBuilder
     private func _makeGroups(userViews: [BaseItemDto]) -> [any ContentGroup] {
 
-        #if os(tvOS)
         let cinematicSelectionContentGroup = CinematicSelectionContentGroup(
             resumeLibrary: ResumeItemsLibrary(mediaTypes: [.video]),
             recentlyAddedLibrary: RecentlyAddedLibrary()
         )
 
         cinematicSelectionContentGroup
-        #else
-        PosterGroup(
-            library: ResumeItemsLibrary(mediaTypes: [.video]),
-            posterDisplayType: .landscape,
-            posterSize: .medium,
-            _viewContext: .isInResume
-        )
-        #endif
 
         PosterGroup(
             library: NextUpLibrary(),
@@ -79,22 +62,9 @@ struct DefaultContentGroupProvider: ContentGroupProvider {
         )
 
         if Defaults[.Customization.Home.showRecentlyAdded] {
-            #if os(tvOS)
             CinematicRecentlyAddedContentGroup(
                 viewModel: cinematicSelectionContentGroup.viewModel
             )
-            #else
-            PosterGroup(
-                library: ItemLibrary(
-                    parent: BaseItemDto(name: L10n.recentlyAdded.localizedCapitalized),
-                    filters: .init(
-                        itemTypes: [.movie, .series],
-                        sortBy: [.dateCreated],
-                        sortOrder: [.descending]
-                    )
-                )
-            )
-            #endif
         }
 
         if Defaults[.Customization.Home.showRecentlyPlayed] {

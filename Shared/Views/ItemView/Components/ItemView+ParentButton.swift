@@ -27,19 +27,11 @@ extension ItemView {
                         .lineLimit(1)
                 } icon: {
                     Image(systemName: "chevron.forward")
-                        #if os(iOS)
-                        .foregroundStyle(.secondary)
-                        #endif
                 }
             }
             .lineLimit(1)
             .labelStyle(.trailingIcon)
-            #if os(tvOS)
             .buttonStyle(TVParentLinkButtonStyle())
-            #else
-            .foregroundStyle(.primary, .secondary)
-            .buttonStyle(.capsule)
-            #endif
             .controlSize(.regular)
         }
     }

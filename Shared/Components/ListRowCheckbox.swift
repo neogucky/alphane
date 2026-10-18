@@ -21,11 +21,7 @@ struct ListRowCheckbox: View {
     @Environment(\.isSelected)
     private var isSelected
 
-    #if os(tvOS)
     private let size: CGFloat = 36
-    #else
-    private let size: CGFloat = 24
-    #endif
 
     var body: some View {
         if isEditing {

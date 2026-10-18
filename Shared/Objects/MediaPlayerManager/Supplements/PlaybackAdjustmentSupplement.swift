@@ -23,14 +23,14 @@ struct PlaybackAdjustmentSupplement: MediaPlayerSupplement {
         "\(VideoPlayer.ViewState.Focus.supplementContent(id)).slider"
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         AdjustmentView(supplement: self)
     }
 }
 
 extension PlaybackAdjustmentSupplement {
 
-    private struct AdjustmentView: PlatformView {
+    private struct AdjustmentView: View {
 
         @Environment(\.safeAreaInsets)
         private var safeAreaInsets
@@ -62,11 +62,7 @@ extension PlaybackAdjustmentSupplement {
             .padding(.bottom, safeAreaInsets.bottom)
         }
 
-        var iOSView: some View {
-            content
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             content
                 .focusSection()
         }

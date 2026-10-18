@@ -8,13 +8,8 @@
 
 import Foundation
 
-#if os(iOS)
-private let landscapeMaxWidth: CGFloat = 300
-private let portraitMaxWidth: CGFloat = 200
-#else
 private let landscapeMaxWidth: CGFloat = 500
 private let portraitMaxWidth: CGFloat = 500
-#endif
 
 enum PosterDisplayType: String, CaseIterable, Displayable, Storable, SystemImageable {
 

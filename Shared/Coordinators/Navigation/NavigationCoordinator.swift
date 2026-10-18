@@ -59,7 +59,6 @@ final class NavigationCoordinator: ObservableObject {
     func push(
         _ route: NavigationRoute
     ) {
-        #if os(tvOS)
         if let presentedCoordinator = presentedFullScreen?.coordinator ?? presentedSheet?.coordinator {
             presentedCoordinator.push(route)
             return
@@ -81,25 +80,5 @@ final class NavigationCoordinator: ObservableObject {
                 coordinator: .init()
             )
         }
-        #else
-        switch route.transitionStyle {
-        case .push:
-            path.append(route)
-
-        case .sheet:
-            presentedSheet = .init(
-                route: route,
-                coordinator: .init()
-            )
-
-        case .fullscreen:
-            withAnimation {
-                presentedFullScreen = .init(
-                    route: route,
-                    coordinator: .init()
-                )
-            }
-        }
-        #endif
     }
 }

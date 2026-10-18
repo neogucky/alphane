@@ -79,7 +79,6 @@ struct EPGChannelButton: View {
     }
 
     var body: some View {
-        #if os(tvOS)
         Button(action: action) {
             Group {
                 if hasPrimaryImage {
@@ -110,9 +109,6 @@ struct EPGChannelButton: View {
         }
         .buttonStyle(EPGButtonStyle())
         .focused($isFocused)
-        #else
-        legacyContent
-        #endif
     }
 
     private var legacyContent: some View {

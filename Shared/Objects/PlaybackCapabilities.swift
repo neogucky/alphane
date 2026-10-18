@@ -56,7 +56,7 @@ enum PlaybackCapabilities {
     // MARK: Google
 
     /// Returns true if the device supports hardware-accelerated VP9 decoding.
-    /// Note: VP9 hardware decode is not available on iOS/tvOS.
+    /// Note: VP9 hardware decode is not available on tvOS.
     static var supportsVP9: Bool {
         VTIsHardwareDecodeSupported(kCMVideoCodecType_VP9)
     }

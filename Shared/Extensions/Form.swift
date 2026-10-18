@@ -34,7 +34,6 @@ private struct PlaybackSettingsFooterStyle: ViewModifier {
     private var usesPlaybackSettingsStyle
 
     func body(content: Content) -> some View {
-        #if os(tvOS)
         if usesPlaybackSettingsStyle {
             content
                 .font(.system(size: 20))
@@ -43,9 +42,6 @@ private struct PlaybackSettingsFooterStyle: ViewModifier {
         } else {
             content
         }
-        #else
-        content
-        #endif
     }
 }
 
@@ -84,7 +80,7 @@ func Form(
 
 // MARK: - Platform Form
 
-private struct PlatformForm<Image: View, Content: View>: PlatformView {
+private struct PlatformForm<Image: View, Content: View>: View {
 
     @Environment(\.usesPlaybackSettingsStyle)
     private var usesPlaybackSettingsStyle
@@ -103,14 +99,7 @@ private struct PlatformForm<Image: View, Content: View>: PlatformView {
         self.image = image()
     }
 
-    var iOSView: some View {
-        Form {
-            content
-        }
-        .toolbarTitleDisplayMode(.inline)
-    }
-
-    var tvOSView: some View {
+    var body: some View {
         HStack {
             descriptionView
                 .frame(maxWidth: .infinity)
@@ -150,7 +139,6 @@ private struct PlatformForm<Image: View, Content: View>: PlatformView {
     @ViewBuilder
     private var descriptionView: some View {
         Group {
-            #if os(tvOS)
             if usesPlaybackSettingsStyle {
                 if let focusedLearnMore {
                     TVPlaybackSettingsDescription(content: focusedLearnMore)
@@ -160,9 +148,6 @@ private struct PlatformForm<Image: View, Content: View>: PlatformView {
             } else {
                 legacyDescriptionView
             }
-            #else
-            legacyDescriptionView
-            #endif
         }
         .animation(.linear(duration: 0.2), value: focusedLearnMore == nil)
     }

@@ -113,10 +113,6 @@ extension VideoPlayer.PlaybackControls.Toolbar {
                 PlayPreviousItem()
             case .subtitles:
                 Subtitles()
-            #if os(iOS)
-            case .gestureLock:
-                GestureLock()
-            #endif
             case .subtitleOffset:
                 SubtitleOffset()
             }
@@ -227,18 +223,7 @@ extension VideoPlayer.PlaybackControls.Toolbar {
         #endif
 
         var body: some View {
-            #if os(tvOS)
             cinemaView
-            #else
-            Group {
-                if viewState.isCompact {
-                    compactView
-                } else {
-                    regularView
-                }
-            }
-            .modifier(VideoPlayer.PlaybackControls.OverlayBarButtonStyleModifier())
-            #endif
         }
     }
 }

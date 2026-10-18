@@ -19,7 +19,7 @@ extension SelectUserView {
 
         let action: () -> Void
 
-        private let columns: CGFloat = UIDevice.isPhone ? 2 : 5
+        private let columns: CGFloat = 5
 
         @ViewBuilder
         private var imageView: some View {
@@ -33,7 +33,6 @@ extension SelectUserView {
         @ViewBuilder
         private var addUserButton: some View {
             Button(action: action) {
-                #if os(tvOS)
                 VStack {
                     imageView
                         .tvFocusBorder(isFocused: isFocused, shape: Circle())
@@ -43,16 +42,6 @@ extension SelectUserView {
                         .fontWeight(.semibold)
                         .lineLimit(1)
                 }
-                #else
-                VStack {
-                    imageView
-
-                    Text(L10n.addUser)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
-                }
-                #endif
             }
             .foregroundStyle(.primary, .secondary)
             .buttonBorderShape(.circle)

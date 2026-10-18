@@ -21,14 +21,14 @@ class MediaPeopleSupplement: ObservableObject, MediaPlayerSupplement {
         self.people = people
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         PeopleOverlay(supplement: self)
     }
 }
 
 extension MediaPeopleSupplement {
 
-    private struct PeopleOverlay: PlatformView {
+    private struct PeopleOverlay: View {
 
         @Environment(\.safeAreaInsets)
         private var safeAreaInsets: EdgeInsets
@@ -47,32 +47,6 @@ extension MediaPeopleSupplement {
             supplement.people
         }
 
-        var iOSView: some View {
-            CompactOrRegularView(
-                isCompact: viewState.isCompact
-            ) {
-                iOSCompactView
-            } regularView: {
-                iOSRegularView
-            }
-        }
-
-        @ViewBuilder
-        private var iOSCompactView: some View {
-            CollectionVGrid(
-                uniqueElements: people,
-                id: \.hashValue,
-                layout: .columns(
-                    1,
-                    insets: .init(EdgeInsets.edgePadding),
-                    itemSpacing: EdgeInsets.itemSpacing,
-                    lineSpacing: EdgeInsets.itemSpacing
-                )
-            ) { person, _ in
-                PersonRow(person: person)
-            }
-        }
-
         @ViewBuilder
         private func personView(for person: BaseItemPerson) -> some View {
             PosterButton(
@@ -81,22 +55,7 @@ extension MediaPeopleSupplement {
             ) { _ in }
         }
 
-        @ViewBuilder
-        private var iOSRegularView: some View {
-            CollectionHStack(
-                uniqueElements: people,
-                id: \.hashValue,
-                layout: .minimumWidth(columnWidth: 80, rows: 1)
-            ) { person in
-                personView(for: person)
-            }
-            .clipsToBounds(false)
-            .insets(horizontal: max(safeAreaInsets.leading, safeAreaInsets.trailing) + EdgeInsets.edgePadding)
-            .itemSpacing(EdgeInsets.itemSpacing)
-            .scrollBehavior(.continuousLeadingEdge)
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             CollectionHStack(
                 uniqueElements: people,
                 id: \.hashValue,

@@ -45,7 +45,6 @@ struct UserSessionRootView: View {
 
     var body: some View {
         ZStack {
-            #if os(tvOS)
             if userSessionManager.state != .initial, onboarding.step != .complete {
                 NavigationInjectionView(coordinator: .init()) {
                     TVOnboardingView(model: onboarding)
@@ -53,9 +52,6 @@ struct UserSessionRootView: View {
             } else {
                 sessionContent
             }
-            #else
-            sessionContent
-            #endif
         }
         .animation(.linear(duration: 0.1), value: userSessionManager.state)
         .task {

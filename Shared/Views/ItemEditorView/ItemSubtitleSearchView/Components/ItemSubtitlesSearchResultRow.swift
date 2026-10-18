@@ -20,11 +20,7 @@ extension ItemSubtitleSearchView {
         let action: () -> Void
 
         var body: some View {
-            #if os(tvOS)
             tvOSContent
-            #else
-            legacyContent
-            #endif
         }
 
         #if os(tvOS)

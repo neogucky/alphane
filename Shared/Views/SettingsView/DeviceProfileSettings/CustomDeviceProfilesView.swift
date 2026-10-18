@@ -42,11 +42,7 @@ struct CustomDeviceProfilesView: View {
     }
 
     var body: some View {
-        #if os(tvOS)
         tvOSContent
-        #else
-        legacyContent
-        #endif
     }
 
     #if os(tvOS)
@@ -123,11 +119,6 @@ struct CustomDeviceProfilesView: View {
         .topBarTrailing {
             if customProfiles.isNotEmpty {
                 addButton
-                #if os(iOS)
-                .backport
-                .buttonStyle(.glassProminent)
-                .controlSize(.small)
-                #endif
             }
         }
     }
@@ -135,11 +126,7 @@ struct CustomDeviceProfilesView: View {
     @ViewBuilder
     private var behaviorView: some View {
         Section(L10n.behavior) {
-            #if os(iOS)
-            Picker(L10n.behavior, selection: $customDeviceProfileAction)
-            #else
             ListRowMenu(L10n.behavior, selection: $customDeviceProfileAction)
-            #endif
         } footer: {
             if !isValid {
                 Label(L10n.noDeviceProfileWarning, systemImage: "exclamationmark.circle.fill")
@@ -177,15 +164,9 @@ struct CustomDeviceProfilesView: View {
                         containers: profile.container
                     )
                 }
-                #if os(iOS)
-                .swipeActions {
+                .contextMenu {
                     deleteButton(profile: profile)
                 }
-                #else
-                .contextMenu {
-                        deleteButton(profile: profile)
-                    }
-                #endif
             }
         }
     }

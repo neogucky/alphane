@@ -205,10 +205,6 @@ extension AVMediaPlayerProxy {
         pipController?.delegate = self
         pipController?.requiresLinearPlayback = false
 
-        #if os(iOS)
-        pipController?.canStartPictureInPictureAutomaticallyFromInline = false
-        #endif
-
         pipAvailableObserver = pipController?.observe(
             \.isPictureInPicturePossible,
             options: [.initial, .new]
@@ -386,12 +382,8 @@ extension AVMediaPlayerProxy {
 
             DispatchQueue.main.async {
 
-                #if os(tvOS)
                 self.isBuffering.value = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
                     || self.displayManager?.isDisplayModeSwitchInProgress == true
-                #else
-                self.isBuffering.value = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
-                #endif
 
                 switch status {
                 case .playing:

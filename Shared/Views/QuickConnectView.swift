@@ -49,7 +49,6 @@ struct QuickConnectView: View {
     }
 
     var body: some View {
-        #if os(tvOS)
         TVQuickConnectContent(
             code: code,
             error: error,
@@ -57,10 +56,6 @@ struct QuickConnectView: View {
             dismiss: { router.dismiss() }
         )
         .task(id: requestID) { await connect() }
-        #else
-        legacyContent
-            .task(id: requestID) { await connect() }
-        #endif
     }
 
     private func connect() async {
@@ -98,11 +93,5 @@ struct QuickConnectView: View {
         .animation(.linear(duration: 0.2), value: code)
         .edgePadding()
         .navigationTitle(L10n.quickConnect)
-        #if os(iOS)
-            .toolbarTitleDisplayMode(.inline)
-            .navigationBarCloseButton {
-                router.dismiss()
-            }
-        #endif
     }
 }

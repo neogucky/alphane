@@ -19,34 +19,10 @@ struct CustomizeSettingsView: View {
     private var router
 
     var body: some View {
-        #if os(tvOS)
         TVSettingsPage(title: L10n.appearance) {
             TVSettingsAppearanceColumn(showsTitle: false, focus: $focusedControl)
                 .frame(maxWidth: 600)
                 .frame(height: 320)
         }
-        #else
-        Form(systemImage: "gear") {
-
-            ChevronButton(L10n.items) {
-                router.route(to: .itemSettings)
-            }
-
-            ChevronButton(L10n.libraries) {
-                router.route(to: .librarySettings)
-            }
-
-            ChevronButton(L10n.posters) {
-                router.route(to: .posterSettings)
-            }
-
-            ChevronButton(L10n.videoPlayer) {
-                router.route(to: .videoPlayerSettings)
-            }
-
-            HomeSection()
-        }
-        .navigationTitle(L10n.advanced)
-        #endif
     }
 }

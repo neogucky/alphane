@@ -41,7 +41,7 @@ struct TVOnboardingView: View {
 
     private var subtitle: String {
         switch model.step {
-        case .style: String(localized: "Browse styles to preview. Select one to continue.")
+        case .style: String(localized: "Browse styles to preview. Choose one, then select Next.")
         case .server: String(localized: "Enter an address or choose a server on your network.")
         case .profile: model.selectedServer?.name ?? ""
         case .complete: ""
@@ -94,26 +94,53 @@ struct TVOnboardingView: View {
 
     private var styleStep: some View {
         HStack(spacing: 90) {
-            TVThemeChoices(
-                selection: Binding(get: { model.theme }, set: { model.choose($0) }),
-                customColor: Binding(get: { model.customColor }, set: { model.chooseCustomColor($0) }),
-                focus: $focus,
-                onPreview: {
-                    previewTheme = $0
-                    model.preview($0)
-                },
-                onConfirm: model.continueFromStyle
-            )
+            VStack(spacing: 36) {
+                TVThemeChoices(
+                    selection: Binding(get: { model.theme }, set: { model.choose($0) }),
+                    customColor: Binding(get: { model.customColor }, set: { model.chooseCustomColor($0) }),
+                    focus: $focus,
+                    onPreview: {
+                        previewTheme = $0
+                        model.preview($0)
+                    },
+                    onConfirm: {
+                        showConfirmedStyle()
+                        focus = "setup-next"
+                    }
+                )
+                Button(action: model.continueFromStyle) {
+                    HStack {
+                        Text(String(localized: "Next"))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .font(.system(size: 22, weight: .medium))
+                    .frame(minHeight: 46)
+                }
+                .buttonStyle(CapsuleButtonStyle(fillsAvailableWidth: true))
+                .focused($focus, equals: "setup-next")
+                .accessibilityIdentifier("setup-next")
+            }
             .frame(width: 360)
             .onAppear {
                 previewTheme = model.theme
                 focus = model.theme == .custom ? "accent" : "theme-" + model.theme.rawValue
+            }
+            .onChange(of: focus) {
+                if focus == "setup-next" {
+                    showConfirmedStyle()
+                }
             }
             TVOnboardingPreview(theme: displayedTheme, color: displayedColor)
                 .frame(maxWidth: 960)
                 .accessibilityLabel(String(localized: "Preview of the selected style"))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+
+    private func showConfirmedStyle() {
+        previewTheme = model.theme
+        model.applyPreview()
     }
 
     private var serverStep: some View {

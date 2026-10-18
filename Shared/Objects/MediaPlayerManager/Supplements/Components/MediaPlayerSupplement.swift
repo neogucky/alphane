@@ -17,7 +17,7 @@ enum MediaPlayerSupplementPresentationStyle: Equatable {
 @MainActor
 protocol MediaPlayerSupplement: Displayable, Identifiable {
 
-    associatedtype VideoPlayerBody: PlatformView
+    associatedtype VideoPlayerBody: View
 
     var id: String { get }
     var presentationStyle: MediaPlayerSupplementPresentationStyle { get }

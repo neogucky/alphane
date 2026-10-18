@@ -40,7 +40,6 @@ struct EditLocalServerView: View {
 
     @ViewBuilder
     private var content: some View {
-        #if os(tvOS)
         TVManagementPage(title: viewModel.server.name, width: 1080) {
             EmptyView()
         } content: {
@@ -74,9 +73,6 @@ struct EditLocalServerView: View {
             }
         }
         .onExitCommand { router.dismiss() }
-        #else
-        legacyContent
-        #endif
     }
 
     private var legacyContent: some View {

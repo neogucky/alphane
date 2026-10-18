@@ -11,7 +11,7 @@ For details on current library support and what is required for future expansion
 | Movies               | ✅         | |
 | Playlists            | ❌         | Not supported. Upstream discussion in [PR #1428](https://github.com/jellyfin/Swiftfin/pull/1428). |
 | Mixed      		   | ✅         | This library type is [officially deprecated](https://jellyfin.org/docs/general/server/media/mixed-movies-and-shows) by the Jellyfin server and [may be removed in the future](https://github.com/jellyfin/jellyfin-meta/discussions/46). |
-| Music                | ❌         | Not supported. Music would need to come after Playlist support as this is a common requirement. Music requires an Artist > Album > Song structure, different from other media. Additionally needs a lightweight, *(potentially native)* iOS player and a dedicated playback manager. |
+| Music                | ❌         | Not supported. Music would need to come after Playlist support as this is a common requirement. Music requires an Artist > Album > Song structure, different from other media. Additionally needs a lightweight playback interface and a dedicated playback manager. |
 | Music Videos         | ✅         | |
 | Home Videos          | ✅         | |
 | Photos               | ❌         | Not supported. Viewing photos requires dedicated logic and potentially a photo view package. Current photo viewing packages are most geared towards posters. |

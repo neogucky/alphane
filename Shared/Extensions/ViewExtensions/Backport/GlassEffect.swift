@@ -97,7 +97,7 @@ struct BackportGlassEffectModifier<BackgroundShape: Shape>: ViewModifier {
 
     @ViewBuilder
     private func platformAppearanceBody(_ content: some View) -> some View {
-        if #available(iOS 26.0, *), UIDevice.supportsLiquidGlass {
+        if #available(tvOS 26.0, *), UIDevice.supportsLiquidGlass {
             glassBody(content)
         } else {
             legacyBody(content)
@@ -129,13 +129,8 @@ struct BackportGlassEffectModifier<BackgroundShape: Shape>: ViewModifier {
                 shape
                     .fill(resolvedTint)
             } else {
-                #if os(tvOS)
                 shape
                     .fill(AlphaneTheme.surface)
-                #else
-                shape
-                    .fill(.ultraThinMaterial)
-                #endif
             }
         }
     }
@@ -171,7 +166,7 @@ struct BackportGlassEffectModifier<BackgroundShape: Shape>: ViewModifier {
         }
     }
 
-    @available(iOS 26.0, tvOS 26.0, *)
+    @available(tvOS 26.0, *)
     @ViewBuilder
     private func glassBody(_ content: some View) -> some View {
         if glass.isVisible {

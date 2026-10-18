@@ -8,13 +8,8 @@
 
 import SwiftUI
 
-#if os(tvOS)
 private let dotHStackDotSize: CGFloat = 5
 private let dotHStackPadding: CGFloat = 10
-#else
-private let dotHStackDotSize: CGFloat = 2
-private let dotHStackPadding: CGFloat = 5
-#endif
 
 func DotHStack(
     padding: CGFloat = dotHStackPadding,

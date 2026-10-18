@@ -73,30 +73,24 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
             }
             .trackingFrame(for: .scrollView)
             .mainNavigationScrollObserver()
-            #if os(tvOS)
             .coordinatedFocus(Focus.content.rawValue)
             .ignoresSafeArea(.container)
-                .task {
-                    guard !isMainNavigationFocused,
-                          let target = navigationFocusStore?.target(on: navigationFocusPageID)
-                    else { return }
+            .task {
+                guard !isMainNavigationFocused,
+                      let target = navigationFocusStore?.target(on: navigationFocusPageID)
+                else { return }
 
-                    // Recreate the lazy row before restoring its cell. The pop's
-                    // first focus update can otherwise land on an earlier row.
-                    await Task.yield()
-                    guard !Task.isCancelled else { return }
+                // Recreate the lazy row before restoring its cell. The pop's
+                // first focus update can otherwise land on an earlier row.
+                await Task.yield()
+                guard !Task.isCancelled else { return }
 
-                    proxy.scrollTo(target.scope, anchor: .center)
-                    await Task.yield()
-                    guard !Task.isCancelled else { return }
+                proxy.scrollTo(target.scope, anchor: .center)
+                await Task.yield()
+                guard !Task.isCancelled else { return }
 
-                    navigationFocusStore?.restore(navigationFocusPageID)
-                }
-            #else
-            .ignoresSafeArea(
-                edges: contentGroupOptions.contains(.ignoreSafeAreaTop) ? [.horizontal, .top] : .horizontal
-            )
-            #endif
+                navigationFocusStore?.restore(navigationFocusPageID)
+            }
             .scrollIndicators(.hidden)
             .refreshable {
                 await viewModel.background.refresh()
@@ -128,7 +122,7 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
                     )
                     .focusable()
                     #if os(tvOS)
-                    .coordinatedFocus(.fallback)
+                        .coordinatedFocus(.fallback)
                     #endif
                 } else {
                     contentView
@@ -139,9 +133,9 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
 
             case .initial, .refreshing:
                 ProgressView()
-                    #if os(tvOS)
-                        .coordinatedFocus(.placeholder)
-                    #endif
+                #if os(tvOS)
+                    .coordinatedFocus(.placeholder)
+                #endif
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea(edges: .all)
             }
@@ -149,16 +143,12 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
         .animation(.linear(duration: 0.2), value: viewModel.state)
         .animation(.linear(duration: 0.2), value: viewModel.background.states)
         .navigationTitle(viewModel.provider.displayTitle)
-        #if os(iOS)
-        .toolbarTitleDisplayMode(router.isRootOfPath ? .inlineLarge : .inline)
-        #elseif os(tvOS)
         .toolbar(router.isRootOfPath ? .hidden : .automatic, for: .navigationBar)
-        #endif
         .onFirstAppear {
             viewModel.refresh()
         }
         .refreshable {
-                await viewModel.refresh()
+            await viewModel.refresh()
         }
         .sinceLastDisappear { interval in
             viewModel.refreshIfNeeded(sinceLastDisappear: interval)
@@ -172,7 +162,7 @@ struct ContentGroupView<Provider: ContentGroupProvider>: View {
             viewModel.background.refresh()
         }
         .topBarTrailing {
-            if #unavailable(iOS 26.0) {
+            if #unavailable(tvOS 26.0) {
                 if viewModel.background.is(.refreshing) {
                     ProgressView()
                 }

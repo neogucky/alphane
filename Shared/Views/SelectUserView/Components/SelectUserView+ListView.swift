@@ -58,7 +58,7 @@ extension SelectUserView {
                                 pipeline: .Alphane.local
                             )
                             .subtleShadow()
-                            .frame(width: UIDevice.isTV ? 120 : UIDevice.isPad ? 80 : 50)
+                            .frame(width: 120)
 
                             VStack(alignment: .leading) {
                                 Text(item.user.username)
@@ -83,30 +83,13 @@ extension SelectUserView {
                         }
                     }
                     .isSelected(selectedUsers.contains(item.user))
-                    #if os(iOS)
-                    .swipeActions {
-                        if !isEditing {
-                            Button(
-                                L10n.delete,
-                                systemImage: "trash"
-                            ) {
-                                onDelete(item.user)
-                            }
-                            .tint(.red)
-                        }
-                    }
-                    #endif
                 }
                 .listRowBackground(Color.clear)
             }
             .listStyle(.plain)
-            #if os(iOS)
-            .scrollContentBackground(.hidden)
-            #else
             .edgePadding()
             .scrollClipDisabled()
             .focusSection()
-            #endif
         }
     }
 }

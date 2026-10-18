@@ -13,11 +13,7 @@ extension Color {
     static let jellyfinPurple = Color(red: 172 / 255, green: 92 / 255, blue: 195 / 255, opacity: 1)
 
     static var defaultClientAccent: Color {
-        #if os(tvOS)
         AlphaneTheme.accent
-        #else
-        .jellyfinPurple
-        #endif
     }
 
     var uiColor: UIColor {
@@ -29,21 +25,10 @@ extension Color {
     }
 
     // TODO: Correct and add colors
-    #if os(tvOS)
     static let systemFill = Color.white
     static let secondarySystemFill = Color.gray
     static let tertiarySystemFill = Color.black
     static let lightGray = Color(UIColor.lightGray)
-
-    #else
-    static let systemBackground = Color(UIColor.systemBackground)
-    static let secondarySystemBackground = Color(UIColor.secondarySystemBackground)
-    static let tertiarySystemBackground = Color(UIColor.tertiarySystemBackground)
-
-    static let systemFill = Color(UIColor.systemFill)
-    static let secondarySystemFill = Color(UIColor.secondarySystemFill)
-    static let tertiarySystemFill = Color(UIColor.tertiarySystemFill)
-    #endif
 }
 
 extension Color {

@@ -23,10 +23,9 @@ body:
     id: platform
     attributes:
       label: Platform
-      description: Select the platform(s) where this feature would apply
+      description: Select the platform where this feature would apply
       multiple: true
       options:
-        - iOS
         - tvOS
     validations:
       required: true

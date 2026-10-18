@@ -324,25 +324,18 @@ private struct ItemLibraryBody<Content: View>: View {
 
                 viewModel.environment.filters = filters
             }
-            #if os(tvOS)
+        #if os(tvOS)
             .filterBar(
                 viewModel: filterViewModel,
                 types: filterTypes
             )
-            #endif
+        #endif
             .letterPickerBar(filterViewModel: filterViewModel)
-            #if os(tvOS)
-            .background(alignment: .top) {
-                if !router.isRootOfPath {
-                    FocusedPosterCinematicBackgroundView()
+                .background(alignment: .top) {
+                    if !router.isRootOfPath {
+                        FocusedPosterCinematicBackgroundView()
+                    }
                 }
-            }
-            #else
-            .navigationBarFilterDrawer(
-                viewModel: filterViewModel,
-                types: filterTypes
-            )
-            #endif
     }
 
     private func rememberSort(from filters: ItemFilterCollection) {

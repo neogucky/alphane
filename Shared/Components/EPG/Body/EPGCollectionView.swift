@@ -319,10 +319,6 @@ extension EPGCollectionView {
 
             cell.backgroundConfiguration = .clear()
             cell.clipsToBounds = true
-
-            #if os(iOS)
-            cell.focusEffect = nil
-            #endif
         }
 
         private func select(_ itemID: ItemID) {

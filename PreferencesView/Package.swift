@@ -5,7 +5,6 @@ import PackageDescription
 let package = Package(
     name: "PreferencesView",
     platforms: [
-        .iOS(.v16),
         .tvOS(.v16),
     ],
     products: [

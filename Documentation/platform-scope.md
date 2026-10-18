@@ -1,16 +1,16 @@
 # Platform scope
 
-Alphane maintains and releases the Apple TV app, using the `Alphane tvOS` scheme. This builds the app and its Top Shelf extension; `Alphane tvOS Tests` covers regressions. CI and TestFlight automation target tvOS only.
+Alphane is an Apple TV app. The `Alphane tvOS` scheme builds the app and its Top Shelf extension; `Alphane tvOS Tests` covers regressions. CI, TestFlight, package platform declarations and the handwritten build helpers target tvOS.
 
-The repository is **not yet a tvOS-only source tree**. Audit on 2026-10-18 found:
+The inherited iOS app target, scheme, `Alphane/` source/resources, mobile-only permissions, touch gesture settings and unused mobile management models have been removed. Shared views retain their tvOS implementation without an iOS presentation adapter. Keep code used by tvOS, including profile security, playback preferences, subtitle search and Siri Remote scrubbing.
 
-- The inherited `Alphane iOS` Xcode target and shared `Alphane.xcscheme` still exist.
-- `Alphane/` contains 138 tracked files of inherited iOS-specific source/resources. The tvOS target uses its own `Alphane tvOS/` group and shared code.
-- 76 `Shared` Swift files contain `#if os(iOS)` branches; `PlatformView` also retains an iOS presentation API.
-- `AlphaneMacros` and `PreferencesView` still declare iOS alongside tvOS as supported package platforms. These declarations do not cause an iOS app build.
-- The hand-written Fastlane build helper retains iPhone SDK/platform fallbacks. Generated Fastlane API bindings also mention iOS; those are tooling definitions, not app support.
-- Issue templates still offer iOS, and inherited documentation/availability checks contain platform references.
+Some platform names remain intentionally:
 
-These leftovers are outside the maintained build/release scope. Their presence does not mean the iOS app builds or retains Alphane's current behavior. Removing the target/source tree is a separate cleanup; do not blindly delete shared code, package compatibility, third-party bindings, licensing or platform availability guards.
+- Xcode's `com.apple.ApplicationGroups.iOS` capability identifier also enables tvOS App Groups and Top Shelf sharing.
+- The macro package retains macOS support because compiler plugins and their tests run on the build host.
+- Server-client identification recognises other clients, including iOS devices; that is Jellyfin interoperability, not an iOS app implementation.
+- An inherited device-authentication policy still decodes from saved records but is unavailable as a setting and fails authentication on tvOS. Removing its serialized value must not silently bypass an existing security requirement.
+- Generated Fastlane bindings, dependency lockfiles and third-party compatibility declarations can mention other platforms. They do not create an Alphane iOS target or release.
+- Swiftfin licensing, attribution and historical audit records remain intact.
 
-Future Swiftfin merges follow the selective technical-update policy in [AGENTS.md](../AGENTS.md). Do not re-enable iOS releases or import iOS-only changes by default.
+Future Swiftfin updates must preserve this scope, reject reintroduced iOS-only code/settings and still use a real merge. See [AGENTS.md](../AGENTS.md).

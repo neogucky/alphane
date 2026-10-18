@@ -78,13 +78,9 @@ where Value.RawValue: Equatable {
 
     @ViewBuilder
     private var content: some View {
-        #if os(tvOS)
         ListRowMenu(title, subtitle: Text(selection.wrappedValue.displayTitle)) {
             picker
         }
-        #else
-        picker
-        #endif
     }
 
     var body: some View {

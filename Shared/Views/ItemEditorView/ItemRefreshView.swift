@@ -45,7 +45,7 @@ struct ItemRefreshView: View {
             case .deleted, .updated:
                 break
             case .metadataRefreshStarted:
-                UIDevice.feedback(.success)
+
                 router.dismiss()
             }
         }
@@ -53,25 +53,13 @@ struct ItemRefreshView: View {
             router.dismiss()
         }
         .errorMessage($viewModel.error)
-        #if os(iOS)
-        .topBarTrailing {
-            Button(L10n.run, action: onRun)
-                .backport
-                .buttonStyle(.glassProminent)
-                .controlSize(.small)
-        }
-        #endif
     }
 
     private var contentView: some View {
         Form(systemImage: "arrow.clockwise") {
 
             Section {
-                #if os(iOS)
-                Picker(L10n.type, selection: $refreshType)
-                #else
                 ListRowMenu(L10n.type, selection: $refreshType)
-                #endif
             } header: {
                 Text(L10n.refreshMode)
             } footer: {
@@ -97,9 +85,6 @@ struct ItemRefreshView: View {
                 .backport
                 .buttonStyle(.glassProminent.shadow(false))
                 .tint(accentColor)
-                #if os(iOS)
-                .controlSize(.large)
-                #endif
             }
             #endif
         }

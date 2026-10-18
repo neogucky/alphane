@@ -40,11 +40,7 @@ struct SearchView: View {
                             if viewModel.isEmpty {
                                 Text(L10n.noResults)
                                     .font(.system(size: 22, weight: .medium))
-                                #if os(tvOS)
                                     .foregroundStyle(AlphaneTheme.secondaryText)
-                                #else
-                                    .foregroundStyle(.secondary)
-                                #endif
                                     .padding(.top, 36)
                             } else {
                                 ContentGroupVStack(

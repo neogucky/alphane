@@ -25,7 +25,6 @@ struct TVOrderedOptions<Element: Displayable & Hashable>: View {
         guard removable.contains(element), sources.contains(element) else { return }
 
         selection.toggle(element)
-        UIDevice.impact(.light)
     }
 
     func move(_ element: Element, by distance: Int) {
@@ -33,7 +32,6 @@ struct TVOrderedOptions<Element: Displayable & Hashable>: View {
               selection.indices.contains(index + distance) else { return }
 
         selection.move(fromOffsets: IndexSet(integer: index), toOffset: distance < 0 ? index + distance : index + distance + 1)
-        UIDevice.impact(.light)
     }
 
     private func label(_ element: Element) -> some View {

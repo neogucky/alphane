@@ -77,9 +77,9 @@ Automatic discovery uses UDP broadcast on port `7359` and this port cannot be ch
 
 Alphane can't reach the server but a browser on the same device can. Common causes:
 
-- **Local Network permission is off.** Enable it in iOS Settings > Alphane.
+- **Local Network permission is off.** Allow local network access for Alphane in Apple TV settings.
 - **Reverse Proxy or Custom Headers**, which Alphane does not currently support. See [Reverse Proxies](#reverse-proxies).
-- **Stale iOS network cache**, usually after changing networks or during server maintenance. Restarting your device should be your first step in resolving this issue.
+- **Stale device network cache**, usually after changing networks or during server maintenance. Restarting your device should be your first step in resolving this issue.
 
 If the issue persists, please reach out with an issue and include your logs from Alphane found at *Settings > Logs*. If you are unable to login, these logs can be found at *Settings > Advanced > Logs*.
 

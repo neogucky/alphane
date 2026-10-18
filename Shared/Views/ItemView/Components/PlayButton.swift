@@ -23,11 +23,7 @@ struct PlayButton: View {
     private var router
 
     private var actionTint: Color {
-        #if os(tvOS)
         AlphaneTheme.surface
-        #else
-        accentColor
-        #endif
     }
 
     private var itemProvider: MediaPlayerItemProvider? {
@@ -69,7 +65,6 @@ struct PlayButton: View {
         Button {
             play()
         } label: {
-            #if os(tvOS)
             HStack(spacing: 14) {
                 Image(systemName: "play.fill")
                     .font(.system(size: 24))
@@ -80,40 +75,10 @@ struct PlayButton: View {
                 }
             }
             .frame(minWidth: 160)
-            #else
-            HStack {
-                Image(systemName: "play.fill")
-
-                VStack(spacing: 2) {
-                    Text(itemProvider?.item.playButtonLabel ?? L10n.play)
-
-                    if let mediaSource {
-                        Marquee(mediaSource, speed: 40, delay: 3, fade: 5)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                    }
-                }
-            }
-            .font(.callout)
-            .fontWeight(.semibold)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .backport
-            .glassEffect(
-                .regular.selection(
-                    tint: actionTint,
-                    foregroundColor: actionTint.overlayColor
-                ),
-                in: .capsule
-            )
-            #endif
         }
         .buttonBorderShape(.capsule)
-        #if os(tvOS)
         .buttonStyle(.capsule)
         .controlSize(.extraLarge)
-        #else
-        .buttonStyle(BasicHoverButtonStyle())
-        #endif
         .contextMenu {
             if itemProvider?.item.userData?.playbackPositionTicks != 0 {
                 Button(L10n.playFromBeginning, systemImage: "gobackward") {
@@ -123,7 +88,7 @@ struct PlayButton: View {
         }
         .disabled(itemProvider == nil)
         #if os(tvOS)
-        .accessibilityIdentifier("item-play")
+            .accessibilityIdentifier("item-play")
         #endif
     }
 }

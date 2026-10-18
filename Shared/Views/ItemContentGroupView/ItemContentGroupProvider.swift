@@ -63,11 +63,7 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
     // Movie/episode playback updates shared user data and the header directly.
     // The loaded metadata/cast/recommendation groups do not need rebuilding.
     var refreshesGroupsAfterPlayback: Bool {
-        #if os(tvOS)
         item.type != .episode && item.type != .movie
-        #else
-        true
-        #endif
     }
 
     private func observePlaybackStops() {
@@ -178,15 +174,6 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
     @ContentGroupBuilder
     private func _makeGroups(item: BaseItemDto, itemID: String) async throws -> [any ContentGroup] {
 
-        #if !os(tvOS)
-        if item.type == .episode {
-            EpisodeNavigationContentGroup(
-                nextEpisode: item.userData?.isPlayed == true ? nextEpisodeItemProvider?.item : nil,
-                seasons: episodeSeasons
-            )
-        }
-        #endif
-
         if let birthday = item.birthday?.formatted(date: .long, time: .omitted) {
             LabeledContentGroup(
                 L10n.born,
@@ -219,65 +206,7 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
             []
         }
 
-        #if os(tvOS)
         ItemView.TVDetailMetadataContentGroup(item: item)
-        #else
-        if let genres = item.itemGenres, genres.isNotEmpty {
-            PillGroup(
-                displayTitle: L10n.genres,
-                id: "genres",
-                elements: genres
-            ) { router, element in
-                router.route(
-                    to: .contentGroup(
-                        provider: ItemTypeContentGroupProvider(
-                            itemTypes: [
-                                BaseItemKind.movie,
-                                .series,
-                                .boxSet,
-                                .episode,
-                                .musicVideo,
-                                .video,
-                                .liveTvProgram,
-                                .tvChannel,
-                                .person,
-                            ],
-                            parent: BaseItemDto(name: element.displayTitle),
-                            environment: .init(filters: .init(genres: [element]))
-                        )
-                    )
-                )
-            }
-        }
-
-        if let studios = item.studios, studios.isNotEmpty {
-            PillGroup(
-                displayTitle: L10n.studios,
-                id: "studios",
-                elements: studios
-            ) { router, element in
-                router.route(
-                    to: .contentGroup(
-                        provider: ItemTypeContentGroupProvider(
-                            itemTypes: [
-                                BaseItemKind.movie,
-                                .series,
-                                .boxSet,
-                                .episode,
-                                .musicVideo,
-                                .video,
-                                .liveTvProgram,
-                                .tvChannel,
-                                .person,
-                            ],
-                            parent: BaseItemDto(id: element.id, name: element.displayTitle, type: .studio)
-                        )
-                    )
-                )
-            }
-        }
-
-        #endif
 
         switch item.type {
         case .movie:

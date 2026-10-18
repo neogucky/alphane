@@ -30,18 +30,6 @@ extension ItemView {
 
             private let headerAspectRatio = 2.0
 
-            #if !os(tvOS)
-            private var headerImageItem: BaseItemDto {
-                if provider.item.type == .person || provider.item.type == .musicArtist,
-                   let randomItem = provider.randomBackdropItem
-                {
-                    randomItem
-                } else {
-                    provider.item
-                }
-            }
-            #endif
-
             private var logoHeight: CGFloat {
                 UIDevice.isTV ? 100 : 70
             }
@@ -111,75 +99,16 @@ extension ItemView {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                #if os(tvOS)
                 .focusSection()
-                #else
-                    .edgePadding(.bottom)
-                    .background(
-                        alignment: .bottom,
-                        extendedBy: .init(horizontal: EdgeInsets.edgePadding)
-                    ) {
-                        Rectangle()
-                            .fill(Material.ultraThin)
-                            .mask(gradient: .eased(.easeOut)) {
-                                (location: 0, opacity: 0)
-                                (location: 1, opacity: 1)
-                            }
-                    }
-                #endif
             }
-
-            #if !os(tvOS)
-            private func resolveColor(from image: UIImage, binding: Binding<Color>) {
-                Task.detached(priority: .utility) {
-                    guard let color = image.interestingColor() else { return }
-
-                    await MainActor.run {
-                        binding.wrappedValue = color
-                    }
-                }
-            }
-            #endif
 
             var body: some View {
-                #if os(tvOS)
                 CinematicContentGroupContainer {
                     overlay
                         .edgePadding(.horizontal)
                         .frame(maxWidth: .infinity)
                         .colorScheme(.dark)
                 }
-                #else
-                AlternateLayoutView(alignment: .bottom) {
-                    Color.clear
-                        .aspectRatio(headerAspectRatio, contentMode: .fit)
-                } content: {
-                    overlay
-                        .edgePadding(.horizontal)
-                        .frame(maxWidth: .infinity)
-                        .colorScheme(.dark)
-                }
-                .backgroundParallaxHeader(multiplier: 0.3) {
-                    StateAdapter(initialValue: Color.secondarySystemFill) { resolvedColor in
-                        AlternateLayoutView {
-                            Color.clear
-                        } content: {
-                            ImageView(headerImageItem.imageSources(for: .landscape, environment: .init(maxWidth: 1920)))
-                                .image { (image: UIImage) in
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(1.77, contentMode: .fill)
-                                        .onAppear {
-                                            resolveColor(from: image, binding: resolvedColor)
-                                        }
-                                }
-                        }
-                        .aspectRatio(headerAspectRatio, contentMode: .fit)
-                        .bottomEdgeGradient(bottomColor: resolvedColor.wrappedValue)
-                        .accessibilityHidden(true)
-                    }
-                }
-                #endif
             }
         }
     }

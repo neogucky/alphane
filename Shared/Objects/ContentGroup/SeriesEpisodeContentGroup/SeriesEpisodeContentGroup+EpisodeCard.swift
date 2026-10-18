@@ -200,12 +200,8 @@ extension SeriesEpisodeContentGroup {
                 #endif
             }
             .foregroundStyle(.primary, .secondary)
-            #if os(tvOS)
-                .buttonStyle(.focusBorder)
-            #else
-                .buttonStyle(.card)
-            #endif
-                .focused($focusedElement, equals: .artwork)
+            .buttonStyle(.focusBorder)
+            .focused($focusedElement, equals: .artwork)
 
             if let contextMenuItem {
                 button
@@ -263,11 +259,7 @@ extension SeriesEpisodeContentGroup {
         let isHighlighted: Bool
 
         private func textStyle(_ style: HierarchicalShapeStyle) -> AnyShapeStyle {
-            #if os(tvOS)
             AnyShapeStyle(Color.white.opacity(isHighlighted ? 1 : 0.8))
-            #else
-            AnyShapeStyle(style)
-            #endif
         }
 
         var body: some View {

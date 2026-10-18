@@ -6,10 +6,6 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
-#if canImport(LocalAuthentication)
-import LocalAuthentication
-#endif
-
 import SwiftUI
 
 struct LocalUserAuthenticationAction {
@@ -76,16 +72,6 @@ struct WithLocalUserAuthentication<Content: View>: View {
         request.continuation.resume(with: result)
     }
 
-    private func handleDeviceAuthentication(reason: String?) async throws {
-        #if os(iOS)
-        let context = LAContext()
-        try context.canEvaluatePolicy(.deviceOwnerAuthentication)
-        try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason ?? "")
-        #else
-        throw ErrorMessage(L10n.deviceAuthFailed)
-        #endif
-    }
-
     private func handleAuthentication(
         policy: LocalUserAccessPolicy,
         reason: String?
@@ -94,9 +80,9 @@ struct WithLocalUserAuthentication<Content: View>: View {
         case .none:
             return Empty()
 
-        case .requireDeviceAuthentication:
-            try await handleDeviceAuthentication(reason: reason)
-            return Empty()
+        case .legacyDeviceAuthentication:
+            // Preserve a fail-closed result for an inherited saved policy.
+            throw ErrorMessage(L10n.deviceAuthFailed)
 
         case .requirePin:
             let pin = try await handlePinAuthentication(reason: reason)

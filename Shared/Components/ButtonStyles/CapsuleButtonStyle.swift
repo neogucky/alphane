@@ -176,28 +176,6 @@ struct CapsuleButtonStyle: ButtonStyle {
 
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
-        #if os(tvOS)
         tvOSBody(configuration: configuration)
-        #else
-        configuration.label
-            .font(font ?? metrics.font)
-            .fontWeight(.semibold)
-            .foregroundStyle(foregroundStyle)
-            .symbolRenderingMode(.monochrome)
-            .padding(.horizontal, metrics.horizontalPadding)
-            .padding(.vertical, metrics.verticalPadding)
-            .frame(minHeight: metrics.minimumHeight)
-            .clipShape(.capsule)
-            .background { background }
-            .contentShape(.capsule)
-            .scaleEffect(isEnabled && isFocused ? 1.05 : 1)
-            .opacity(opacity(isPressed: configuration.isPressed))
-            .shadow(color: isEnabled && isFocused ? .black.opacity(0.5) : .clear, radius: 10)
-            .animation(.linear(duration: 0.1), value: isFocused)
-            .animation(.linear(duration: 0.1), value: isSelected)
-            .animation(.linear(duration: 0.1), value: isSelectionActive)
-            .animation(.linear(duration: 0.1), value: configuration.isPressed)
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
-        #endif
     }
 }

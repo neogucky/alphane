@@ -72,55 +72,38 @@ struct ExperimentalSettingsView: View {
     #endif
 
     var body: some View {
-        Group {
-            #if os(tvOS)
-            TVSettingsPage(title: L10n.experimental) {
-                HStack(alignment: .top, spacing: 100) {
-                    VStack(spacing: 18) {
-                        Button {
-                            isMPVEnabled.toggle()
-                        } label: {
-                            TVSettingsRow(title: "MPV engine", value: isMPVEnabled ? TVSettingsText.on : TVSettingsText.off, symbol: nil)
-                        }
-                        .focused($focusedFeature, equals: .mpv)
-                        .accessibilityIdentifier("experimental-mpv")
-                        Button {
-                            isVideoPlayerEPGEnabled.toggle()
-                        } label: {
-                            TVSettingsRow(
-                                title: "Live TV programme guide",
-                                value: isVideoPlayerEPGEnabled ? TVSettingsText.on : TVSettingsText.off,
-                                symbol: nil
-                            )
-                        }
-                        .focused($focusedFeature, equals: .programmeGuide)
-                        .accessibilityIdentifier("experimental-guide")
+        TVSettingsPage(title: L10n.experimental) {
+            HStack(alignment: .top, spacing: 100) {
+                VStack(spacing: 18) {
+                    Button {
+                        isMPVEnabled.toggle()
+                    } label: {
+                        TVSettingsRow(title: "MPV engine", value: isMPVEnabled ? TVSettingsText.on : TVSettingsText.off, symbol: nil)
                     }
-                    .frame(maxWidth: .infinity)
-                    .focusSection()
-                    featureExplanation
+                    .focused($focusedFeature, equals: .mpv)
+                    .accessibilityIdentifier("experimental-mpv")
+                    Button {
+                        isVideoPlayerEPGEnabled.toggle()
+                    } label: {
+                        TVSettingsRow(
+                            title: "Live TV programme guide",
+                            value: isVideoPlayerEPGEnabled ? TVSettingsText.on : TVSettingsText.off,
+                            symbol: nil
+                        )
+                    }
+                    .focused($focusedFeature, equals: .programmeGuide)
+                    .accessibilityIdentifier("experimental-guide")
                 }
-                .defaultFocus($focusedFeature, .mpv, priority: .userInitiated)
-                .onChange(of: focusedFeature) { _, feature in
-                    if let feature {
-                        explainedFeature = feature
-                    }
+                .frame(maxWidth: .infinity)
+                .focusSection()
+                featureExplanation
+            }
+            .defaultFocus($focusedFeature, .mpv, priority: .userInitiated)
+            .onChange(of: focusedFeature) { _, feature in
+                if let feature {
+                    explainedFeature = feature
                 }
             }
-            #else
-            Form(systemImage: "flask") {
-                // swiftlint:disable hard_coded_display_string
-                Toggle("MPV engine", isOn: $isMPVEnabled)
-
-                Toggle("Live TV EPG", isOn: $isVideoPlayerEPGEnabled)
-
-                #if os(iOS)
-                Toggle("Auto switch connection", isOn: $isServerConnectionAutoSwitchEnabled)
-                #endif
-
-                // swiftlint:enable hard_coded_display_string
-            }
-            #endif
         }
         .onChange(of: isMPVEnabled) {
             if !isMPVEnabled, Defaults[.VideoPlayer.videoPlayerType] == .mpv {

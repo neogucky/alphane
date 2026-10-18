@@ -9,10 +9,6 @@
 import Foundation
 import Network
 
-#if os(iOS)
-import NetworkExtension
-#endif
-
 struct NetworkConnectionContext: Equatable {
 
     let isSatisfied: Bool
@@ -78,13 +74,7 @@ struct NetworkConnectionContext: Equatable {
     }
 
     static func currentWifiSSID() async -> String? {
-        #if os(iOS)
-        await (NEHotspotNetwork.fetchCurrent())?
-            .ssid
-            .nilIfBlank
-        #else
         nil
-        #endif
     }
 
     private final class ContinuationResumeState {

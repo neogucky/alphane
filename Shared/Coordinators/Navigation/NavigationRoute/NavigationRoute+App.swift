@@ -19,17 +19,6 @@ extension NavigationRoute {
         }
     }
 
-    #if os(iOS)
-    static var appPermissions: NavigationRoute {
-        NavigationRoute(
-            id: "app-permissions"
-        ) {
-            AppPermissionsView()
-        }
-    }
-
-    #endif
-
     static var appIconSelector: NavigationRoute {
         NavigationRoute(
             id: "app-icon-selector"

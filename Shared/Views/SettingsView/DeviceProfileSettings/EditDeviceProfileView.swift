@@ -46,16 +46,12 @@ extension CustomDeviceProfilesView {
         }
 
         var body: some View {
-            #if os(tvOS)
             tvOSContent
                 .interactiveDismissDisabled(true)
                 .alert(L10n.profileNotSaved, isPresented: $isPresentingNotSaved) {
                     Button(L10n.close, role: .destructive) { router.dismiss() }
                 }
                 .onExitCommand { isPresentingNotSaved = true }
-            #else
-            legacyContent
-            #endif
         }
 
         private func saveProfile() {
@@ -66,7 +62,7 @@ extension CustomDeviceProfilesView {
             } else {
                 source?.wrappedValue = profile
             }
-            UIDevice.impact(.light)
+
             router.dismiss()
         }
 
@@ -126,36 +122,18 @@ extension CustomDeviceProfilesView {
                         } else {
                             source?.wrappedValue = profile
                         }
-                        UIDevice.impact(.light)
+
                         router.dismiss()
                     }
 
                     Group {
-                        #if os(iOS)
-                        if #available(iOS 26, *) {
-                            Button(L10n.save, role: .confirm, action: saveAction)
-                        } else {
-                            Button(L10n.save, action: saveAction)
-                                .backport
-                                .buttonStyle(.glassProminent)
-                                .controlSize(.small)
-                        }
-                        #else
                         Button(L10n.save, action: saveAction)
-                        #endif
                     }
                     .enabled(isValid)
                 }
-            #if os(iOS)
-                .navigationBarBackButtonHidden()
-                .navigationBarCloseButton {
-                    isPresentingNotSaved = true
-                }
-            #else
                 .onExitCommand {
                     isPresentingNotSaved = true
                 }
-            #endif
         }
 
         @ViewBuilder

@@ -25,23 +25,6 @@ extension VideoPlayer.UIContainerViewController {
         @FocusState
         private var focusedElement: String?
 
-        #if os(iOS)
-        @ViewBuilder
-        private func closeButton(size: CGFloat) -> some View {
-            Button {
-                viewState.selectedSupplementID = nil
-                UIDevice.impact(.light)
-            } label: {
-                Label(L10n.close, systemImage: "chevron.down")
-                    .contentShape(Rectangle())
-            }
-            .frame(width: size, height: size)
-            .modifier(
-                VideoPlayer.PlaybackControls.OverlayBarButtonStyleModifier()
-            )
-        }
-        #endif
-
         private var defaultTabFocus: String? {
             viewState.selectedSupplementID ?? viewState.supplements.first?.id
         }
@@ -66,12 +49,6 @@ extension VideoPlayer.UIContainerViewController {
             .environment(viewState)
             .environmentObject(viewState.focusCoordinator)
             .environmentObject(manager)
-            #if os(iOS)
-            .background {
-                GestureView()
-                    .environment(\.panGestureDirection, .vertical)
-            }
-            #endif
         }
 
         @ViewBuilder
@@ -81,13 +58,8 @@ extension VideoPlayer.UIContainerViewController {
                 Button("Hidden") {}
                     .frame(maxWidth: .infinity)
                     .disabled(true)
-            } content: { (size: CGSize) in
+            } content: { (_: CGSize) in
                 HStack(spacing: Self.buttonSpacing) {
-                    #if os(iOS)
-                    if viewState.isPresentingFullScreenSupplement {
-                        closeButton(size: size.height)
-                    }
-                    #endif
 
                     SelectionTrack(
                         viewState.supplements,
@@ -101,7 +73,6 @@ extension VideoPlayer.UIContainerViewController {
                             viewState.selectedSupplementID = supplement.id
                         } else {
                             viewState.selectedSupplementID = viewState.selectedSupplementID == supplement.id ? nil : supplement.id
-                            UIDevice.impact(.light)
                         }
                     }
                     .coordinatedFocus(ViewState.Focus.supplementTabs)
@@ -110,38 +81,31 @@ extension VideoPlayer.UIContainerViewController {
             }
             .edgePadding(.horizontal)
             #if os(tvOS)
-            // Menu dismissal can restore a tab before the content finishes appearing.
-            // Keep tabs out of the focus engine until the requested control receives focus.
-            .disabled(viewState.isSupplementFocusPending)
-            .activeSelectionFocus($focusedElement, selection: defaultTabFocus)
-            .onMoveCommand { direction in
-                if direction == .up, viewState.isPresentingSupplement {
-                    viewState.selectedSupplementID = nil
-                }
-            }
+                // Menu dismissal can restore a tab before the content finishes appearing.
+                // Keep tabs out of the focus engine until the requested control receives focus.
+                    .disabled(viewState.isSupplementFocusPending)
+                    .activeSelectionFocus($focusedElement, selection: defaultTabFocus)
+                    .onMoveCommand { direction in
+                        if direction == .up, viewState.isPresentingSupplement {
+                            viewState.selectedSupplementID = nil
+                        }
+                    }
             #endif
-            .padding(
-                .init(
-                    top: 0,
-                    leading: UIDevice.isTV ? 0 : safeAreaInsets.leading,
-                    bottom: UIDevice.isTV ? 0 : 8,
-                    trailing: UIDevice.isTV ? 0 : safeAreaInsets.trailing
-                )
-            )
-            .buttonStyle(.capsule)
-            .controlSize(.large)
-            .foregroundStyle(.white)
+                    .padding(
+                            .init(
+                                top: 0,
+                                leading: UIDevice.isTV ? 0 : safeAreaInsets.leading,
+                                bottom: UIDevice.isTV ? 0 : 8,
+                                trailing: UIDevice.isTV ? 0 : safeAreaInsets.trailing
+                            )
+                        )
+                        .buttonStyle(.capsule)
+                        .controlSize(.large)
+                        .foregroundStyle(.white)
         }
 
         var body: some View {
             ZStack {
-                #if os(iOS)
-                GestureView()
-                    .environment(
-                        \.panGestureDirection,
-                        viewState.supplements.isEmpty ? [] : (viewState.presentationControllerShouldDismiss ? .up : .vertical)
-                    )
-                #endif
 
                 VStack(alignment: .leading, spacing: 0) {
 
@@ -159,15 +123,15 @@ extension VideoPlayer.UIContainerViewController {
                     }
                     #if os(tvOS)
                     .onSelectionPresented { id in
-                            viewState.focusSupplementIfNeeded(id)
-                        }
-                        .onFocusExit(.up, perform: viewState.singleSupplement == nil ? nil : {
-                            viewState.selectedSupplementID = nil
-                        })
+                        viewState.focusSupplementIfNeeded(id)
+                    }
+                    .onFocusExit(.up, perform: viewState.singleSupplement == nil ? nil : {
+                        viewState.selectedSupplementID = nil
+                    })
                     #endif
-                    .isVisible(viewState.isPresentingSupplement)
-                    .enabled(viewState.isPresentingSupplement)
-                    .animation(.linear(duration: 0.25), value: viewState.selectedSupplementID)
+                        .isVisible(viewState.isPresentingSupplement)
+                        .enabled(viewState.isPresentingSupplement)
+                        .animation(.linear(duration: 0.25), value: viewState.selectedSupplementID)
                 }
                 .isVisible(viewState.visibleElements.contains(.supplements))
                 .enabled(viewState.visibleElements.contains(.supplements))
@@ -178,56 +142,28 @@ extension VideoPlayer.UIContainerViewController {
             }
             .withViewContext(.isOverComplexContent)
             #if os(tvOS)
-            .task(id: focusedSupplementID) {
-                let previousSelection = viewState.selectedSupplementID
-                guard !viewState.isSupplementFocusPending,
-                      let id = focusedSupplementID, id != previousSelection
-                else { return }
+                .task(id: focusedSupplementID) {
+                    let previousSelection = viewState.selectedSupplementID
+                    guard !viewState.isSupplementFocusPending,
+                          let id = focusedSupplementID, id != previousSelection
+                    else { return }
 
-                if previousSelection != nil {
-                    do {
-                        try await Task.sleep(for: .milliseconds(500))
-                    } catch {
-                        return
+                    if previousSelection != nil {
+                        do {
+                            try await Task.sleep(for: .milliseconds(500))
+                        } catch {
+                            return
+                        }
                     }
+
+                    guard !Task.isCancelled,
+                          !viewState.isSupplementFocusPending,
+                          focusedSupplementID == id,
+                          viewState.selectedSupplementID == previousSelection
+                    else { return }
+
+                    viewState.selectedSupplementID = id
                 }
-
-                guard !Task.isCancelled,
-                      !viewState.isSupplementFocusPending,
-                      focusedSupplementID == id,
-                      viewState.selectedSupplementID == previousSelection
-                else { return }
-
-                viewState.selectedSupplementID = id
-            }
-            #endif
-            #if os(iOS)
-            .environment(
-                \.panAction,
-                .init(
-                    action: {
-                        viewState.containerView?.handlePanGesture(
-                            translation: $0,
-                            velocity: $1,
-                            location: $2,
-                            unitPoint: $3,
-                            state: $4
-                        )
-                    }
-                )
-            )
-            .environment(
-                \.tapGestureAction,
-                .init(
-                    action: {
-                        viewState.containerView?.handleTapGesture(
-                            location: $0,
-                            unitPoint: $1,
-                            count: $2
-                        )
-                    }
-                )
-            )
             #endif
         }
     }

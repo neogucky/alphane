@@ -36,12 +36,23 @@ struct TVThemeChoices: View {
     @Binding
     var customColor: Color
     let focus: FocusState<String?>.Binding
-    var onPreview: ((AlphaneColorTheme) -> Void)? = nil
-    var onConfirm: (() -> Void)? = nil
+    var onPreview: ((AlphaneColorTheme) -> Void)?
+    var onConfirm: (() -> Void)?
     @State
     private var showsCustomPicker = false
     @State
     private var draftCustomColor: Color = .white
+    @State
+    private var isCustomFocused = false
+    @State
+    private var isCustomConfirmationPending = false
+
+    private func confirmCustomWhenFocusReturns() {
+        guard isCustomConfirmationPending, isCustomFocused else { return }
+
+        isCustomConfirmationPending = false
+        onConfirm?()
+    }
 
     private func row(_ theme: AlphaneColorTheme) -> some View {
         HStack(spacing: 14) {
@@ -71,11 +82,18 @@ struct TVThemeChoices: View {
             }
             Button {
                 draftCustomColor = customColor
+                isCustomFocused = false
                 showsCustomPicker = true
-            } label: { row(.custom) }
-                .focused(focus, equals: "accent")
-                .isSelected(selection == .custom)
-                .accessibilityIdentifier("settings-accent")
+            } label: {
+                row(.custom)
+                    .modifier(CustomChoiceFocusObserver { isFocused in
+                        isCustomFocused = isFocused
+                        confirmCustomWhenFocusReturns()
+                    })
+            }
+            .focused(focus, equals: "accent")
+            .isSelected(selection == .custom)
+            .accessibilityIdentifier("settings-accent")
         }
         .buttonStyle(CapsuleButtonStyle(isSelectionActive: false, fillsAvailableWidth: true))
         .activeSelectionFocus(focus, selection: selection == .custom ? "accent" : "theme-" + selection.rawValue)
@@ -89,9 +107,22 @@ struct TVThemeChoices: View {
         .sheet(isPresented: $showsCustomPicker, onDismiss: {
             customColor = draftCustomColor
             selection = .custom
-            onConfirm?()
+            // The sheet's dismissal callback can precede native focus restoration.
+            // Hand off to Next only once the covered Custom button has focus again.
+            isCustomConfirmationPending = onConfirm != nil
+            confirmCustomWhenFocusReturns()
         }) {
             ColorPicker.Sheet(title: L10n.accentColor, value: $draftCustomColor, supportsOpacity: false)
         }
+    }
+}
+
+private struct CustomChoiceFocusObserver: ViewModifier {
+    @Environment(\.isFocused)
+    private var isFocused
+    let onChange: (Bool) -> Void
+
+    func body(content: Content) -> some View {
+        content.onChange(of: isFocused) { onChange(isFocused) }
     }
 }

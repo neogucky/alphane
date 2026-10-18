@@ -134,8 +134,6 @@ extension L10n {
 
     // MARK: - Platforms
 
-    static let iOS = "iOS"
-    static let iPadOS = "iPadOS"
     static let macOS = "macOS"
     static let tvOS = "tvOS"
 

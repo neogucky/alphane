@@ -9,56 +9,12 @@
 import JellyfinAPI
 import SwiftUI
 
-struct FormItemSection<Item: Poster>: PlatformView {
+struct FormItemSection<Item: Poster>: View {
 
     @SharedPoster
     var item: Item
 
-    var iOSView: some View {
-        Section {
-            HStack(alignment: .bottom, spacing: 12) {
-                PosterImage(
-                    item: item,
-                    type: item.posterDisplayType(for: .compact),
-                    contentMode: .fit
-                )
-                .frame(width: 100)
-
-                VStack(alignment: .leading) {
-                    if let baseItem = item as? BaseItemDto, let parent = baseItem.parentTitle {
-                        Text(parent)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
-
-                    Text(item.displayTitle)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-
-                    if let subtitle = item.subtitle {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    } else if let baseItem = item as? BaseItemDto, let year = baseItem.productionYear {
-                        Text(year.description)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.bottom)
-            }
-        }
-        .listRowBackground(Color.clear)
-        .listRowInsets(.zero)
-        #if os(iOS)
-        .listRowCornerRadius(0)
-        #endif
-    }
-
-    var tvOSView: some View {
+    var body: some View {
         Section(L10n.media) {
             if let baseItem = item as? BaseItemDto,
                let parentLabel = baseItem.parentLabel,

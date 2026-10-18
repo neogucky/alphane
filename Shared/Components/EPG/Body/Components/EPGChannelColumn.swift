@@ -28,32 +28,8 @@ struct EPGChannelColumn: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                #if os(iOS)
-                // On Now Button
-                if viewModel.now >= viewModel.startDate {
-                    Button {
-                        proxy.scrollTo(
-                            centering: layout.width(from: viewModel.startDate, to: viewModel.now)
-                        )
-                    } label: {
-                        Text(L10n.onNow)
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .backport
-                            .glassEffect(
-                                .regular.interactive(false),
-                                in: .capsule
-                            )
-                    }
-                    .buttonStyle(EPGButtonStyle())
-                }
-                #endif
-            }
-            .frame(width: layout.channelColumnWidth, height: layout.rulerHeight)
+            ZStack {}
+                .frame(width: layout.channelColumnWidth, height: layout.rulerHeight)
 
             Divider()
 
@@ -71,7 +47,7 @@ struct EPGChannelColumn: View {
                 .padding(.bottom, bottomInset)
             }
             .scrollIndicators(.hidden)
-            .introspect(.scrollView, on: .iOS(.v18...), .tvOS(.v18...)) { scrollView in
+            .introspect(.scrollView, on: .tvOS(.v18...)) { scrollView in
                 #if os(tvOS)
                 scrollView.contentInsetAdjustmentBehavior = .never
                 #endif

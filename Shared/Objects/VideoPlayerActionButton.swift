@@ -18,9 +18,6 @@ enum VideoPlayerActionButton: String, CaseIterable, Displayable, Equatable, Iden
     case playNextItem
     case playPreviousItem
     case subtitles
-    #if os(iOS)
-    case gestureLock
-    #endif
     case subtitleOffset
 
     var displayTitle: String {
@@ -45,10 +42,6 @@ enum VideoPlayerActionButton: String, CaseIterable, Displayable, Equatable, Iden
             L10n.playPreviousItem
         case .subtitles:
             L10n.subtitles
-        #if os(iOS)
-        case .gestureLock:
-            L10n.gestureLock
-        #endif
         case .subtitleOffset:
             L10n.subtitleOffset
         }
@@ -58,7 +51,6 @@ enum VideoPlayerActionButton: String, CaseIterable, Displayable, Equatable, Iden
         rawValue
     }
 
-    #if os(tvOS)
     var systemImage: String {
         switch self {
         case .aspectFill: "arrow.up.left.and.arrow.down.right"
@@ -86,54 +78,6 @@ enum VideoPlayerActionButton: String, CaseIterable, Displayable, Equatable, Iden
             systemImage
         }
     }
-    #else
-    var systemImage: String {
-        let usesLiquidGlassSymbols = if #available(iOS 26.0, *) {
-            true
-        } else {
-            false
-        }
-
-        return switch self {
-        case .aspectFill: "arrow.up.left.and.arrow.down.right"
-        case .audio: "speaker.wave.2.fill"
-        case .audioOffset: "waveform.path"
-        case .autoPlay: usesLiquidGlassSymbols ? "play.fill" : "play.circle.fill"
-        case .gestureLock: usesLiquidGlassSymbols ? "lock.fill" : "lock.circle.fill"
-        case .pictureInPicture: "pip.enter"
-        case .playbackSpeed: "speedometer"
-        case .playbackSettings: usesLiquidGlassSymbols ? "tv" : "tv.circle.fill"
-        case .playNextItem: usesLiquidGlassSymbols ? "forward.end.fill" : "forward.end.circle.fill"
-        case .playPreviousItem: usesLiquidGlassSymbols ? "backward.end.fill" : "backward.end.circle.fill"
-        case .subtitles: "captions.bubble.fill"
-        case .subtitleOffset: "textformat.abc"
-        }
-    }
-
-    var secondarySystemImage: String {
-        switch self {
-        case .aspectFill: "arrow.down.right.and.arrow.up.left"
-
-        case .audio: "speaker.wave.2"
-
-        case .autoPlay:
-            if #available(iOS 26.0, *) {
-                "stop"
-            } else {
-                "stop.circle"
-            }
-
-        case .gestureLock: "lock.open.fill"
-
-        case .pictureInPicture: "pip.exit"
-
-        case .subtitles: "captions.bubble"
-
-        default:
-            systemImage
-        }
-    }
-    #endif
 
     static let defaultBarActionButtons: [VideoPlayerActionButton] = [
         .aspectFill,

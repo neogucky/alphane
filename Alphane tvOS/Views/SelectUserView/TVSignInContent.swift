@@ -290,13 +290,27 @@ extension UserSignInView {
                                 .padding(.bottom, viewModel.profile == nil ? 38 : 46)
                             credentials
                             if let errorMessage {
-                                Text(errorMessage)
-                                    .font(.system(size: 18))
-                                    .foregroundStyle(AlphaneTheme.secondaryText)
-                                    .multilineTextAlignment(.center)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .padding(.top, 16)
-                                    .accessibilityIdentifier("sign-in-error")
+                                HStack(alignment: .top, spacing: 14) {
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundStyle(Color(red: 1, green: 0.55, blue: 0.5))
+                                        .accessibilityHidden(true)
+                                    Text(errorMessage)
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundStyle(.white)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .strokeBorder(.red.opacity(0.4), lineWidth: 1)
+                                }
+                                .padding(.top, 20)
+                                .accessibilityElement(children: .combine)
+                                .accessibilityIdentifier("sign-in-error")
                             }
                             actions.padding(.top, errorMessage == nil ? 40 : 20)
                             if let disclaimer = viewModel.serverDisclaimer {

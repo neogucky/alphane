@@ -62,7 +62,7 @@ class EpisodeMediaPlayerQueue: ViewModel, MediaPlayerQueue {
         seasonsViewModel.refresh()
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         EpisodeOverlay(viewModel: seasonsViewModel)
     }
 
@@ -83,9 +83,11 @@ class EpisodeMediaPlayerQueue: ViewModel, MediaPlayerQueue {
     private func getAdjacentEpisodes(for item: BaseItemDto?) async throws {
         guard let item else { return }
         guard item.seriesID != nil, item.type == .episode else { return }
+
         let session = try requireUserSession()
         let items = try await EpisodeContinuation.episodes(around: item, userID: session.user.id, client: session.client)
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+
         let previousItem = index > 0 && items[index - 1].isPlayable ? items[index - 1] : nil
         let nextItem = EpisodeContinuation.nextEpisode(after: item, in: items)
 
@@ -125,7 +127,7 @@ class EpisodeMediaPlayerQueue: ViewModel, MediaPlayerQueue {
 
 extension EpisodeMediaPlayerQueue {
 
-    private struct EpisodeOverlay: PlatformView {
+    private struct EpisodeOverlay: View {
 
         @EnvironmentObject
         private var manager: MediaPlayerManager
@@ -181,15 +183,7 @@ extension EpisodeMediaPlayerQueue {
             }
         }
 
-        var iOSView: some View {
-            seasonView
-                .onAppear { selectInitialSeason() }
-                .onReceive(viewModel.$elements) { newSeasons in
-                    setSelectionIfNeeded(seasons: newSeasons)
-                }
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             seasonView
                 .onFirstAppear { selectInitialSeason() }
                 .onReceive(viewModel.$elements) { newSeasons in
@@ -198,7 +192,7 @@ extension EpisodeMediaPlayerQueue {
         }
     }
 
-    private struct SeasonQueueView: PlatformView {
+    private struct SeasonQueueView: View {
 
         @Environment(VideoPlayer.ViewState.self)
         private var viewState
@@ -253,15 +247,7 @@ extension EpisodeMediaPlayerQueue {
             }
         }
 
-        var iOSView: some View {
-            content(errorView: CompactOrRegularView(isCompact: viewState.isCompact) {
-                ErrorView(error: ErrorMessage(L10n.unknownError))
-            } regularView: {
-                SeasonErrorView(viewModel: viewModel)
-            })
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             content(errorView: SeasonErrorView(viewModel: viewModel))
         }
     }

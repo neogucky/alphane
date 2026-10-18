@@ -51,24 +51,7 @@ struct ItemSubtitleSearchView: View {
         .navigationBarCloseButton {
             router.dismiss()
         }
-        .topBarTrailing {
-            #if os(iOS)
-            if viewModel.background.states.isNotEmpty {
-                ProgressView()
-            }
-            if #available(iOS 26, *) {
-                Button(L10n.save, role: .confirm, action: save)
-                    .disabled(selectedSubtitles.isEmpty)
-            } else {
-                Button(L10n.save, action: save)
-                    .foregroundStyle(accentColor.overlayColor, accentColor)
-                    .disabled(selectedSubtitles.isEmpty)
-                    .backport
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.small)
-            }
-            #endif
-        }
+        .topBarTrailing {}
         .onChange(of: isPerfectMatch) {
             viewModel.search(isPerfectMatch: isPerfectMatch)
         }
@@ -76,11 +59,7 @@ struct ItemSubtitleSearchView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        #if os(tvOS)
         tvOSContent
-        #else
-        legacyContent
-        #endif
     }
 
     #if os(tvOS)

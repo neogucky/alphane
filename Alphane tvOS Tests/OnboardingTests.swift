@@ -65,6 +65,17 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(model.theme, .noAccent)
         XCTAssertEqual(model.step, .style)
 
+        model.preview(.custom)
+        assertColor(Defaults[.accentColor], model.customColor)
+        for preset in AlphaneColorTheme.presets {
+            XCTAssertNotEqual(
+                model.customColor.hexString,
+                preset.color(custom: .white).hexString,
+                "The initial Custom preview must differ from each preset"
+            )
+        }
+        XCTAssertEqual(model.theme, .noAccent, "Previewing Custom must not confirm it")
+
         let restored = TVOnboardingModel(preferences: preferences, servers: [])
         XCTAssertEqual(restored.theme, .noAccent, "An unconfirmed focus preview must not become the saved choice")
         model.choose(.cold)

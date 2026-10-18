@@ -32,14 +32,14 @@ class PlaybackInformationSupplement: ObservableObject, MediaPlayerSupplement {
         self.provider = .init(itemID: itemID)
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         OverlayView(viewModel: provider)
     }
 }
 
 extension PlaybackInformationSupplement {
 
-    private struct OverlayView: PlatformView {
+    private struct OverlayView: View {
 
         @Environment(\.safeAreaInsets)
         private var safeAreaInsets: EdgeInsets
@@ -213,20 +213,6 @@ extension PlaybackInformationSupplement {
             }
         }
 
-        var iOSView: some View {
-            CompactOrRegularView(
-                isCompact: viewState.isCompact
-            ) {
-                compactView
-            } regularView: {
-                regularView
-            }
-            .labeledContentStyle(.playbackInfo)
-            .padding(.leading, safeAreaInsets.leading)
-            .padding(.trailing, safeAreaInsets.trailing)
-            .padding(.bottom, safeAreaInsets.bottom)
-        }
-
         @ViewBuilder
         private var compactView: some View {
             ScrollView {
@@ -265,7 +251,7 @@ extension PlaybackInformationSupplement {
             .edgePadding()
         }
 
-        var tvOSView: some View {
+        var body: some View {
             regularView
                 .labeledContentStyle(.playbackInfo)
                 .focusSection()

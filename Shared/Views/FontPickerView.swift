@@ -13,11 +13,7 @@ struct FontPickerView: View {
     let selection: Binding<String>
 
     var body: some View {
-        #if os(tvOS)
         TVFontPickerContent(selection: selection)
-        #else
-        legacyContent
-        #endif
     }
 
     private var legacyContent: some View {

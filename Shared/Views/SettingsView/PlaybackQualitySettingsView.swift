@@ -12,11 +12,7 @@ import SwiftUI
 
 struct PlaybackQualitySettingsView: View {
 
-    #if os(tvOS)
     typealias PlatformPicker = ListRowMenu
-    #else
-    typealias PlatformPicker = Picker
-    #endif
 
     @Default(.VideoPlayer.Playback.appMaximumResolution)
     private var appMaximumResolution

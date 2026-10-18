@@ -68,72 +68,31 @@ struct NavigationInjectionView: View {
             )
         )
         .environmentObject(coordinator)
-        #if os(tvOS)
-            .environment(\.navigationFocusStore, coordinator.focusStore)
-            .environment(\.navigationFocusPageID, "root")
-            .fullScreenCover(
-                item: $coordinator.presentedSheet
-            ) {
-                coordinator.presentedSheet = nil
-            } content: { presentedRoute in
-                NavigationInjectionView(coordinator: presentedRoute.coordinator) {
-                    presentedRoute.route.destination
-                }
-                .environment(\.tabSafeAreaInsets, .zero)
-                .environment(\.isMainNavigationFocused, false)
-                .environment(\.mainNavigationScrollContext, nil)
-                .background(.regularMaterial)
+        .environment(\.navigationFocusStore, coordinator.focusStore)
+        .environment(\.navigationFocusPageID, "root")
+        .fullScreenCover(
+            item: $coordinator.presentedSheet
+        ) {
+            coordinator.presentedSheet = nil
+        } content: { presentedRoute in
+            NavigationInjectionView(coordinator: presentedRoute.coordinator) {
+                presentedRoute.route.destination
             }
-            .fullScreenCover(
-                item: $coordinator.presentedFullScreen,
-                onDismiss: coordinator.fullScreenDidDismiss
-            ) { presentedRoute in
-                NavigationInjectionView(coordinator: presentedRoute.coordinator) {
-                    presentedRoute.route.destination
-                }
-                .environment(\.tabSafeAreaInsets, .zero)
-                .environment(\.isMainNavigationFocused, false)
-                .environment(\.mainNavigationScrollContext, nil)
+            .environment(\.tabSafeAreaInsets, .zero)
+            .environment(\.isMainNavigationFocused, false)
+            .environment(\.mainNavigationScrollContext, nil)
+            .background(.regularMaterial)
+        }
+        .fullScreenCover(
+            item: $coordinator.presentedFullScreen,
+            onDismiss: coordinator.fullScreenDidDismiss
+        ) { presentedRoute in
+            NavigationInjectionView(coordinator: presentedRoute.coordinator) {
+                presentedRoute.route.destination
             }
-        #else
-            .sheet(
-                item: $coordinator.presentedSheet
-            ) {
-                coordinator.presentedSheet = nil
-            } content: { presentedRoute in
-                NavigationInjectionView(coordinator: presentedRoute.coordinator) {
-                    presentedRoute.route.destination
-                }
-            }
-            .presentation(
-                $coordinator.presentedFullScreen,
-                transition: .zoomIfAvailable(
-                    .init(
-                        dimmingVisualEffect: .systemThickMaterialDark,
-                        prefersScalePresentingView: false
-                    ),
-                    options: .init(
-                        isInteractive: isPresentationInteractive,
-                        preferredPresentationSafeAreaInsets: .zero,
-                    ),
-                    otherwise: .slide(.init(edge: .bottom), options: .init(isInteractive: isPresentationInteractive))
-                )
-            ) { presentedRouteBinding, _ in
-                let vc = UIPreferencesHostingController {
-                    NavigationInjectionView(coordinator: presentedRouteBinding.wrappedValue.coordinator) {
-                        presentedRouteBinding.wrappedValue
-                            .route
-                            .destination
-                            .onPreferenceChange(PresentationControllerShouldDismissPreferenceKey.self) { newValue in
-                                isPresentationInteractive = newValue
-                            }
-                    }
-                }
-
-                vc.view.backgroundColor = .black
-
-                return vc
-            }
-        #endif
+            .environment(\.tabSafeAreaInsets, .zero)
+            .environment(\.isMainNavigationFocused, false)
+            .environment(\.mainNavigationScrollContext, nil)
+        }
     }
 }

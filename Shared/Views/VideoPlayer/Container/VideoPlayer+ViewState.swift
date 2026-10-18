@@ -328,18 +328,6 @@ extension VideoPlayer {
         @ObservationIgnored
         private var supplementActionCancellables: [AnyCancellable] = []
 
-        #if os(iOS)
-        var panHandlingAction: (any _PanHandlingAction)?
-        var didSwipe: Bool = false
-        var lastTapLocation: CGPoint?
-
-        func cancelTapGesture() {
-            lastTapLocation = nil
-            jumpProgressObserver.timer.stop()
-            jumpProgressObserver.reset()
-        }
-        #endif
-
         #if os(tvOS)
         var isPresentingCloseConfirmation: Bool = false {
             didSet { refreshAutoDismiss() }
@@ -405,14 +393,6 @@ extension VideoPlayer {
                     self.refreshAutoDismiss()
                 }
                 .store(in: &cancellables)
-
-            #if os(iOS)
-            jumpProgressObserver.timer
-                .sink { [weak self] in
-                    self?.lastTapLocation = nil
-                }
-                .store(in: &cancellables)
-            #endif
         }
 
         func connect(manager: MediaPlayerManager) {
@@ -476,9 +456,6 @@ extension VideoPlayer {
                 }
             playbackItemCancellable = manager.$playbackItem
                 .sink { [weak self] _ in
-                    #if os(iOS)
-                    self?.cancelTapGesture()
-                    #endif
                     self?.fitVideo()
                 }
             playbackStatusCancellable = manager.$playbackRequestStatus
@@ -605,12 +582,8 @@ extension VideoPlayer {
         }
 
         private var autoDismissInterval: TimeInterval {
-            #if os(tvOS)
             // Short interval for progress only
             presentation == .progress ? 2 : 10
-            #else
-            5
-            #endif
         }
 
         func refreshAutoDismiss() {
@@ -622,12 +595,6 @@ extension VideoPlayer {
         }
 
         private func transition(to presentation: Presentation) {
-            #if os(iOS)
-            // A presentation change outside the tap handler ends the tap sequence.
-            if self.presentation != presentation {
-                lastTapLocation = nil
-            }
-            #endif
             if case .supplement = presentation {
                 resetZoom()
             }

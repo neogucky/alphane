@@ -37,11 +37,7 @@ private struct TextSubtitleOverlayContent: View {
     let videoLayout: VideoPlayer.VideoLayout
 
     private var basePointSize: CGFloat {
-        #if os(tvOS)
         36
-        #else
-        21
-        #endif
     }
 
     private var pointSize: CGFloat {

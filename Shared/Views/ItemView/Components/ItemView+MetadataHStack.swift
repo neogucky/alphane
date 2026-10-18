@@ -35,13 +35,8 @@ extension ItemView {
                 }
             }
             .fontWeight(.semibold)
-            #if os(tvOS)
             .font(.system(size: 22))
             .foregroundStyle(AlphaneTheme.secondaryText)
-            #else
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            #endif
         }
     }
 }

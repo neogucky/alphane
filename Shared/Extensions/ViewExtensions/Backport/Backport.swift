@@ -42,7 +42,7 @@ extension Backport where Content: View {
         _ style: ScrollEdgeEffectStyle?,
         for edges: Edge.Set
     ) -> some View {
-        if #available(iOS 26.0, *) {
+        if #available(tvOS 26.0, *) {
             content.scrollEdgeEffectStyle(
                 style?.swiftUIValue,
                 for: edges

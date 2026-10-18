@@ -41,11 +41,7 @@ struct FilterView: View {
     }
 
     var body: some View {
-        #if os(tvOS)
         TVFilterContent(viewModel: viewModel, type: type)
-        #else
-        legacyContent
-        #endif
     }
 
     private var legacyContent: some View {

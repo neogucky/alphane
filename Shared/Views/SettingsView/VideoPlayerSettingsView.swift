@@ -21,11 +21,7 @@ struct VideoPlayerSettingsView: View {
 
     private let page: Page
 
-    #if os(tvOS)
     typealias PlatformPicker = ListRowMenu
-    #else
-    typealias PlatformPicker = Picker
-    #endif
 
     // MARK: - Player Defaults
 
@@ -100,10 +96,6 @@ struct VideoPlayerSettingsView: View {
                 engineSettings
             }
 
-            #if os(iOS)
-            gestureSettings
-            #endif
-
             if page != .audioAndSubtitles {
                 buttonSettings
 
@@ -112,10 +104,6 @@ struct VideoPlayerSettingsView: View {
                 sliderSettings
 
                 supplementSettings
-
-                #if !os(tvOS)
-                timestampSettings
-                #endif
             }
 
             if page != .playbackPreferences {
@@ -154,13 +142,9 @@ struct VideoPlayerSettingsView: View {
     @ViewBuilder
     private var engineSettings: some View {
         Section(L10n.playback) {
-            #if os(iOS)
-            videoPlayerPicker
-            #else
             ListRowMenu(L10n.player, subtitle: videoPlayerType.displayTitle) {
                 videoPlayerPicker
             }
-            #endif
 
             ChevronButton(L10n.playbackQuality) {
                 router.route(to: .playbackQualitySettings)
@@ -178,17 +162,6 @@ struct VideoPlayerSettingsView: View {
     }
 
     // MARK: - Gesture Settings
-
-    #if os(iOS)
-    @ViewBuilder
-    private var gestureSettings: some View {
-        Section(L10n.gestures) {
-            ChevronButton(L10n.gestures) {
-                router.route(to: .gestureSettings)
-            }
-        }
-    }
-    #endif
 
     // MARK: - Button Settings
 

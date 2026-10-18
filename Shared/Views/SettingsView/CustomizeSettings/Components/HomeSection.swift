@@ -26,10 +26,6 @@ extension CustomizeSettingsView {
         var body: some View {
             Section(L10n.home) {
 
-                #if !os(tvOS)
-                Toggle(L10n.recentlyAdded, isOn: $showRecentlyAdded)
-                Toggle(L10n.recentlyPlayed, isOn: $showRecentlyPlayed)
-                #endif
                 Toggle(L10n.nextUpRewatch, isOn: $resumeNextUp)
 
                 StateAdapter(initialValue: false) { isNextUpDaysPresented in

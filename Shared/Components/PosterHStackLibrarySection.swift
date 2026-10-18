@@ -62,7 +62,6 @@ struct PosterHStackLibrarySection<Library: PagingLibrary>: View
     private var header: some View {
         if group.environment.isHeaderButtonEnabled {
             Button(action: routeToLibrary) {
-                #if os(tvOS)
                 HStack(spacing: 3) {
                     headerTitle
 
@@ -82,15 +81,6 @@ struct PosterHStackLibrarySection<Library: PagingLibrary>: View
                 )
                 .animation(.easeInOut(duration: 0.15), value: isHeaderFocused)
                 .offset(x: -16)
-                #else
-                HStack(spacing: 3) {
-                    headerTitle
-
-                    Image(systemName: "chevron.forward")
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                }
-                #endif
             }
             .foregroundStyle(.primary, .secondary)
             .accessibilityAction(named: Text(L10n.openLibrary), routeToLibrary)
@@ -128,12 +118,12 @@ struct PosterHStackLibrarySection<Library: PagingLibrary>: View
                 }
                 .withViewContext(.isThumb)
                 #if os(tvOS)
-                // Lazy Home rows may rebuild their cells after visiting details.
-                // Keep the restoration target tied to the row, rather than the view's lifetime.
-                .environment(\.navigationFocusScopeID, group.id)
+                    // Lazy Home rows may rebuild their cells after visiting details.
+                    // Keep the restoration target tied to the row, rather than the view's lifetime.
+                        .environment(\.navigationFocusScopeID, group.id)
                 #endif
-                .focusSection()
-                .focused($focusedSection, equals: .content)
+                        .focusSection()
+                        .focused($focusedSection, equals: .content)
             } header: {
                 if group.environment.isHeaderVisible {
                     sectionHeader

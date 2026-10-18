@@ -243,20 +243,11 @@ extension UserSessionManager {
 
                 let entry = try await userSession.getFullItem(id: itemID)
                 guard let urlString = entry.value?.remoteTrailers?.first?.url else { return }
-
-                #if os(tvOS)
                 guard let externalURL = ExternalTrailerURL(string: urlString),
                       externalURL.canBeOpened
                 else { return }
 
                 await UIApplication.shared.open(externalURL.deepLink)
-                #else
-                guard let url = URL(string: urlString),
-                      UIApplication.shared.canOpenURL(url)
-                else { return }
-
-                await UIApplication.shared.open(url)
-                #endif
             } catch {
                 logger.error(
                     "Unable to play trailers from socket command",

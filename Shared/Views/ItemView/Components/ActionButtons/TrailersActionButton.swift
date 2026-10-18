@@ -54,7 +54,6 @@ extension ItemActionButtons {
         }
 
         private func playExternalTrailer(_ trailer: NamedURL) {
-            #if os(tvOS)
             guard let urlString = trailer.url,
                   let externalURL = ExternalTrailerURL(string: urlString)
             else {
@@ -71,18 +70,6 @@ extension ItemActionButtons {
                     error = ErrorMessage(L10n.unableToOpenTrailerApp(externalURL.source.displayTitle))
                 }
             }
-            #else
-            guard let url = URL(string: trailer.url), UIApplication.shared.canOpenURL(url) else {
-                error = ErrorMessage(L10n.unableToOpenTrailer)
-                return
-            }
-
-            UIApplication.shared.open(url) { success in
-                if !success {
-                    error = ErrorMessage(L10n.unableToOpenTrailer)
-                }
-            }
-            #endif
         }
 
         var body: some View {

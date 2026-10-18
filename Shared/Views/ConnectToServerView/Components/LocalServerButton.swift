@@ -19,7 +19,6 @@ extension ConnectToServerView {
 
         var body: some View {
             Button(action: action) {
-                #if os(tvOS)
                 VStack(spacing: 6) {
                     Text(server.name).font(.system(size: 24, weight: .semibold))
                     Text(server.currentURL.absoluteString)
@@ -27,33 +26,10 @@ extension ConnectToServerView {
                         .opacity(0.8)
                 }
                 .frame(minWidth: 440)
-                #else
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(server.name)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-
-                        Text(server.currentURL.absoluteString)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Image(systemName: "chevron.right")
-                        .font(.body)
-                        .fontWeight(.regular)
-                        .foregroundStyle(.secondary)
-                }
-                #endif
             }
             .foregroundStyle(.primary, .secondary)
-            #if os(tvOS)
-                .buttonStyle(.capsule)
-                .controlSize(.large)
-            #else
-                .buttonStyle(.card)
-            #endif
+            .buttonStyle(.capsule)
+            .controlSize(.large)
         }
     }
 }

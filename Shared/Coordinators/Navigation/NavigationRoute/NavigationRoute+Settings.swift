@@ -88,16 +88,6 @@ extension NavigationRoute {
         }
     }
 
-    #if os(iOS)
-    static var adminDashboard: NavigationRoute {
-        NavigationRoute(
-            id: "adminDashboard"
-        ) {
-            AdminDashboardView()
-        }
-    }
-    #endif
-
     static var createDeviceProfile: NavigationRoute {
         NavigationRoute(
             id: "createDeviceProfile",
@@ -218,16 +208,6 @@ extension NavigationRoute {
         }
     }
 
-    #if os(iOS)
-    static var gestureSettings: NavigationRoute {
-        NavigationRoute(
-            id: "gestureSettings"
-        ) {
-            GestureSettingsView()
-        }
-    }
-    #endif
-
     static var itemSettings: NavigationRoute {
         NavigationRoute(
             id: "itemSettings"
@@ -315,17 +295,6 @@ extension NavigationRoute {
             PlaybackQualitySettingsView()
         }
     }
-
-    #if os(iOS)
-    static func resetUserPassword(userID: String) -> NavigationRoute {
-        NavigationRoute(
-            id: "resetUserPassword",
-            style: .sheet
-        ) {
-            ResetUserPasswordView(userID: userID, requiresCurrentPassword: true)
-        }
-    }
-    #endif
 
     static var settings: NavigationRoute {
         NavigationRoute(

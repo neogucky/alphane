@@ -34,14 +34,10 @@ struct SupplementActionButtonStyle: PrimitiveButtonStyle {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 7))
         }
-        #if os(tvOS)
         .buttonStyle(FocusBorderButtonStyle(shape: RoundedRectangle(cornerRadius: 7)))
-        #else
-        .buttonStyle(.card)
-        #endif
     }
 
-    @available(iOS 26.0, tvOS 26.0, *)
+    @available(tvOS 26.0, *)
     private func glassButton(_ configuration: Configuration) -> some View {
         Button {
             configuration.trigger()
@@ -62,7 +58,7 @@ struct SupplementActionButtonStyle: PrimitiveButtonStyle {
 
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
-        if #available(iOS 26.0, *), UIDevice.supportsLiquidGlass {
+        if #available(tvOS 26.0, *), UIDevice.supportsLiquidGlass {
             glassButton(configuration)
         } else {
             legacyButton(configuration)

@@ -45,17 +45,6 @@ extension PagingLibraryView {
                 .pickerStyle(.menu)
             }
 
-            if libraryStyle.displayType == .list,
-               UIDevice.isPad,
-               options.displayTypes.contains(.list)
-            {
-                Stepper(
-                    L10n.columnsWithCount(libraryStyle.listColumnCount),
-                    value: $libraryStyle.listColumnCount,
-                    in: 1 ... 3
-                )
-            }
-
             if options.posterDisplayTypes.count > 1 {
                 Picker(selection: $libraryStyle.posterDisplayType) {
                     ForEach(options.posterDisplayTypes, id: \.self) { displayType in

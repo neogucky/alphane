@@ -23,22 +23,16 @@ struct ItemOverviewView: View {
     #endif
 
     var body: some View {
-        Group {
-            #if os(tvOS)
-            TVOverviewText(item: item, controller: overviewScrollController)
-                .edgePadding()
-                .focusable()
-                .focusEffectDisabled()
-                .onMoveCommand(perform: overviewScrollController.move)
-            #else
-            overviewScrollView
-            #endif
-        }
-        .navigationTitle(item.displayTitle)
-        .toolbarTitleDisplayMode(.inline)
-        .navigationBarCloseButton {
-            router.dismiss()
-        }
+        TVOverviewText(item: item, controller: overviewScrollController)
+            .edgePadding()
+            .focusable()
+            .focusEffectDisabled()
+            .onMoveCommand(perform: overviewScrollController.move)
+            .navigationTitle(item.displayTitle)
+            .toolbarTitleDisplayMode(.inline)
+            .navigationBarCloseButton {
+                router.dismiss()
+            }
     }
 
     private var overviewScrollView: some View {
@@ -113,6 +107,7 @@ private final class OverviewScrollController: ObservableObject {
 
     func move(_ direction: MoveCommandDirection) {
         guard let view, direction == .up || direction == .down else { return }
+
         let minimum = -view.adjustedContentInset.top
         let maximum = max(minimum, view.contentSize.height - view.bounds.height + view.adjustedContentInset.bottom)
         let distance = view.bounds.height * 0.65 * (direction == .down ? 1 : -1)

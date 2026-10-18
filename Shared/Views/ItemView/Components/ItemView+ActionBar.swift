@@ -35,7 +35,6 @@ extension ItemView {
 
         var body: some View {
             let (visible, overflow, menu) = buttonConfiguration.resolvedButtons(for: provider)
-            #if os(tvOS)
             let layout = stacksPlaybackControls
                 ? AnyLayout(VStackLayout(alignment: alignment, spacing: 20))
                 : AnyLayout(HStackLayout(spacing: 20))
@@ -54,33 +53,6 @@ extension ItemView {
             }
             .frame(height: stacksPlaybackControls ? 140 : 64)
             .focusSection()
-            #else
-            let defaultFocusedButton = provider.item.presentPlayButton ?
-                ItemView.Component.play : visible.first?.id ?? ItemView.Component.menu
-
-            VStack(alignment: alignment, spacing: UIDevice.isTV ? 24 : 8) {
-                if provider.item.presentPlayButton {
-                    PlayButton(provider: provider)
-                        .coordinatedFocus(ItemView.Component.play, selection: $focusedButton)
-                        .frame(height: UIDevice.isTV ? 75 : 44)
-                }
-
-                ItemActionButtons(
-                    provider: provider,
-                    buttons: visible,
-                    overflowButtons: overflow,
-                    menuButtons: menu,
-                    focusedButton: $focusedButton
-                )
-            }
-            .focusSection()
-            .defaultFocus(
-                $focusedButton,
-                defaultFocusedButton,
-                priority: .userInitiated
-            )
-            .multilineTextAlignment(.center)
-            #endif
         }
     }
 }

@@ -85,9 +85,6 @@ struct PosterButton<Item: Poster>: View {
         .contentShape(.contextMenuPreview, Rectangle())
         .matchedTransitionSource(id: "item", in: namespace)
         .subtleShadow()
-        #if !os(tvOS)
-            .hoverEffect(.highlight)
-        #endif
     }
 
     @ViewBuilder
@@ -107,7 +104,6 @@ struct PosterButton<Item: Poster>: View {
             #endif
             action(namespace)
         } label: {
-            #if os(tvOS)
             VStack(alignment: .leading, spacing: 8) {
                 posterImage(overlay: item.posterOverlay(for: displayType))
                     .posterAspectRatio(displayType, contentMode: .fit)
@@ -127,40 +123,36 @@ struct PosterButton<Item: Poster>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityHidden(true)
             }
-            #else
-            buttonLabel(overlay: item.posterOverlay(for: displayType))
-                .posterAccessibility(for: item)
-            #endif
         }
         .environment(\.posterDisplayType, displayType)
         .foregroundStyle(.primary, .secondary)
-        #if os(tvOS)
-            .buttonStyle(ArtworkButtonStyle())
-            .focused($isFocused)
-            .onAppear {
-                restoreFocus(navigationFocusStore?.request)
-                if isFocused { onFocus?(item) }
+        .buttonStyle(ArtworkButtonStyle())
+        .focused($isFocused)
+        .onAppear {
+            restoreFocus(navigationFocusStore?.request)
+            if isFocused {
+                onFocus?(item)
             }
-            .onChange(of: isFocused) { _, isFocused in
-                if isFocused {
-                    navigationFocusStore?.didRestore(returnFocusTarget, on: navigationFocusPageID)
-                    onFocus?(item)
-                }
+        }
+        .onChange(of: isFocused) { _, isFocused in
+            if isFocused {
+                navigationFocusStore?.didRestore(returnFocusTarget, on: navigationFocusPageID)
+                onFocus?(item)
             }
-            .onChange(of: item) {
-                // A refreshed collection can replace a focused cell's item
-                // without a focus transition between hosting controllers.
-                if isFocused { onFocus?(item) }
+        }
+        .onChange(of: item) {
+            // A refreshed collection can replace a focused cell's item
+            // without a focus transition between hosting controllers.
+            if isFocused {
+                onFocus?(item)
             }
-            .onReceive(navigationFocusStore?.$request.eraseToAnyPublisher() ?? Combine.Empty<NavigationFocusStore.Request?, Never>()
-                .eraseToAnyPublisher())
-            { request in
-                restoreFocus(request)
-            }
-        #else
-            .buttonStyle(.borderless)
-        #endif
-            .buttonBorderShape(.roundedRectangle)
+        }
+        .onReceive(navigationFocusStore?.$request.eraseToAnyPublisher() ?? Combine.Empty<NavigationFocusStore.Request?, Never>()
+            .eraseToAnyPublisher())
+        { request in
+            restoreFocus(request)
+        }
+        .buttonBorderShape(.roundedRectangle)
         #if os(tvOS)
             .focusedValue(\.focusedPoster, AnyPoster(item))
             .frame(maxWidth: .infinity, alignment: .leading)

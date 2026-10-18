@@ -107,10 +107,6 @@ final class UserSignInViewModel: ObservableObject {
         // feature depend on a different public endpoint being available.
         async let isQuickConnectEnabled = try? retrieveIsQuickConnectEnabled()
         async let serverDisclaimer = try? retrieveServerDisclaimer()
-        #if os(iOS)
-        async let publicUsers = try? retrievePublicUsers()
-        self.publicUsers = await publicUsers ?? []
-        #endif
 
         self.isQuickConnectEnabled = await isQuickConnectEnabled ?? false
         self.serverDisclaimer = await serverDisclaimer

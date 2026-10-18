@@ -66,12 +66,7 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
     }
 
     private var isLibraryStyleSectionVisible: Bool {
-        libraryStyleOptions.hasVisibleControls ||
-            (
-                libraryStyle.displayType == .list &&
-                    UIDevice.isPad &&
-                    libraryStyleOptions.displayTypes.contains(.list)
-            )
+        libraryStyleOptions.hasVisibleControls
     }
 
     private var storedLibraryStyle: LibraryStyle {
@@ -89,33 +84,12 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
     }
 
     private func contentInsets(for frame: FrameAndSafeAreaInsets) -> EdgeInsets {
-        #if os(tvOS)
         // The collection disables automatic adjustment, so include both the local
         // safe area (including filter bars) and the tab's measured top inset.
         var insets = frame.safeAreaInsets
         let menuInset = navigationScrollContext == nil ? 0 : MainNavigationScrollController.headerHeight
         insets.top = max(insets.top, tabSafeAreaInsets.top + menuInset)
         return insets + EdgeInsets.itemSpacing
-        #else
-        var insets: EdgeInsets = if isSafeAreaBarApplied {
-            frame.safeAreaInsets + EdgeInsets.itemSpacing
-        } else {
-            EdgeInsets(
-                top: 0,
-                leading: frame.safeAreaInsets.leading,
-                bottom: 0,
-                trailing: frame.safeAreaInsets.trailing
-            ) + EdgeInsets.itemSpacing
-        }
-
-        // TODO: shouldn't need explicitly for list, find fix
-        if libraryStyle.displayType == .list {
-            insets.leading = frame.safeAreaInsets.leading
-            insets.trailing = frame.safeAreaInsets.trailing
-        }
-
-        return insets
-        #endif
     }
 
     @ViewBuilder
@@ -133,20 +107,20 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
                 )
             ) { element in
                 element.makeBody(libraryStyle: libraryStyle)
-                    #if os(tvOS)
-                        .if(element.id == viewModel.displayedElements.first?.id) { view in
-                            view
-                                .coordinatedFocus(Focus.firstElement.rawValue)
-                                .environmentObject(focusCoordinator)
+                #if os(tvOS)
+                    .if(element.id == viewModel.displayedElements.first?.id) { view in
+                        view
+                            .coordinatedFocus(Focus.firstElement.rawValue)
+                            .environmentObject(focusCoordinator)
+                    }
+                    .introspect(.viewController, on: .tvOS(.v26...)) { controller in
+                        // Do not have hosting controller apply safe regions
+                        // TODO: do in CollectionVGrid instead
+                        if let hostingController = controller as? UIHostingController<AnyView> {
+                            hostingController.safeAreaRegions.remove(.container)
                         }
-                        .introspect(.viewController, on: .tvOS(.v26...)) { controller in
-                            // Do not have hosting controller apply safe regions
-                            // TODO: do in CollectionVGrid instead
-                            if let hostingController = controller as? UIHostingController<AnyView> {
-                                hostingController.safeAreaRegions.remove(.container)
-                            }
-                        }
-                    #endif
+                    }
+                #endif
             }
             .onReachedBottomEdge(offset: .offset(300)) {
                 if viewModel.isSearchActive {
@@ -166,7 +140,7 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
             }
             #endif
             .ignoresSafeArea()
-            .mainNavigationScrollObserver()
+                .mainNavigationScrollObserver()
         }
         .scrollIndicators(.hidden)
         .withViewContext(.isListRowSeparatorVisible)
@@ -208,9 +182,9 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
                 switch viewModel.state {
                 case .initial, .refreshing:
                     ProgressView()
-                        #if os(tvOS)
-                            .coordinatedFocus(.placeholder)
-                        #endif
+                    #if os(tvOS)
+                        .coordinatedFocus(.placeholder)
+                    #endif
 
                 case .content:
                     if viewModel.isSearchActive, viewModel.background.is(.searching) {
@@ -222,7 +196,7 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
                         )
                         .focusable()
                         #if os(tvOS)
-                        .coordinatedFocus(.fallback)
+                            .coordinatedFocus(.fallback)
                         #endif
                     } else {
                         elementsView
@@ -246,9 +220,6 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
         .onPreferenceChange(IsSafeAreaBarApplied.self) { newValue in
             isSafeAreaBarApplied = newValue
         }
-        #if os(iOS)
-        .toolbarTitleDisplayMode(router.isRootOfPath ? .inlineLarge : .inline)
-        #endif
         .onChange(of: viewModel.environment) {
             viewModel.refreshForEnvironmentChange()
         }
@@ -268,7 +239,6 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
         .onFirstAppear {
             viewModel.refresh()
         }
-        #if os(tvOS)
         .environmentObject(focusCoordinator)
         .onChange(of: viewModel.state) { _, state in
             if state == .content {
@@ -278,12 +248,5 @@ struct PagingLibraryView<Library: PagingLibrary>: View where Library.Element: Li
                 focusCoordinator.resolveInitialFocus()
             }
         }
-        #else
-        .navigationBarMenuButton(
-            isLoading: viewModel.background.is(.gettingNextPage) || viewModel.background.is(.gettingNextSearchPage)
-        ) {
-            menuContent
-        }
-        #endif
     }
 }

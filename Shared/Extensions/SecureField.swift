@@ -15,30 +15,10 @@ func SecureField(
     maskToggle: SwiftUI.SecureField<EmptyView>.MaskToggleBehavior,
     onSubmit: (() -> Void)? = nil
 ) -> some View {
-    #if os(iOS)
-    if maskToggle == .enabled {
-        _UnmaskSecureField(
-            title,
-            text: text
-        )
-        .onSubmit {
-            onSubmit?()
-        }
-    } else {
-        SecureField(
-            title,
-            text: text
-        )
-        .onSubmit {
-            onSubmit?()
-        }
-    }
-    #else
     SecureField(
         title,
         text: text
     )
-    #endif
 }
 
 extension SecureField {

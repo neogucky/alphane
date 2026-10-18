@@ -166,10 +166,6 @@ extension Defaults.Keys {
             UserKey("searchPosterType", default: .portrait)
         }
 
-        static var tabBarPlacement: Key<TabBarPlacement> {
-            UserKey("tabBarPlacement", default: .sidebar)
-        }
-
         enum Poster {
 
             static var configuration: Key<PosterConfiguration> {
@@ -295,48 +291,6 @@ extension Defaults.Keys {
             UserKey("videoPlayerType", default: .vlc)
         }
 
-        enum Gesture {
-
-            static var horizontalPanAction: Key<PanGestureAction> {
-                UserKey("videoPlayerHorizontalPanGesture", default: .none)
-            }
-
-            static var horizontalSwipeAction: Key<SwipeGestureAction> {
-                UserKey("videoPlayerhorizontalSwipeAction", default: .none)
-            }
-
-            static var longPressAction: Key<LongPressGestureAction> {
-                UserKey("videoPlayerLongPressGesture", default: .gestureLock)
-            }
-
-            static var longPressSpeedMultiplier: Key<PlaybackSpeed> {
-                UserKey(
-                    "videoPlayerLongPressSpeedMultiplier",
-                    default: .two
-                )
-            }
-
-            static var multiTapGesture: Key<MultiTapGestureAction> {
-                UserKey("videoPlayerMultiTapGesture", default: .none)
-            }
-
-            static var doubleTouchGesture: Key<DoubleTouchGestureAction> {
-                UserKey("videoPlayerDoubleTouchGesture", default: .none)
-            }
-
-            static var pinchGesture: Key<PinchGestureAction> {
-                UserKey("videoPlayerSwipeGesture", default: .aspectFill)
-            }
-
-            static var verticalPanLeftAction: Key<PanGestureAction> {
-                UserKey("videoPlayerverticalPanLeftAction", default: .none)
-            }
-
-            static var verticalPanRightAction: Key<PanGestureAction> {
-                UserKey("videoPlayerverticalPanRightAction", default: .none)
-            }
-        }
-
         enum Overlay {
 
             static var chapterSlider: Key<Bool> {
@@ -350,6 +304,13 @@ extension Defaults.Keys {
         }
 
         enum Playback {
+            static var longPressSpeedMultiplier: Key<PlaybackSpeed> {
+                UserKey(
+                    "videoPlayerLongPressSpeedMultiplier",
+                    default: .two
+                )
+            }
+
             static var appMaximumResolution: Key<PlaybackResolution> {
                 UserKey("appMaximumResolution", default: .max)
             }
@@ -398,12 +359,6 @@ extension Defaults.Keys {
 
         static var mpvPlayer: Key<Bool> {
             UserKey("experimentalMPVPlayer", default: false)
-        }
-
-        // TODO: don't use L10n key as key, just used to not
-        // lose translations
-        static var downloads: Key<Bool> {
-            UserKey(L10n.download, default: false)
         }
 
         static var serverConnectionAutoSwitch: Key<Bool> {

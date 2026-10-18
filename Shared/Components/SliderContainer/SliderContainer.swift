@@ -26,12 +26,6 @@ struct SliderContainer<Value: BinaryFloatingPoint>: View {
     private let originProgress: Value?
     private var onEditingChanged: (Bool) -> Void
 
-    #if os(iOS)
-    private var translationBinding: Binding<CGPoint> = .constant(.zero)
-    private var valueDamping: Double = 1
-    private var gesturePadding: CGFloat = 0
-    #endif
-
     init(
         value: Binding<Value>,
         total: Value = 1,
@@ -47,7 +41,6 @@ struct SliderContainer<Value: BinaryFloatingPoint>: View {
     }
 
     private var interaction: SliderInteractionModifier<Value> {
-        #if os(tvOS)
         SliderInteractionModifier(
             value: $value,
             total: total,
@@ -55,18 +48,6 @@ struct SliderContainer<Value: BinaryFloatingPoint>: View {
             onEditingChanged: setEditing,
             onFocusChanged: { containerState.isFocused = $0 }
         )
-        #else
-        SliderInteractionModifier(
-            value: $value,
-            total: total,
-            isScrollingEnabled: isScrollingEnabled,
-            isEditing: containerState.isEditing,
-            translationBinding: translationBinding,
-            valueDamping: valueDamping,
-            gesturePadding: gesturePadding,
-            onEditingChanged: setEditing
-        )
-        #endif
     }
 
     var body: some View {
@@ -100,20 +81,3 @@ extension SliderContainer {
         copy(modifying: \.onEditingChanged, with: action)
     }
 }
-
-#if os(iOS)
-extension SliderContainer {
-
-    func translation(_ binding: Binding<CGPoint>) -> Self {
-        copy(modifying: \.translationBinding, with: binding)
-    }
-
-    func valueDamping(_ damping: Double) -> Self {
-        copy(modifying: \.valueDamping, with: damping.isFinite ? clamp(damping, min: 0.01, max: 2) : 1)
-    }
-
-    func gesturePadding(_ padding: CGFloat) -> Self {
-        copy(modifying: \.gesturePadding, with: padding.isFinite ? max(0, padding) : 0)
-    }
-}
-#endif

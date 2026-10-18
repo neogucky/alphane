@@ -68,11 +68,7 @@ struct ServerConnectionView: View {
     }
 
     var body: some View {
-        #if os(tvOS)
         TVServerConnectionContent(viewModel: viewModel, editMode: $editMode)
-        #else
-        legacyContent
-        #endif
     }
 
     private var legacyContent: some View {
@@ -131,11 +127,6 @@ struct ServerConnectionView: View {
                 Button(isEditing ? L10n.done : L10n.edit) {
                     editMode = isEditing ? .inactive : .active
                 }
-                #if os(iOS)
-                .backport
-                .buttonStyle(.glass)
-                .controlSize(.small)
-                #endif
             }
         }
     }

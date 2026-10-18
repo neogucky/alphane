@@ -9,14 +9,17 @@
 enum LocalUserAccessPolicy: String, CaseIterable, Codable, Displayable {
 
     case none
-    case requireDeviceAuthentication
+    // Decode inherited records without silently removing their authentication requirement.
+    case legacyDeviceAuthentication = "requireDeviceAuthentication"
     case requirePin
+
+    static let allCases: [Self] = [.none, .requirePin]
 
     var displayTitle: String {
         switch self {
         case .none:
             L10n.none
-        case .requireDeviceAuthentication:
+        case .legacyDeviceAuthentication:
             L10n.deviceAuth
         case .requirePin:
             L10n.pin
@@ -26,7 +29,7 @@ enum LocalUserAccessPolicy: String, CaseIterable, Codable, Displayable {
     func createReason(user: UserState) -> String? {
         switch self {
         case .none: nil
-        case .requireDeviceAuthentication:
+        case .legacyDeviceAuthentication:
             L10n.requireDeviceAuthForUser(user.username)
         case .requirePin:
             L10n.createPinForUser(user.username)
@@ -36,7 +39,7 @@ enum LocalUserAccessPolicy: String, CaseIterable, Codable, Displayable {
     func authenticateReason(user: UserState) -> String? {
         switch self {
         case .none: nil
-        case .requireDeviceAuthentication:
+        case .legacyDeviceAuthentication:
             L10n.requireDeviceAuthForUser(user.username)
         case .requirePin:
             L10n.enterPinForUser(user.username)

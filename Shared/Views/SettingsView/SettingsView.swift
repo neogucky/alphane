@@ -13,11 +13,6 @@ import SwiftUI
 
 struct SettingsView: View {
 
-    #if os(iOS)
-    @Default(.userAppearance)
-    private var appearance
-    #endif
-
     @Default(.userAccentColor)
     private var accentColor
 
@@ -30,21 +25,7 @@ struct SettingsView: View {
     // MARK: - Body
 
     var body: some View {
-        #if os(tvOS)
         TVSettingsView()
-        #else
-        Form(image: .alphaneMark) {
-            serverSection
-            customizeSection
-            diagnosticsSection
-        }
-        #if os(iOS)
-        .navigationTitle(L10n.settings)
-        .navigationBarCloseButton {
-            router.dismiss()
-        }
-        #endif
-        #endif
     }
 
     // MARK: - Server Section
@@ -72,21 +53,13 @@ struct SettingsView: View {
                     }
                     .labelStyle(.sectionFooterWithImage(imageStyle: .orange))
                 }
-
-                #if os(iOS)
-                if userSession.user.data.policy?.isAdministrator == true {
-                    ChevronButton(L10n.dashboard) {
-                        router.route(to: .adminDashboard)
-                    }
-                }
-                #endif
             }
         }
 
         Section {
             Button {
                 Task { @MainActor in
-                    UIDevice.impact(.medium)
+
                     await userSessionManager.signOut(reason: .explicit)
                     router.dismiss()
                 }
@@ -101,16 +74,10 @@ struct SettingsView: View {
             }
             .listRowInsets(.zero)
             .listRowBackground(Color.clear)
-            #if os(iOS)
-                .listRowSeparator(.hidden)
-            #endif
-                .fontWeight(.semibold)
-                .backport
-                .buttonStyle(.glassProminent.shadow(false))
-                .tint(accentColor)
-            #if os(iOS)
-                .controlSize(.large)
-            #endif
+            .fontWeight(.semibold)
+            .backport
+            .buttonStyle(.glassProminent.shadow(false))
+            .tint(accentColor)
         }
     }
 
@@ -119,9 +86,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var customizeSection: some View {
         Section {
-            #if os(iOS)
-            Picker(L10n.appearance, selection: $appearance)
-            #endif
 
             ColorPicker(L10n.accentColor, selection: $accentColor, supportsOpacity: false)
 

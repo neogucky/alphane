@@ -57,18 +57,9 @@ struct EPGView: View {
                 await viewModel.refresh(startDate: nil)
             }
         }
-        #if os(iOS)
-        .topBarTrailing {
-            EPGDateMenu(viewModel: viewModel)
-        }
-        .navigationTitle(L10n.guide)
-        .toolbarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        #else
         .padding(.horizontal, 60)
         .background(AlphaneTheme.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .ignoresSafeArea(edges: [.horizontal])
-        #endif
     }
 }

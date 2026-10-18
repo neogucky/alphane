@@ -85,23 +85,6 @@ extension VideoPlayer {
                 height: size.height
             )
         }
-
-        #if os(iOS)
-        static func padding(
-            insets: EdgeInsets,
-            behavior: ViewState.AspectFillBehavior
-        ) -> EdgeInsets {
-            guard behavior == .fit else { return .init() }
-
-            let horizontalInset = max(insets.leading, insets.trailing)
-            return EdgeInsets(
-                top: insets.top,
-                leading: horizontalInset,
-                bottom: insets.bottom,
-                trailing: horizontalInset
-            )
-        }
-        #endif
     }
 
     struct VideoViewport<Content: View>: View {
@@ -134,42 +117,9 @@ extension VideoPlayer {
         }
 
         var body: some View {
-            #if os(iOS)
-            NotchReader { notchMeasurement in
-                GeometryReader { geometry in
-                    let usesSystemSafeArea = viewState.isCompact && notchMeasurement?.cutout == nil
-                    let fitInsets = usesSystemSafeArea
-                        ? (notchMeasurement?.systemInsets ?? geometry.safeAreaInsets)
-                        : VideoLayout.padding(insets: notchMeasurement?.insets ?? .init(), behavior: .fit)
-                    let zoomGeometry = VideoZoom.Geometry(
-                        videoSize: videoSize.value,
-                        viewportSize: geometry.size,
-                        fitViewport: CGRect(
-                            x: fitInsets.leading,
-                            y: fitInsets.top,
-                            width: geometry.size.width - fitInsets.leading - fitInsets.trailing,
-                            height: geometry.size.height - fitInsets.top - fitInsets.bottom
-                        )
-                    )
-
-                    viewport
-                        .padding(viewState.zoom.transform == nil && viewState.aspectFillBehavior == .fit ? fitInsets : .init())
-                        .opacity(viewState.aspectFillBehavior == .fill || notchMeasurement != nil ? 1 : 0)
-                        .animation(.easeInOut(duration: 0.2), value: viewState.aspectFillBehavior)
-                        .onChange(of: zoomGeometry, initial: true) { _, value in
-                            if viewState.zoom.geometry != value {
-                                viewState.resetZoom()
-                                viewState.zoom = VideoZoom(geometry: value)
-                            }
-                        }
-                }
-                .ignoresSafeArea(.container)
-            }
-            #else
             viewport
                 .animation(.easeInOut(duration: 0.2), value: viewState.aspectFillBehavior)
                 .ignoresSafeArea(.container)
-            #endif
         }
     }
 }

@@ -69,7 +69,7 @@ struct TVSettingsView: View {
 
         isSigningOut = true
         Task { @MainActor in
-            UIDevice.impact(.medium)
+
             await userSessionManager.signOut(reason: .explicit)
             router.dismiss()
         }

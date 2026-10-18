@@ -29,21 +29,6 @@ extension NavigationRoute {
         }
     }
 
-    #if os(iOS)
-    // TODO: rename to `localUserAccessPolicy`
-    static func userSecurity(pinHint: Binding<String>, accessPolicy: Binding<LocalUserAccessPolicy>) -> NavigationRoute {
-        NavigationRoute(
-            id: "userSecurity",
-            style: .sheet
-        ) {
-            LocalUserAccessPolicyView(
-                pinHint: pinHint,
-                accessPolicy: accessPolicy
-            )
-        }
-    }
-    #endif
-
     static func userSignIn(server: ServerState, profile: UserSignInProfile? = nil) -> NavigationRoute {
         NavigationRoute(
             id: "userSignIn-\(server.id)-\(profile?.id ?? "manual")",

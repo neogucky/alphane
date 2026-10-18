@@ -35,18 +35,18 @@ struct EPGLoadableView<Content: View>: View {
                 return viewModel.state == .error ? viewModel.error ?? ErrorMessage(L10n.unknownError) : nil
             }
         ) {
-        switch viewModel.state {
-        case .initial, .refreshing:
-            ProgressView()
+            switch viewModel.state {
+            case .initial, .refreshing:
+                ProgressView()
 
-        case .error:
+            case .error:
                 EmptyView()
 
-        case .content:
-            if viewModel.channels.isEmpty {
-                ContentUnavailableView(L10n.noPrograms, systemImage: "tv")
-            } else {
-                content
+            case .content:
+                if viewModel.channels.isEmpty {
+                    ContentUnavailableView(L10n.noPrograms, systemImage: "tv")
+                } else {
+                    content
                 }
             }
         }
@@ -115,7 +115,7 @@ struct EPGContentView: View {
                     }
                     .environment(\.layoutDirection, .leftToRight)
                     .scrollDisabled(true)
-                    .introspect(.scrollView, on: .iOS(.v15...), .tvOS(.v15...)) { scrollView in
+                    .introspect(.scrollView, on: .tvOS(.v15...)) { scrollView in
                         proxy.registerHorizontal(scrollView)
                     }
 
