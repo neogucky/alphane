@@ -24,6 +24,32 @@
   border: 1px solid #ffffff1c; border-radius: 14px; box-shadow: 0 18px 70px #0006;
 }
 .actionSheetMenuItem:hover, .MuiMenuItem-root:hover { background: #ffffff0b; }
+/* Selected menu options and segmented controls follow the TV capsule treatment. */
+.MuiMenuItem-root.Mui-selected, .MuiMenuItem-root.Mui-selected:hover {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+}
+.MuiMenuItem-root.Mui-selected :is(.MuiListItemIcon-root, .MuiSvgIcon-root, .MuiCheckbox-root, .MuiRadio-root, .MuiTypography-root) { color: inherit; }
+.MuiMenu-paper .MuiMenuItem-root { border-radius: 999px; margin-inline: 4px; }
+.MuiToggleButtonGroup-root.MuiToggleButtonGroup-horizontal { gap: 6px; }
+.MuiToggleButtonGroup-horizontal .MuiToggleButtonGroup-grouped {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: var(--alphane-text);
+  background: transparent;
+}
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root:is(.Mui-selected, :focus-visible),
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root.Mui-selected:hover {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+}
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root .MuiSvgIcon-root { color: inherit; }
+.alphaPicker-fixed-right .MuiToggleButton-root.Mui-selected {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+  border-radius: 6px;
+}
 .checkboxOutline { border-radius: 4px; border-color: #7b8798; }
 .emby-checkbox:checked + span + .checkboxOutline { background: #e5eaf1; color: #181a1d; border-color: #e5eaf1; }
 .collapseContent, .paperList, .dashboardSection .cardBox { background: var(--alphane-surface); border-radius: 10px; }

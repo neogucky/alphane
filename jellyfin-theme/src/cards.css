@@ -70,12 +70,12 @@
 .homePage .section0 .sectionTitle { color: var(--alphane-secondary); font-size: .85rem; letter-spacing: .015em; }
 /* Keep library shortcuts useful, but give viewing rows more prominence. */
 .homePage .MyMedia .overflowBackdropCard { width: 16%; }
-/* The installed library images contain a square cream frame. Crop that frame
-   slightly and draw it as a real border so both its inner and outer corners round. */
+/* Crop the frame embedded in the library artwork; keep the shortcuts borderless.
+   Hover and keyboard selection use the same white artwork ring as other cards. */
 .homePage .MyMedia .cardImageContainer.coveredImage {
   box-sizing: border-box;
-  border: 3px solid #ead8a3 !important;
-  background-size: 106% auto;
+  border: 0 !important;
+  background-size: 108% auto;
   background-origin: padding-box;
   background-clip: padding-box !important;
 }

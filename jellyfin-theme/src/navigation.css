@@ -33,6 +33,45 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .MuiAppBar-root a[href="#/"] { font-size: 1.1rem; font-weight: 700; letter-spacing: -.045em; margin-inline-end: 16px; }
 .MuiAppBar-root .MuiIconButton-root { color: #c4cbd5; }
 .MuiAppBar-root .MuiIconButton-root:hover { color: #fff; background: #ffffff0c; }
+/* Library actions share the app bar with navigation. MUI joins grouped buttons
+   with divider borders; independent pills need a gap and complete rounded edges. */
+.MuiAppBar-root .MuiButtonGroup-root {
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped {
+  border: 0 !important;
+  border-radius: 999px !important;
+  margin: 0 !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--alphane-text);
+  box-shadow: none;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:has(> :is(svg, .MuiBadge-root)) {
+  width: 44px;
+  padding: 10px;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped .MuiSvgIcon-root { color: inherit; }
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped.Mui-disabled {
+  color: #ffffff4d;
+  background: transparent;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:is(:focus-visible, .Mui-selected, .MuiButton-textPrimary, [aria-pressed="true"], [aria-expanded="true"], [aria-describedby$="-popover"]),
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:has(.MuiBadge-badge:not(.MuiBadge-invisible)) {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+}
+@media (hover: hover) and (pointer: fine) {
+  .MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:not(.Mui-disabled):hover {
+    background: var(--alphane-text);
+    color: var(--alphane-background);
+  }
+}
 .skinHeader { box-shadow: none; color: var(--alphane-text); }
 .skinHeader-withBackground { background: #181a1df5; border-bottom: 1px solid var(--alphane-line); }
 .headerTop { min-height: 68px; }

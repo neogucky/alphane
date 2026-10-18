@@ -72,7 +72,9 @@ Live screenshots can contain private library information and are written only to
 
 The theme uses Jellyfin's public palette variables, stable component classes and MUI utility classes; it avoids generated `css-*` selectors. A scoped 12.1 adjustment removes the obsolete legacy Home tab offset underneath the modern app bar. Custom carousels clip to their own viewport while retaining Jellyfin's transform-based scrolling. Native hidden/disabled states and admin actions remain intact.
 
-Watch-progress cards use the TV app's 6px aqua capsule, 5px artwork inset and subdued track. Jellyfin's foreground retains its actual watched percentage. The installed library artwork has square cream frames embedded in the images; the scoped `MyMedia .coveredImage` rule crops those frames slightly and replaces them with rounded CSS borders. Adapt that rule if replacing the library artwork with a different style.
+Watch-progress cards use the TV app's 6px aqua capsule, 5px artwork inset and subdued track. Jellyfin's foreground retains its actual watched percentage. The installed library artwork has square cream frames embedded in the images; the scoped `MyMedia .coveredImage` rule crops those frames and keeps the shortcuts borderless, with the shared white selection ring on hover or keyboard focus. Adapt that crop if replacing the library artwork with a different style.
+
+Library toolbar actions have separate rounded hit areas and no joined divider borders. Inactive controls show white text or icons; hovered, keyboard-focused, selected and expanded controls invert onto white pills. Active-filter badges, selected menu items and horizontal segmented controls use the same treatment. Native disabled states remain dimmed.
 
 This is intentionally a dark theme. Check desktop, phone, login, details, search, metadata/image dialogs and player controls after Jellyfin updates. CSS selectors are not a versioned extension API, so updates may need small compatibility changes. If there is a regression, restore the previous CSS before investigating.
 

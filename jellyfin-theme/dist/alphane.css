@@ -109,6 +109,45 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .MuiAppBar-root a[href="#/"] { font-size: 1.1rem; font-weight: 700; letter-spacing: -.045em; margin-inline-end: 16px; }
 .MuiAppBar-root .MuiIconButton-root { color: #c4cbd5; }
 .MuiAppBar-root .MuiIconButton-root:hover { color: #fff; background: #ffffff0c; }
+/* Library actions share the app bar with navigation. MUI joins grouped buttons
+   with divider borders; independent pills need a gap and complete rounded edges. */
+.MuiAppBar-root .MuiButtonGroup-root {
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped {
+  border: 0 !important;
+  border-radius: 999px !important;
+  margin: 0 !important;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--alphane-text);
+  box-shadow: none;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:has(> :is(svg, .MuiBadge-root)) {
+  width: 44px;
+  padding: 10px;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped .MuiSvgIcon-root { color: inherit; }
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped.Mui-disabled {
+  color: #ffffff4d;
+  background: transparent;
+}
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:is(:focus-visible, .Mui-selected, .MuiButton-textPrimary, [aria-pressed="true"], [aria-expanded="true"], [aria-describedby$="-popover"]),
+.MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:has(.MuiBadge-badge:not(.MuiBadge-invisible)) {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+}
+@media (hover: hover) and (pointer: fine) {
+  .MuiAppBar-root .MuiButtonGroup-root .MuiButtonGroup-grouped:not(.Mui-disabled):hover {
+    background: var(--alphane-text);
+    color: var(--alphane-background);
+  }
+}
 .skinHeader { box-shadow: none; color: var(--alphane-text); }
 .skinHeader-withBackground { background: #181a1df5; border-bottom: 1px solid var(--alphane-line); }
 .headerTop { min-height: 68px; }
@@ -217,12 +256,12 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .homePage .section0 .sectionTitle { color: var(--alphane-secondary); font-size: .85rem; letter-spacing: .015em; }
 /* Keep library shortcuts useful, but give viewing rows more prominence. */
 .homePage .MyMedia .overflowBackdropCard { width: 16%; }
-/* The installed library images contain a square cream frame. Crop that frame
-   slightly and draw it as a real border so both its inner and outer corners round. */
+/* Crop the frame embedded in the library artwork; keep the shortcuts borderless.
+   Hover and keyboard selection use the same white artwork ring as other cards. */
 .homePage .MyMedia .cardImageContainer.coveredImage {
   box-sizing: border-box;
-  border: 3px solid #ead8a3 !important;
-  background-size: 106% auto;
+  border: 0 !important;
+  background-size: 108% auto;
   background-origin: padding-box;
   background-clip: padding-box !important;
 }
@@ -299,6 +338,32 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
   border: 1px solid #ffffff1c; border-radius: 14px; box-shadow: 0 18px 70px #0006;
 }
 .actionSheetMenuItem:hover, .MuiMenuItem-root:hover { background: #ffffff0b; }
+/* Selected menu options and segmented controls follow the TV capsule treatment. */
+.MuiMenuItem-root.Mui-selected, .MuiMenuItem-root.Mui-selected:hover {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+}
+.MuiMenuItem-root.Mui-selected :is(.MuiListItemIcon-root, .MuiSvgIcon-root, .MuiCheckbox-root, .MuiRadio-root, .MuiTypography-root) { color: inherit; }
+.MuiMenu-paper .MuiMenuItem-root { border-radius: 999px; margin-inline: 4px; }
+.MuiToggleButtonGroup-root.MuiToggleButtonGroup-horizontal { gap: 6px; }
+.MuiToggleButtonGroup-horizontal .MuiToggleButtonGroup-grouped {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: var(--alphane-text);
+  background: transparent;
+}
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root:is(.Mui-selected, :focus-visible),
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root.Mui-selected:hover {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+}
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root .MuiSvgIcon-root { color: inherit; }
+.alphaPicker-fixed-right .MuiToggleButton-root.Mui-selected {
+  background: var(--alphane-text);
+  color: var(--alphane-background);
+  border-radius: 6px;
+}
 .checkboxOutline { border-radius: 4px; border-color: #7b8798; }
 .emby-checkbox:checked + span + .checkboxOutline { background: #e5eaf1; color: #181a1d; border-color: #e5eaf1; }
 .collapseContent, .paperList, .dashboardSection .cardBox { background: var(--alphane-surface); border-radius: 10px; }

@@ -10,6 +10,32 @@ test('cards scroll within their rows, not the whole page', async ({ page }) => {
   await first.focus();
   await expect(first).toBeFocused();
 });
+test('library actions have separate complete hit areas and invert on selection', async ({ page }, testInfo) => {
+  const toolbar = page.getByTestId('library-toolbar');
+  const buttons = toolbar.locator('.MuiButtonGroup-grouped').filter({ visible: true });
+  const boxes = [];
+  for (const button of await buttons.all()) {
+    const box = await button.boundingBox(); boxes.push(box);
+    expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
+    for (const side of ['top', 'right', 'bottom', 'left']) await expect(button).toHaveCSS(`border-${side}-width`, '0px');
+    await expect(button).toHaveCSS('border-top-left-radius', '999px');
+    await expect(button).toHaveCSS('border-top-right-radius', '999px');
+  }
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i].x - boxes[i-1].x - boxes[i-1].width).toBeGreaterThanOrEqual(6);
+  const filter = toolbar.getByRole('button', { name: 'Filter', exact: true });
+  await expect(filter).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(filter).toHaveCSS('color', 'rgb(243, 244, 246)');
+  const before = await filter.boundingBox();
+  await page.keyboard.press('Tab'); await filter.focus();
+  await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
+  expect(await filter.boundingBox()).toEqual(before);
+  await filter.blur(); await filter.evaluate(button => button.setAttribute('aria-pressed', 'true'));
+  await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(filter.locator('svg')).toHaveCSS('color', 'rgb(24, 26, 29)');
+  if (!testInfo.project.use.isMobile) await expect(toolbar.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
 test('selection frames the full artwork without moving it or blocking actions', async ({ page }, testInfo) => {
   const card = page.locator('.card').first(), artwork = card.locator('.cardScalable');
   const before = await artwork.boundingBox();

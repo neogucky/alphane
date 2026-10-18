@@ -121,11 +121,12 @@ test.describe('Jellyfin integration', () => {
     // Close without saving any metadata.
     await page.keyboard.press('Escape');
   });
-  test('library frames round inward and watch progress matches the TV cards', async ({ page }, testInfo) => {
+  test('library artwork is borderless and watch progress matches the TV cards', async ({ page }, testInfo) => {
     const library = page.locator('.homePage .MyMedia .cardImageContainer.coveredImage').first();
-    await expect(library).toHaveCSS('border-top-width', '3px');
+    await expect(library).toHaveCSS('border-top-width', '0px');
     await expect(library).toHaveCSS('border-top-left-radius', '12px');
     await expect(library).toHaveCSS('background-clip', 'padding-box');
+    await expect(library).toHaveCSS('background-size', '108% auto');
     await page.keyboard.press('Tab'); await library.focus();
     await expectArtworkRing(page, library.locator('..'), testInfo, 'library-focus');
     await page.screenshot({ path: testInfo.outputPath('library-frames.png') });
@@ -157,5 +158,63 @@ test.describe('Jellyfin integration', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
     await page.goto(server.replace(/\/$/, '') + '/web/#/dashboard');
     await expect(page.locator('main').getByText('Server version', { exact: true }).filter({ visible: true })).toBeVisible();
+  });
+  test('movie toolbar separates actions and reflects active filters and menus', async ({ page }, testInfo) => {
+    const movieLink = page.locator('header a[href*="/movies?"]').first();
+    const library = page.locator('.homePage .MyMedia .card').filter({ hasText: /^Movies$/ }).first();
+    await library.waitFor();
+    const href = await movieLink.count() ? await movieLink.getAttribute('href') : '#/movies?topParentId=' + await library.getAttribute('data-id');
+    await page.goto(server.replace(/\/$/, '') + '/web/' + href);
+    const toolbar = page.locator('.MuiToolbar-root').filter({ has: page.locator('button[title="Filter"]') });
+    await expect(toolbar).toBeVisible();
+    const buttons = toolbar.locator('.MuiButtonGroup-grouped').filter({ visible: true });
+    expect(await buttons.count()).toBeGreaterThanOrEqual(3);
+    const boxes = [];
+    for (const button of await buttons.all()) {
+      const box = await button.boundingBox(); boxes.push(box);
+      expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
+      for (const side of ['top', 'right', 'bottom', 'left']) await expect(button).toHaveCSS(`border-${side}-width`, '0px');
+      await expect(button).toHaveCSS('border-top-left-radius', '999px');
+      await expect(button).toHaveCSS('border-top-right-radius', '999px');
+    }
+    for (let i = 1; i < boxes.length; i++) expect(boxes[i].x - boxes[i-1].x - boxes[i-1].width).toBeGreaterThanOrEqual(6);
+    const filter = toolbar.locator('button[title="Filter"]');
+    await page.mouse.move(0, 0);
+    await expect(filter).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await page.keyboard.press('Tab'); await filter.focus();
+    await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+    await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
+    await filter.click();
+    const popover = page.locator('#filter-popover');
+    await expect(popover).toBeVisible();
+    await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+    await popover.getByRole('button', { name: 'Filters', exact: true }).click();
+    const unplayed = popover.getByRole('checkbox', { name: 'Unplayed', exact: true });
+    await expect(unplayed).toBeVisible();
+    const initial = await unplayed.isChecked();
+    const dismiss = async () => { await popover.locator('.MuiBackdrop-root').click({ position: { x: 2, y: 2 } }); await expect(popover).toBeHidden(); };
+    try {
+      // Jellyfin updates these values through router state, after the click returns.
+      await unplayed.click(); await expect(unplayed).toBeChecked();
+      await dismiss(); await page.mouse.move(0, 0);
+      await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+      await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
+      await page.screenshot({ path: testInfo.outputPath('movies-active-filter.png') });
+    } finally {
+      if (!await popover.isVisible()) await filter.click();
+      if (await unplayed.isChecked() !== initial) { await unplayed.click(); await expect(unplayed).toBeChecked({ checked: initial }); }
+      await dismiss();
+    }
+    await page.mouse.move(0, 0); await filter.blur();
+    await expect(filter).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    const section = toolbar.getByRole('button', { name: 'Movies', exact: true });
+    await section.click();
+    const selected = page.getByRole('menuitem', { name: 'Movies', exact: true });
+    await expect(selected).toBeVisible();
+    await expect(selected).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+    await expect(selected).toHaveCSS('color', 'rgb(24, 26, 29)');
+    await expect(selected).toHaveCSS('border-radius', '999px');
+    await page.keyboard.press('Escape');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
   });
 });
