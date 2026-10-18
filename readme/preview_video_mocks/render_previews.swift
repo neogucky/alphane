@@ -55,13 +55,44 @@ let outputDirectory = directory.deletingLastPathComponent()
 let catalog = try JSONDecoder().decode(Catalog.self, from: Data(contentsOf: directory.appendingPathComponent("catalog.json")))
 let themeBackground = Color(red: 24 / 255, green: 26 / 255, blue: 29 / 255)
 let surface = Color(red: 40 / 255, green: 43 / 255, blue: 48 / 255)
-let accent = Color(red: 106 / 255, green: 214 / 255, blue: 202 / 255)
 let secondary = Color.white.opacity(0.8)
 let screenWidth: CGFloat = 1920
 let screenHeight: CGFloat = 1080
 let edge: CGFloat = 60
 let posterWidth: CGFloat = (1920 - 120 - 4 * 40) / 5
 let posterHeight = posterWidth * 9 / 16
+
+enum PreviewColorTheme: String, CaseIterable {
+    case noAccent, aqua, amber
+
+    var title: String {
+        switch self {
+        case .noAccent: "No accent"
+        case .aqua: "Aqua"
+        case .amber: "Amber"
+        }
+    }
+
+    // Match AlphaneColorTheme.noAccent / .cold / .warm.
+    var accent: Color {
+        switch self {
+        case .noAccent: .white
+        case .aqua: Color(red: 106 / 255, green: 214 / 255, blue: 202 / 255)
+        case .amber: Color(red: 225 / 255, green: 180 / 255, blue: 113 / 255)
+        }
+    }
+}
+
+private struct PreviewColorThemeKey: EnvironmentKey {
+    static let defaultValue = PreviewColorTheme.noAccent
+}
+
+extension EnvironmentValues {
+    var previewColorTheme: PreviewColorTheme {
+        get { self[PreviewColorThemeKey.self] }
+        set { self[PreviewColorThemeKey.self] = newValue }
+    }
+}
 
 func media(_ id: String) -> Media { catalog.items.first { $0.id == id }! }
 func episode(_ number: Int) -> Episode { catalog.episodes.first { $0.seriesID == catalog.featuredSeries && $0.episode == number }! }
@@ -94,6 +125,8 @@ struct Canvas<Content: View>: View {
 }
 
 struct Cover: View {
+    @Environment(\.previewColorTheme) private var colorTheme
+
     let path: String
     var width: CGFloat = posterWidth
     var height: CGFloat = posterHeight
@@ -118,8 +151,8 @@ struct Cover: View {
                             .padding(.horizontal, 10)
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
-                                Capsule().fill(accent.opacity(0.3))
-                                Capsule().fill(accent).frame(width: geometry.size.width * progress)
+                                Capsule().fill(colorTheme.accent.opacity(0.3))
+                                Capsule().fill(colorTheme.accent).frame(width: geometry.size.width * progress)
                             }
                         }
                         .frame(height: 6)
@@ -182,10 +215,10 @@ struct NavigationHeader: View {
         HStack(spacing: 20) {
             ForEach(["Home", "TV Shows", "Movies", "Search", "Media", "Settings"], id: \.self) { title in
                 Text(title)
-                    .font(.system(size: 26))
+                    .font(.system(size: 26, weight: .semibold))
                     .padding(.horizontal, 24)
                     .padding(.vertical, 6)
-                    .foregroundStyle(title == "Home" ? Color.black : Color.white)
+                    .foregroundStyle(title == "Home" ? Color.black : secondary)
                     .background {
                         if title == "Home" { Capsule().fill(.white.opacity(0.8)) }
                     }
@@ -196,6 +229,8 @@ struct NavigationHeader: View {
 }
 
 struct HomePreview: View {
+    @Environment(\.previewColorTheme) private var colorTheme
+
     var body: some View {
         Canvas {
             artwork(media(catalog.featuredSeries).backdrop!)
@@ -210,7 +245,9 @@ struct HomePreview: View {
             NavigationHeader()
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 2).fill(accent).frame(width: 3, height: 18)
+                    if colorTheme != .noAccent {
+                        RoundedRectangle(cornerRadius: 2).fill(colorTheme.accent).frame(width: 3, height: 18)
+                    }
                     Text("Continue").font(.system(size: 23, weight: .semibold)).foregroundStyle(secondary)
                 }
                 Text(media(catalog.featuredSeries).title)
@@ -267,10 +304,10 @@ struct ActionPill: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: symbol).font(.system(size: 24))
-            Text(title).font(.system(size: 30))
+            Text(title).font(.system(size: 30, weight: .semibold))
         }
         .frame(minWidth: 160)
-        .foregroundStyle(filled ? Color.black : Color.white)
+        .foregroundStyle(filled ? Color.black : secondary)
         .padding(.horizontal, 28)
         .frame(height: 64)
         .background(filled ? Color.white : Color.clear, in: Capsule())
@@ -278,6 +315,8 @@ struct ActionPill: View {
 }
 
 struct FinishedPreview: View {
+    @Environment(\.previewColorTheme) private var colorTheme
+
     var body: some View {
         Canvas {
             artwork(media(catalog.featuredSeries).backdrop!)
@@ -308,15 +347,20 @@ struct FinishedPreview: View {
                     HStack(spacing: 28) {
                         HStack(spacing: 20) {
                             ActionPill(title: "Play", symbol: "play.fill")
-                            Image(systemName: "checkmark").font(.system(size: 26)).frame(width: 64, height: 64)
-                            Image(systemName: "heart").font(.system(size: 26)).frame(width: 64, height: 64)
-                            Image(systemName: "tv").font(.system(size: 28)).frame(width: 64, height: 64)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 28, weight: .medium))
+                                .foregroundStyle(colorTheme.accent.opacity(colorTheme == .noAccent ? 1 : 0.8))
+                                .frame(width: 80, height: 48)
+                            Image(systemName: "heart").font(.system(size: 28, weight: .medium))
+                                .foregroundStyle(secondary).frame(width: 80, height: 48)
+                            Image(systemName: "slider.horizontal.3").font(.system(size: 28, weight: .medium))
+                                .foregroundStyle(secondary).frame(width: 80, height: 48)
                         }
                         Rectangle().fill(.white.opacity(0.2)).frame(width: 1, height: 28)
                         HStack(spacing: 10) {
                             Text("Seasons")
                             Image(systemName: "chevron.down").font(.system(size: 20))
-                        }.font(.system(size: 26))
+                        }.font(.system(size: 26, weight: .semibold)).foregroundStyle(secondary)
                     }
                     .padding(.top, 12)
                 }
@@ -364,6 +408,8 @@ struct CinemaControl: View {
 }
 
 struct VideoPreview: View {
+    @Environment(\.previewColorTheme) private var colorTheme
+
     let progress = Double(episode(3).resumeSeconds!) / Double(episode(3).runtimeSeconds)
     var body: some View {
         Canvas {
@@ -394,8 +440,8 @@ struct VideoPreview: View {
             .frame(width: screenWidth - edge * 2)
             .offset(x: edge, y: 882)
             ZStack(alignment: .leading) {
-                Capsule().fill(accent.opacity(0.16))
-                Capsule().fill(accent.opacity(0.45)).frame(width: (screenWidth - edge * 2) * progress)
+                Capsule().fill(colorTheme.accent.opacity(0.16))
+                Capsule().fill(colorTheme.accent.opacity(0.45)).frame(width: (screenWidth - edge * 2) * progress)
             }
             .frame(width: screenWidth - edge * 2, height: 4)
             .overlay(alignment: .leading) {
@@ -418,9 +464,54 @@ struct VideoPreview: View {
     }
 }
 
-@MainActor func save<V: View>(_ view: V, filename: String) throws {
+let comparisonWidth: CGFloat = 2880
+let comparisonHeight: CGFloat = 780
+
+struct ColorSchemesPreview: View {
+    private let panelWidth: CGFloat = 896
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            themeBackground
+            HStack(alignment: .top, spacing: 32) {
+                ForEach(PreviewColorTheme.allCases, id: \.self) { theme in
+                    VStack(alignment: .leading, spacing: 24) {
+                        HStack(spacing: 16) {
+                            Circle().fill(theme.accent).frame(width: 16, height: 16)
+                            Text(theme.title).font(.system(size: 38, weight: .semibold))
+                            if theme == .noAccent {
+                                Text("Default").font(.system(size: 22, weight: .medium))
+                                    .foregroundStyle(secondary)
+                            }
+                        }
+                        .frame(height: 50, alignment: .leading)
+                        HomePreview()
+                            .environment(\.previewColorTheme, theme)
+                            .scaleEffect(panelWidth / screenWidth, anchor: .topLeading)
+                            .frame(width: panelWidth, height: panelWidth * 9 / 16, alignment: .topLeading)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay { RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.15), lineWidth: 1) }
+                    }
+                    .frame(width: panelWidth)
+                }
+            }
+            .foregroundStyle(.white)
+            .offset(x: 64, y: 56)
+            Text("multiple color schemes selectable")
+                .font(.system(size: 38, weight: .medium))
+                .foregroundStyle(secondary)
+                .frame(width: comparisonWidth)
+                .offset(y: comparisonHeight - 80)
+        }
+        .frame(width: comparisonWidth, height: comparisonHeight, alignment: .topLeading)
+        .clipped()
+        .environment(\.colorScheme, .dark)
+    }
+}
+
+@MainActor func save<V: View>(_ view: V, filename: String, width: CGFloat = screenWidth, height: CGFloat = screenHeight) throws {
     let renderer = ImageRenderer(content: view)
-    renderer.proposedSize = ProposedViewSize(width: screenWidth, height: screenHeight)
+    renderer.proposedSize = ProposedViewSize(width: width, height: height)
     renderer.scale = 1
     renderer.isOpaque = true
     guard let image = renderer.cgImage else { fatalError("Could not render \(filename)") }
@@ -448,7 +539,7 @@ func writeAssetManifest() throws {
     let generated = try prompts.map { spec in
         try assetMetadata(path: spec["destination"] as! String, id: spec["id"] as! String, generator: "built-in image_gen")
     }
-    let previews = try ["home", "dynamic-sections", "video-finished", "video-ui"].map { id in
+    let previews = try ["home", "dynamic-sections", "video-finished", "video-ui", "color-schemes"].map { id in
         try assetMetadata(path: "../\(id).png", id: id, generator: "render_previews.swift / SwiftUI ImageRenderer")
     }
     let manifest: [String: Any] = [
@@ -457,6 +548,10 @@ func writeAssetManifest() throws {
         "catalog": "catalog.json",
         "artworkGeneratedOn": "2026-10-12",
         "initialLayoutReferenceCommit": "197123acb757a6643b0bcb672fff1fd3916da847",
+        "layoutReferenceCommit": "4998af095e2f1eadd47ad16eff9748f6630e85b9",
+        "previewsUpdatedOn": "2026-10-18",
+        "defaultColorTheme": PreviewColorTheme.noAccent.rawValue,
+        "comparisonColorThemes": PreviewColorTheme.allCases.map(\.rawValue),
         "media": generated, "previews": previews
     ]
     var data = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
@@ -474,5 +569,6 @@ try MainActor.assumeIsolated {
     try save(DiscoveryPreview(), filename: "dynamic-sections.png")
     try save(FinishedPreview(), filename: "video-finished.png")
     try save(VideoPreview(), filename: "video-ui.png")
+    try save(ColorSchemesPreview(), filename: "color-schemes.png", width: comparisonWidth, height: comparisonHeight)
     try writeAssetManifest()
 }

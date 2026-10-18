@@ -42,3 +42,5 @@ To build, open `Alphane.xcodeproj` in Xcode and select the `Alphane tvOS` scheme
 Report issues and follow development in [this repository](https://github.com/neogucky/alphane).
 
 Alphane is a fork of [Swiftfin](https://github.com/jellyfin/Swiftfin), built by Jellyfin and its contributors, and retains its [Mozilla Public License 2.0](LICENSE.md) and source attribution.
+
+![No accent (default), Aqua and Amber color schemes](./readme/color-schemes.png)

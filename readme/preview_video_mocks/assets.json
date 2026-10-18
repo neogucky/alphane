@@ -1,7 +1,14 @@
 {
   "artworkGeneratedOn" : "2026-10-12",
   "catalog" : "catalog.json",
+  "comparisonColorThemes" : [
+    "noAccent",
+    "aqua",
+    "amber"
+  ],
+  "defaultColorTheme" : "noAccent",
   "initialLayoutReferenceCommit" : "197123acb757a6643b0bcb672fff1fd3916da847",
+  "layoutReferenceCommit" : "4998af095e2f1eadd47ad16eff9748f6630e85b9",
   "media" : [
     {
       "bytes" : 2762156,
@@ -196,12 +203,12 @@
   "pathsRelativeTo" : "readme/preview_video_mocks",
   "previews" : [
     {
-      "bytes" : 3334928,
+      "bytes" : 3334413,
       "generator" : "render_previews.swift / SwiftUI ImageRenderer",
       "height" : 1080,
       "id" : "home",
       "path" : "../home.png",
-      "sha256" : "7f207823c2911e56e8c1b1bff9b69f96dc35a0e915b4b8825f06752b1bfa4744",
+      "sha256" : "9bef6de3eed97ef00d5591ef8e4bdbac523d1456d38ed15eeb943ebe1e4146ae",
       "width" : 1920
     },
     {
@@ -214,23 +221,33 @@
       "width" : 1920
     },
     {
-      "bytes" : 3334748,
+      "bytes" : 3335488,
       "generator" : "render_previews.swift / SwiftUI ImageRenderer",
       "height" : 1080,
       "id" : "video-finished",
       "path" : "../video-finished.png",
-      "sha256" : "a493ede1d93d9220805f0988ec37f0c929a680c5d1a4ec515ef8d3ea1ad4ede4",
+      "sha256" : "434d7648673a0cadfed37b3c255b749b934ff13890f3b0ed4c782db894b4a03e",
       "width" : 1920
     },
     {
-      "bytes" : 2986992,
+      "bytes" : 2986865,
       "generator" : "render_previews.swift / SwiftUI ImageRenderer",
       "height" : 1080,
       "id" : "video-ui",
       "path" : "../video-ui.png",
-      "sha256" : "f78ccc575fa5fb72a9a170b8f6bf4f409c20e1ae895bcc64bbf076134b9d8124",
+      "sha256" : "c1ec853b28b972a3f33ffa620a2e856d31261289857e0cd48b41a3fa6bb120f4",
       "width" : 1920
+    },
+    {
+      "bytes" : 944814,
+      "generator" : "render_previews.swift / SwiftUI ImageRenderer",
+      "height" : 780,
+      "id" : "color-schemes",
+      "path" : "../color-schemes.png",
+      "sha256" : "ef249b59df54db5e80e1350c12a6ff432a6fb2636c3cf6acf62a5024e3ccfe83",
+      "width" : 2880
     }
   ],
+  "previewsUpdatedOn" : "2026-10-18",
   "promptSet" : "prompts.json"
 }
