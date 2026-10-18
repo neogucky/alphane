@@ -1,13 +1,16 @@
 /* Shared visual language: AlphaneTheme.swift. Keep artwork in charge. */
 :root {
   --alphane-background: #181a1d;
-  --alphane-surface: #22262c;
+  --alphane-surface: #282b30;
   --alphane-raised: #282b30;
-  --alphane-text: #f3f4f6;
+  --alphane-text: #ffffff;
   --alphane-control-active: #ffffffcc;
   --alphane-control-highlight: #ffffff;
-  --alphane-secondary: #b2b8c1;
-  --alphane-accent: #6ad6ca;
+  --alphane-secondary: #ffffffcc;
+  /* No accent is the default, matching the README's neutral TV previews. */
+  --alphane-accent: #ffffff;
+  --alphane-accent-channel: 255 255 255;
+  --alphane-accent-track: #ffffff33;
   --alphane-line: #ffffff14;
   --alphane-radius: 12px;
   --alphane-gutter: clamp(20px, 4vw, 64px);
@@ -19,16 +22,22 @@
   --jf-palette-background-defaultImage: none !important;
   --jf-palette-text-primary: var(--alphane-text) !important;
   --jf-palette-text-secondary: var(--alphane-secondary) !important;
-  --jf-palette-text-disabled: #79818e !important;
+  --jf-palette-text-disabled: #ffffff4d !important;
   --jf-palette-divider: var(--alphane-line) !important;
-  --jf-palette-primary-main: #f3f4f6 !important;
-  --jf-palette-primary-mainChannel: 243 244 246 !important;
+  --jf-palette-primary-main: #ffffff !important;
+  --jf-palette-primary-mainChannel: 255 255 255 !important;
   --jf-palette-primary-light: #ffffff !important;
-  --jf-palette-primary-dark: #d8dde5 !important;
+  --jf-palette-primary-dark: #cccccc !important;
   --jf-palette-primary-contrastText: #181a1d !important;
-  --jf-palette-secondary-main: #f3f4f6 !important;
-  --jf-palette-secondary-mainChannel: 243 244 246 !important;
+  --jf-palette-secondary-main: #ffffff !important;
+  --jf-palette-secondary-mainChannel: 255 255 255 !important;
   --jf-palette-secondary-contrastText: #181a1d !important;
+  --jf-palette-info-main: var(--alphane-accent) !important;
+  --jf-palette-info-mainChannel: var(--alphane-accent-channel) !important;
+  --jf-palette-info-contrastText: #181a1d !important;
+  --jf-palette-success-main: var(--alphane-accent) !important;
+  --jf-palette-success-mainChannel: var(--alphane-accent-channel) !important;
+  --jf-palette-success-contrastText: #181a1d !important;
   --jf-palette-AppBar-defaultBg: #181a1df5 !important;
   --jf-palette-AppBar-darkBg: #181a1df5 !important;
   --jf-palette-AppBar-transparentBg: #181a1de6 !important;
@@ -38,5 +47,17 @@
   --jf-palette-action-selected: #ffffff12 !important;
   --jf-palette-action-focus: #ffffff20 !important;
   --jf-card-borderRadius: var(--alphane-radius) !important;
-  --jf-palette-Tooltip-bg: #30353c !important;
+  --jf-palette-Tooltip-bg: #303030 !important;
+}
+/* Existing Jellyfin theme IDs retain their native CSS/React modules and saved
+   preferences. configure-web.mjs gives these slots their Alphane labels. */
+:root[data-theme="blueradiance"] {
+  --alphane-accent: #6ad6ca;
+  --alphane-accent-channel: 106 214 202;
+  --alphane-accent-track: #6ad6ca33;
+}
+:root[data-theme="purplehaze"] {
+  --alphane-accent: #e1b471;
+  --alphane-accent-channel: 225 180 113;
+  --alphane-accent-track: #e1b47133;
 }

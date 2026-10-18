@@ -43,7 +43,7 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
   mask: var(--alphane-symbol) center / contain no-repeat;
   -webkit-mask: var(--alphane-symbol) center / contain no-repeat;
 }
-.MuiAppBar-root .MuiIconButton-root { color: #c4cbd5; }
+.MuiAppBar-root .MuiIconButton-root { color: var(--alphane-secondary); }
 .MuiAppBar-root .MuiIconButton-root:hover { color: #fff; background: #ffffff0c; }
 /* Library actions share the app bar with navigation. MUI joins grouped buttons
    with divider borders; independent pills need a gap and complete rounded edges. */

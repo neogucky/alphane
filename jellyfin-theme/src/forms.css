@@ -1,13 +1,13 @@
 .emby-input, .emby-textarea, .emby-select-withcolor,
 .MuiOutlinedInput-root {
   color: var(--alphane-text);
-  background: #1d2127;
+  background: #ffffff06;
   border-color: #ffffff26;
   border-radius: 9px;
 }
-.emby-input:focus, .emby-textarea:focus, .emby-select:focus { border-color: #b7c3d5; }
+.emby-input:focus, .emby-textarea:focus, .emby-select:focus { border-color: var(--alphane-control-active); }
 .MuiOutlinedInput-notchedOutline { border-color: #ffffff26; }
-.inputLabel, .selectLabel, .textareaLabel { color: #d6dbe3; font-weight: 550; font-size: .9rem; }
+.inputLabel, .selectLabel, .textareaLabel { color: var(--alphane-secondary); font-weight: 550; font-size: .9rem; }
 .inputLabelFocused, .selectLabelFocused, .textareaLabelFocused { color: var(--alphane-text); }
 .raised, .button-submit, .MuiButton-containedPrimary {
   background: var(--alphane-control-active); color: #181a1d;
@@ -74,8 +74,8 @@
     color: var(--alphane-background);
   }
 }
-.checkboxOutline { border-radius: 4px; border-color: #7b8798; }
-.emby-checkbox:checked + span + .checkboxOutline { background: #e5eaf1; color: #181a1d; border-color: #e5eaf1; }
+.checkboxOutline { border-radius: 4px; border-color: #ffffff80; }
+.emby-checkbox:checked + span + .checkboxOutline { background: var(--alphane-accent); color: #181a1d; border-color: var(--alphane-accent); }
 .collapseContent, .paperList, .dashboardSection .cardBox { background: var(--alphane-surface); border-radius: 10px; }
 /* The login view retains its native fields and account selection. */
 #loginPage .readOnlyContent, #loginPage .padded-left.padded-right.padded-bottom-page {

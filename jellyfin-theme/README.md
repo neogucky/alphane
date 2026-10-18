@@ -1,6 +1,6 @@
 # Alphane for Jellyfin Web
 
-A self-contained dark theme for Jellyfin Web, based on Alphane's Apple TV design: neutral charcoal surfaces, white selected controls, landscape artwork, clear focus outlines, and aqua progress indicators. The first release targets Jellyfin **12.1** and covers modern navigation plus legacy library, detail, login, player and admin components.
+A self-contained dark theme for Jellyfin Web, based on Alphane's Apple TV design: neutral charcoal surfaces, white selected controls, landscape artwork and clear focus outlines. **No accent** is the default, with white/grey progress and neutral state indicators. Optional **Aqua** and **Amber** modes add colour to progress and small state cues while retaining white focus controls. The theme targets Jellyfin **12.1** and covers modern navigation plus legacy library, detail, login, player and admin components.
 
 This is a CSS theme, not a replacement player or a fork of Jellyfin Web. Continue Watching, Next Up, discovery, account permissions and metadata operations keep their existing behavior. The Apple TV app and other native clients are unaffected. The TV app's selected-item hero and randomized discovery rows are future application features, not part of this stylesheet.
 
@@ -51,6 +51,28 @@ npm run rollback -- /absolute/path/to/branding-backup.json
 
 Rollback verifies the backup hash, restores its CSS and preserves other branding settings as they currently stand. Every operation first backs up the current CSS, so rollback can itself be reversed.
 
+## Colour choices
+
+The neutral design follows the default screenshots in README revision `854d54f` (2026-10-18). It uses the TV app's `#181A1D` background, `#282B30` surfaces, 80% white secondary text, white progress and neutral watched/favourite indicators. Colour does not carry state alone: filled watched/favourite glyphs and filter badges retain their native meaning. Error and warning colours remain semantic.
+
+To expose the three presets in Jellyfin's native **Settings → Display → Theme** dropdown, generate an updated Web configuration:
+
+```sh
+node scripts/configure-web.mjs existing-config.json alphane-config.json
+```
+
+Keep the input for rollback, then install the output as Jellyfin Web's `config.json`. In Docker, bind-mount the file read-only at `/jellyfin/jellyfin-web/config.json`, as described in Jellyfin's [Web configuration documentation](https://jellyfin.org/docs/general/clients/web-config/). This configuration step is separate from the CSS-only deployment command. The configurator preserves plugins, servers, menu links, extra theme fields and other theme options. It refuses to overwrite the input or an existing output.
+
+| Display choice | Native theme ID | Progress / state colour |
+| --- | --- | --- |
+| Alphane - No accent (default) | `dark` | White |
+| Alphane - Aqua | `blueradiance` | `#6AD6CA` |
+| Alphane - Amber | `purplehaze` | `#E1B471` |
+
+These existing IDs keep Jellyfin's bundled React and legacy theme modules compatible. The CSS responds to Jellyfin's native `data-theme` attribute; no custom theme module or injected JavaScript is installed. Under Alphane's server CSS, the other built-in choices use the neutral palette.
+
+Select a colour choice and press **Save**. Jellyfin stores its app theme for that user in the current browser/device; it survives refreshes but does not synchronize with the tvOS preference or other browsers. **Server Dashboard theme** is a separate native setting and offers the same choices. A configuration-only installation keeps the existing CSS, so install both pieces together. Browser-only Custom CSS can also override `--alphane-accent`, `--alphane-accent-channel` and `--alphane-accent-track` for a custom colour.
+
 ## Browser checks
 
 ```sh
@@ -72,7 +94,7 @@ Live screenshots can contain private library information and are written only to
 
 The theme uses Jellyfin's public palette variables, stable component classes and MUI utility classes; it avoids generated `css-*` selectors. A scoped 12.1 adjustment removes the obsolete legacy Home tab offset underneath the modern app bar. Custom carousels clip to their own viewport while retaining Jellyfin's transform-based scrolling. Native hidden/disabled states and admin actions remain intact.
 
-Watch-progress cards use the TV app's 6px aqua capsule, 5px artwork inset and subdued track. Jellyfin's foreground retains its actual watched percentage. The installed library artwork has square cream frames embedded in the images; the scoped `MyMedia .coveredImage` rule crops those frames and keeps the shortcuts borderless, with the shared white selection ring on hover or keyboard focus. Adapt that crop if replacing the library artwork with a different style.
+Watch-progress cards use the TV app's 6px capsule, 5px artwork inset and subdued track. The colour follows the selected mode; Jellyfin's foreground retains its actual watched percentage. The installed library artwork has square cream frames embedded in the images; the scoped `MyMedia .coveredImage` rule crops those frames and keeps the shortcuts borderless, with the shared white selection ring on hover or keyboard focus. Adapt that crop if replacing the library artwork with a different style.
 
 Library toolbar actions have separate rounded hit areas and no joined divider borders. Inactive controls show white text or icons; active controls use 80% white pills, while hover and keyboard focus use full white. Active-filter badges, selected menu items and horizontal segmented controls use the same treatment. Primary actions also brighten from 80% to full white, including actions inside the app bar. Native disabled states remain dimmed. The header shows the bundled Alphane symbol beside the server name and inverts it with the label when highlighted.
 

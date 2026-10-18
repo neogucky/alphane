@@ -25,7 +25,7 @@
   height: 6px;
   border-radius: 999px;
   overflow: hidden;
-  background: #6ad6ca33;
+  background: var(--alphane-accent-track);
   box-shadow: inset 0 0 0 .5px #ffffff2e;
 }
 .card .itemProgressBarForeground { height: 100%; border-radius: inherit; background: var(--alphane-accent); }
@@ -64,7 +64,7 @@
 .verticalSection { margin-block-end: 18px; }
 .sectionTitleContainer { margin-block-end: 14px; }
 .itemsContainer { padding-block: 5px 8px; }
-.emby-scroller { scrollbar-color: #59616e transparent; }
+.emby-scroller { scrollbar-color: #ffffff40 transparent; }
 .emby-scroller[data-scroll-mode-x="custom"] { overflow: hidden; }
 .homeSectionsContainer { padding-block: 24px 32px; }
 .homePage .section0 .sectionTitle { color: var(--alphane-secondary); font-size: .85rem; letter-spacing: .015em; }

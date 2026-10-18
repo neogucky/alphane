@@ -24,7 +24,7 @@ test('library actions have separate complete hit areas and invert on selection',
   for (let i = 1; i < boxes.length; i++) expect(boxes[i].x - boxes[i-1].x - boxes[i-1].width).toBeGreaterThanOrEqual(6);
   const filter = toolbar.getByRole('button', { name: 'Filter', exact: true });
   await expect(filter).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(filter).toHaveCSS('color', 'rgb(243, 244, 246)');
+  await expect(filter).toHaveCSS('color', 'rgb(255, 255, 255)');
   const before = await filter.boundingBox();
   await page.keyboard.press('Tab'); await filter.focus();
   await expect(filter).toHaveCSS('background-color', 'rgb(255, 255, 255)');
@@ -99,10 +99,10 @@ test('identification and metadata dialogs remain accessible', async ({ page }) =
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 });
-test('progress has the aqua accent and essential player controls remain visible', async ({ page }) => {
+test('neutral progress matches the TV cards and essential player controls remain visible', async ({ page }) => {
   const track = page.locator('.itemProgressBar').first(), fill = track.locator('.itemProgressBarForeground');
-  await expect(fill).toHaveCSS('background-color', 'rgb(106, 214, 202)');
-  await expect(track).toHaveCSS('background-color', 'rgba(106, 214, 202, 0.2)');
+  await expect(fill).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(track).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.2)');
   await expect(track).toHaveCSS('height', '6px');
   const image = await page.locator('.cardImageContainer').first().boundingBox(), bar = await track.boundingBox();
   expect(bar.x - image.x).toBeCloseTo(5, 1); expect(image.y + image.height - bar.y - bar.height).toBeCloseTo(5, 1);
@@ -115,6 +115,34 @@ test('progress has the aqua accent and essential player controls remain visible'
   await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Audio', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Subtitles', exact: true })).toBeVisible();
+});
+test('colour modes update progress and state cues while focus stays white', async ({ page }) => {
+  const fill = page.locator('.itemProgressBarForeground').first();
+  const before = await fill.boundingBox();
+  await page.evaluate(() => {
+    const sample = document.createElement('div');
+    sample.innerHTML = '<span class="playedIndicator">✓</span><span class="ratingbutton-icon-withrating">♥</span>';
+    document.body.append(sample);
+  });
+  const modes = [
+    ['blueradiance', 'rgb(106, 214, 202)', 'rgba(106, 214, 202, 0.2)'],
+    ['purplehaze', 'rgb(225, 180, 113)', 'rgba(225, 180, 113, 0.2)'],
+    ['dark', 'rgb(255, 255, 255)', 'rgba(255, 255, 255, 0.2)']
+  ];
+  for (const [id, colour, track] of modes) {
+    await page.getByRole('combobox', { name: 'Colour scheme' }).selectOption(id);
+    await expect(fill).toHaveCSS('background-color', colour);
+    await expect(page.locator('.itemProgressBar').first()).toHaveCSS('background-color', track);
+    await expect(page.locator('.progress-preview')).toHaveCSS('background-color', colour);
+    await expect(page.locator('.playedIndicator')).toHaveCSS('background-color', colour);
+    await expect(page.locator('.ratingbutton-icon-withrating')).toHaveCSS('color', colour);
+    const after = await fill.boundingBox();
+    expect(after.width).toBe(before.width); expect(after.height).toBe(before.height);
+    const filter = page.getByRole('button', { name: 'Filter', exact: true });
+    await page.keyboard.press('Tab'); await filter.focus();
+    await expect(filter).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
+  }
 });
 test('reduced-motion preference removes card transitions', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });

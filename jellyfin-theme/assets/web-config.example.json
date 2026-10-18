@@ -1,4 +1,9 @@
 {
+  "themes": [
+    { "name": "Alphane - No accent", "id": "dark", "color": "#181a1d", "default": true },
+    { "name": "Alphane - Aqua", "id": "blueradiance", "color": "#181a1d" },
+    { "name": "Alphane - Amber", "id": "purplehaze", "color": "#181a1d" }
+  ],
   "menuLinks": [
     { "name": "Alphane home", "url": "https://your-server.example/", "icon": "home" }
   ]

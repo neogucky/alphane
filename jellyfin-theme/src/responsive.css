@@ -29,6 +29,6 @@
   .cardScalable, .cardImageContainer, .emby-tab-button, .MuiButton-root { transition: none !important; }
 }
 @media (prefers-contrast: more) {
-  :root { --alphane-secondary: #dde2e9; --alphane-line: #ffffff50; }
-  .cardText-secondary { color: #dde2e9; }
+  :root { --alphane-secondary: #ffffff; --alphane-line: #ffffff50; }
+  .cardText-secondary { color: #ffffff; }
 }

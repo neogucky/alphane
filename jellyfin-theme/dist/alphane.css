@@ -3,13 +3,16 @@
 /* Shared visual language: AlphaneTheme.swift. Keep artwork in charge. */
 :root {
   --alphane-background: #181a1d;
-  --alphane-surface: #22262c;
+  --alphane-surface: #282b30;
   --alphane-raised: #282b30;
-  --alphane-text: #f3f4f6;
+  --alphane-text: #ffffff;
   --alphane-control-active: #ffffffcc;
   --alphane-control-highlight: #ffffff;
-  --alphane-secondary: #b2b8c1;
-  --alphane-accent: #6ad6ca;
+  --alphane-secondary: #ffffffcc;
+  /* No accent is the default, matching the README's neutral TV previews. */
+  --alphane-accent: #ffffff;
+  --alphane-accent-channel: 255 255 255;
+  --alphane-accent-track: #ffffff33;
   --alphane-line: #ffffff14;
   --alphane-radius: 12px;
   --alphane-gutter: clamp(20px, 4vw, 64px);
@@ -21,16 +24,22 @@
   --jf-palette-background-defaultImage: none !important;
   --jf-palette-text-primary: var(--alphane-text) !important;
   --jf-palette-text-secondary: var(--alphane-secondary) !important;
-  --jf-palette-text-disabled: #79818e !important;
+  --jf-palette-text-disabled: #ffffff4d !important;
   --jf-palette-divider: var(--alphane-line) !important;
-  --jf-palette-primary-main: #f3f4f6 !important;
-  --jf-palette-primary-mainChannel: 243 244 246 !important;
+  --jf-palette-primary-main: #ffffff !important;
+  --jf-palette-primary-mainChannel: 255 255 255 !important;
   --jf-palette-primary-light: #ffffff !important;
-  --jf-palette-primary-dark: #d8dde5 !important;
+  --jf-palette-primary-dark: #cccccc !important;
   --jf-palette-primary-contrastText: #181a1d !important;
-  --jf-palette-secondary-main: #f3f4f6 !important;
-  --jf-palette-secondary-mainChannel: 243 244 246 !important;
+  --jf-palette-secondary-main: #ffffff !important;
+  --jf-palette-secondary-mainChannel: 255 255 255 !important;
   --jf-palette-secondary-contrastText: #181a1d !important;
+  --jf-palette-info-main: var(--alphane-accent) !important;
+  --jf-palette-info-mainChannel: var(--alphane-accent-channel) !important;
+  --jf-palette-info-contrastText: #181a1d !important;
+  --jf-palette-success-main: var(--alphane-accent) !important;
+  --jf-palette-success-mainChannel: var(--alphane-accent-channel) !important;
+  --jf-palette-success-contrastText: #181a1d !important;
   --jf-palette-AppBar-defaultBg: #181a1df5 !important;
   --jf-palette-AppBar-darkBg: #181a1df5 !important;
   --jf-palette-AppBar-transparentBg: #181a1de6 !important;
@@ -40,7 +49,19 @@
   --jf-palette-action-selected: #ffffff12 !important;
   --jf-palette-action-focus: #ffffff20 !important;
   --jf-card-borderRadius: var(--alphane-radius) !important;
-  --jf-palette-Tooltip-bg: #30353c !important;
+  --jf-palette-Tooltip-bg: #303030 !important;
+}
+/* Existing Jellyfin theme IDs retain their native CSS/React modules and saved
+   preferences. configure-web.mjs gives these slots their Alphane labels. */
+:root[data-theme="blueradiance"] {
+  --alphane-accent: #6ad6ca;
+  --alphane-accent-channel: 106 214 202;
+  --alphane-accent-track: #6ad6ca33;
+}
+:root[data-theme="purplehaze"] {
+  --alphane-accent: #e1b471;
+  --alphane-accent-channel: 225 180 113;
+  --alphane-accent-track: #e1b47133;
 }
 
 /* base.css */
@@ -67,13 +88,14 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: #ffffff14; }
 }
 .sectionTitle, .sectionTitleTextButton { font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
 .secondary, .secondaryText, .fieldDescription { color: var(--alphane-secondary); }
-/* Aqua is reserved for progress and small status marks, as on Apple TV. */
-.itemProgressBarForeground, .playedIndicator { background: var(--alphane-accent); color: #132724; }
-.countIndicator { background: #20252ee6; color: var(--alphane-text); border: 1px solid #ffffff28; }
-* { scrollbar-color: #59616e transparent; scrollbar-width: thin; }
+/* Colour modes affect progress and state cues; focus pills always stay white. */
+.itemProgressBarForeground, .playedIndicator { background: var(--alphane-accent); color: #181a1d; }
+.ratingbutton-icon-withrating { color: var(--alphane-accent) !important; }
+.countIndicator { background: #282b30e6; color: var(--alphane-text); border: 1px solid #ffffff28; }
+* { scrollbar-color: #ffffff40 transparent; scrollbar-width: thin; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-track-piece { background: transparent; box-shadow: none; }
-::-webkit-scrollbar-thumb { border-radius: 8px; background: #59616e; }
+::-webkit-scrollbar-thumb { border-radius: 8px; background: #ffffff40; }
 
 /* navigation.css */
 .MuiAppBar-root {
@@ -121,7 +143,7 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
   mask: var(--alphane-symbol) center / contain no-repeat;
   -webkit-mask: var(--alphane-symbol) center / contain no-repeat;
 }
-.MuiAppBar-root .MuiIconButton-root { color: #c4cbd5; }
+.MuiAppBar-root .MuiIconButton-root { color: var(--alphane-secondary); }
 .MuiAppBar-root .MuiIconButton-root:hover { color: #fff; background: #ffffff0c; }
 /* Library actions share the app bar with navigation. MUI joins grouped buttons
    with divider borders; independent pills need a gap and complete rounded edges. */
@@ -234,7 +256,7 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
   height: 6px;
   border-radius: 999px;
   overflow: hidden;
-  background: #6ad6ca33;
+  background: var(--alphane-accent-track);
   box-shadow: inset 0 0 0 .5px #ffffff2e;
 }
 .card .itemProgressBarForeground { height: 100%; border-radius: inherit; background: var(--alphane-accent); }
@@ -273,7 +295,7 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .verticalSection { margin-block-end: 18px; }
 .sectionTitleContainer { margin-block-end: 14px; }
 .itemsContainer { padding-block: 5px 8px; }
-.emby-scroller { scrollbar-color: #59616e transparent; }
+.emby-scroller { scrollbar-color: #ffffff40 transparent; }
 .emby-scroller[data-scroll-mode-x="custom"] { overflow: hidden; }
 .homeSectionsContainer { padding-block: 24px 32px; }
 .homePage .section0 .sectionTitle { color: var(--alphane-secondary); font-size: .85rem; letter-spacing: .015em; }
@@ -299,7 +321,7 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 }
 .detailPagePrimaryContainer .nameContainer h1,
 .detailPagePrimaryContainer .itemName { font-weight: 700; letter-spacing: -.045em; line-height: 1.1; }
-.detailPagePrimaryContainer .overview { color: #d3d7dd; line-height: 1.7; max-width: 65ch; }
+.detailPagePrimaryContainer .overview { color: var(--alphane-secondary); line-height: 1.7; max-width: 65ch; }
 .detailPagePrimaryContainer .itemMiscInfo { color: var(--alphane-secondary); gap: 8px; }
 .detailPagePrimaryContainer .itemTags { opacity: .8; }
 .detailPagePrimaryContainer .detailButton { border-radius: 999px; }
@@ -325,9 +347,12 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
   padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
 .videoOsdBottom .nowPlayingBarMainText { font-weight: 650; letter-spacing: -.025em; }
-.videoOsdBottom .nowPlayingBarSecondaryText, .videoOsdBottom .osdTextContainer { color: #e5e7eb; }
-.videoOsdBottom .paper-icon-button-light { border-radius: 999px; color: #f3f4f6; }
-.videoOsdBottom .paper-icon-button-light:hover { background: #ffffff18; }
+.videoOsdBottom .nowPlayingBarSecondaryText, .videoOsdBottom .osdTextContainer { color: var(--alphane-secondary); }
+.videoOsdBottom .paper-icon-button-light { border-radius: 999px; color: var(--alphane-secondary); }
+.videoOsdBottom .paper-icon-button-light:focus-visible { background: var(--alphane-control-highlight); color: #181a1d; }
+@media (hover: hover) and (pointer: fine) {
+  .videoOsdBottom .paper-icon-button-light:hover { background: var(--alphane-control-highlight); color: #181a1d; }
+}
 .videoOsdBottom .sliderContainer { color: var(--alphane-accent); }
 .videoOsdBottom .mdl-slider-background-lower, .videoOsdBottom .sliderBubble,
 .videoOsdBottom .mdl-slider::-webkit-slider-thumb { background: var(--alphane-accent); }
@@ -335,19 +360,19 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .videoOsdBottom .mdl-slider-background-upper { background: #ffffff24; }
 .videoOsdBottom .mdl-slider-container { border-radius: 999px; }
 .videoOsdBottom .osdTimeText { font-variant-numeric: tabular-nums; font-size: .85rem; }
-.upNextContainer { background: #22262cf5; border: 1px solid #ffffff20; border-radius: 14px; box-shadow: 0 12px 40px #0005; }
+.upNextContainer { background: #282b30f5; border: 1px solid #ffffff20; border-radius: 14px; box-shadow: 0 12px 40px #0005; }
 
 /* forms.css */
 .emby-input, .emby-textarea, .emby-select-withcolor,
 .MuiOutlinedInput-root {
   color: var(--alphane-text);
-  background: #1d2127;
+  background: #ffffff06;
   border-color: #ffffff26;
   border-radius: 9px;
 }
-.emby-input:focus, .emby-textarea:focus, .emby-select:focus { border-color: #b7c3d5; }
+.emby-input:focus, .emby-textarea:focus, .emby-select:focus { border-color: var(--alphane-control-active); }
 .MuiOutlinedInput-notchedOutline { border-color: #ffffff26; }
-.inputLabel, .selectLabel, .textareaLabel { color: #d6dbe3; font-weight: 550; font-size: .9rem; }
+.inputLabel, .selectLabel, .textareaLabel { color: var(--alphane-secondary); font-weight: 550; font-size: .9rem; }
 .inputLabelFocused, .selectLabelFocused, .textareaLabelFocused { color: var(--alphane-text); }
 .raised, .button-submit, .MuiButton-containedPrimary {
   background: var(--alphane-control-active); color: #181a1d;
@@ -414,8 +439,8 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
     color: var(--alphane-background);
   }
 }
-.checkboxOutline { border-radius: 4px; border-color: #7b8798; }
-.emby-checkbox:checked + span + .checkboxOutline { background: #e5eaf1; color: #181a1d; border-color: #e5eaf1; }
+.checkboxOutline { border-radius: 4px; border-color: #ffffff80; }
+.emby-checkbox:checked + span + .checkboxOutline { background: var(--alphane-accent); color: #181a1d; border-color: var(--alphane-accent); }
 .collapseContent, .paperList, .dashboardSection .cardBox { background: var(--alphane-surface); border-radius: 10px; }
 /* The login view retains its native fields and account selection. */
 #loginPage .readOnlyContent, #loginPage .padded-left.padded-right.padded-bottom-page {
@@ -457,6 +482,6 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
   .cardScalable, .cardImageContainer, .emby-tab-button, .MuiButton-root { transition: none !important; }
 }
 @media (prefers-contrast: more) {
-  :root { --alphane-secondary: #dde2e9; --alphane-line: #ffffff50; }
-  .cardText-secondary { color: #dde2e9; }
+  :root { --alphane-secondary: #ffffff; --alphane-line: #ffffff50; }
+  .cardText-secondary { color: #ffffff; }
 }

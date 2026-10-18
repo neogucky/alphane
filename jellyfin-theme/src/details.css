@@ -6,7 +6,7 @@
 }
 .detailPagePrimaryContainer .nameContainer h1,
 .detailPagePrimaryContainer .itemName { font-weight: 700; letter-spacing: -.045em; line-height: 1.1; }
-.detailPagePrimaryContainer .overview { color: #d3d7dd; line-height: 1.7; max-width: 65ch; }
+.detailPagePrimaryContainer .overview { color: var(--alphane-secondary); line-height: 1.7; max-width: 65ch; }
 .detailPagePrimaryContainer .itemMiscInfo { color: var(--alphane-secondary); gap: 8px; }
 .detailPagePrimaryContainer .itemTags { opacity: .8; }
 .detailPagePrimaryContainer .detailButton { border-radius: 999px; }

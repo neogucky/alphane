@@ -3,12 +3,17 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { root } from '../scripts/build.mjs';
 import { expectArtworkRing } from './helpers/selection.mjs';
+import { configureWebThemes } from '../scripts/configure-web.mjs';
 
 const server = process.env.ALPHANE_SERVER;
 test.describe('Jellyfin integration', () => {
   test.skip(!server || !process.env.ALPHANE_USERNAME || !process.env.ALPHANE_PASSWORD, 'Optional: supply a server and test account.');
   test.beforeEach(async ({ page }) => {
     if (process.env.ALPHANE_PREVIEW === '1') {
+      await page.route(/\/web\/config\.json(?:\?|$)/i, async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, json: configureWebThemes(await response.json()) });
+      });
       const css = await readFile(path.join(root, 'dist/alphane.css'), 'utf8');
       await page.route(/\/Branding\/Css(?:\.css)?(?:\?|$)/i, route => route.fulfill({ contentType: 'text/css', body: css }));
       await page.route(/\/Branding\/Configuration(?:\?|$)/i, async route => {
@@ -139,8 +144,8 @@ test.describe('Jellyfin integration', () => {
     await fill.scrollIntoViewIfNeeded();
     const track = fill.locator('..');
     const artwork = card.locator('.cardImageContainer');
-    await expect(fill).toHaveCSS('background-color', 'rgb(106, 214, 202)');
-    await expect(track).toHaveCSS('background-color', 'rgba(106, 214, 202, 0.2)');
+    await expect(fill).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(track).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.2)');
     const image = await artwork.boundingBox(), bar = await track.boundingBox();
     expect(bar.height).toBe(6);
     expect(bar.x - image.x).toBeCloseTo(5, 1);
@@ -250,5 +255,47 @@ test.describe('Jellyfin integration', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
     await page.locator('.card[data-type="BoxSet"]').first().waitFor();
     await page.screenshot({ path: testInfo.outputPath('collection-primary-action.png') });
+  });
+  test('native Display choices save colour modes and survive reload', async ({ page }, testInfo) => {
+    await page.locator('.homePage .cardImageContainer').first().waitFor();
+    const userId = await page.evaluate(() => window.ApiClient.getCurrentUserId());
+    const address = server.replace(/\/$/, '') + '/web/#/mypreferencesdisplay?userId=' + userId;
+    await page.goto(address);
+    const choice = page.locator('#mui-component-select-theme');
+    await expect(choice).toBeVisible();
+    const original = await page.locator('input[name="theme"]').inputValue();
+    const choose = async (id) => {
+      await choice.click();
+      await page.locator('[role="option"][data-value="' + id + '"]').click();
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', id);
+    };
+    try {
+      for (const [id, name, accent, colour] of [['blueradiance', 'Aqua', '#6ad6ca', 'rgb(106, 214, 202)'], ['purplehaze', 'Amber', '#e1b471', 'rgb(225, 180, 113)'], ['dark', 'No accent', '#ffffff', 'rgb(255, 255, 255)']]) {
+        await choose(id);
+        await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--alphane-accent').trim())).toBe(accent);
+        await expect(choice).toHaveText('Alphane - ' + name);
+        // Native appTheme is stored locally for this browser/profile.
+        await page.reload();
+        await expect(choice).toHaveText('Alphane - ' + name);
+        await expect(page.locator('html')).toHaveAttribute('data-theme', id);
+        await page.goto(server.replace(/\/$/, '') + '/web/#/home');
+        const progress = page.locator('.homePage .ContinueWatching .itemProgressBarForeground').first();
+        await expect(progress).toHaveCSS('background-color', colour);
+        if (id === 'dark') {
+          const artwork = page.locator('.homePage .MyMedia .cardImageContainer.coveredImage').first();
+          await expect(artwork).toHaveCSS('background-image', /\/Images\/Primary/i);
+          await page.screenshot({ path: testInfo.outputPath('home-no-accent.png') });
+        }
+        await page.goto(address);
+        await expect(choice).toHaveText('Alphane - ' + name);
+      }
+      await page.screenshot({ path: testInfo.outputPath('display-colour-modes.png') });
+    } finally {
+      await choose(original);
+      await page.reload();
+      await expect(page.locator('input[name="theme"]')).toHaveValue(original);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
   });
 });

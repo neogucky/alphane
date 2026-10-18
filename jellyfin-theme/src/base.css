@@ -21,10 +21,11 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: #ffffff14; }
 }
 .sectionTitle, .sectionTitleTextButton { font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
 .secondary, .secondaryText, .fieldDescription { color: var(--alphane-secondary); }
-/* Aqua is reserved for progress and small status marks, as on Apple TV. */
-.itemProgressBarForeground, .playedIndicator { background: var(--alphane-accent); color: #132724; }
-.countIndicator { background: #20252ee6; color: var(--alphane-text); border: 1px solid #ffffff28; }
-* { scrollbar-color: #59616e transparent; scrollbar-width: thin; }
+/* Colour modes affect progress and state cues; focus pills always stay white. */
+.itemProgressBarForeground, .playedIndicator { background: var(--alphane-accent); color: #181a1d; }
+.ratingbutton-icon-withrating { color: var(--alphane-accent) !important; }
+.countIndicator { background: #282b30e6; color: var(--alphane-text); border: 1px solid #ffffff28; }
+* { scrollbar-color: #ffffff40 transparent; scrollbar-width: thin; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-track-piece { background: transparent; box-shadow: none; }
-::-webkit-scrollbar-thumb { border-radius: 8px; background: #59616e; }
+::-webkit-scrollbar-thumb { border-radius: 8px; background: #ffffff40; }
