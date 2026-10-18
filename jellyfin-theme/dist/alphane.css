@@ -151,6 +151,8 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .cardContent-shadow { box-shadow: 0 3px 12px #00000018; }
 .cardOverlayContainer { background: linear-gradient(180deg, transparent 30%, #101215b8); }
 .cardImageContainer { background-color: var(--alphane-raised); }
+/* Collection cards also use an empty full-size link over the actual image. */
+.cardOverlayContainer .cardImageContainer { background-color: transparent; }
 .cardImageContainer::after { border-radius: inherit; }
 .card .cardText { text-align: start !important; padding-inline: 2px; font-size: 1rem; }
 .cardText-first { color: var(--alphane-text); font-weight: 550; padding-top: 8px; }
