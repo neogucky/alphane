@@ -55,11 +55,12 @@ test.describe('Jellyfin integration', () => {
     }
     await page.screenshot({ path: testInfo.outputPath('home.png') });
   });
-  test('header uses text labels and padded highlights without overflowing', async ({ page }, testInfo) => {
+  test('header uses the Alphane symbol and text labels without overflowing', async ({ page }, testInfo) => {
     const header = page.locator('header.MuiAppBar-root');
     await page.locator('.homePage .cardImageContainer').first().waitFor();
     const brand = header.locator('a[href="#/"]');
     await expect(brand.locator('.MuiButton-startIcon')).toBeHidden();
+    if (await brand.isVisible()) expect(await brand.evaluate(element => { const style = getComputedStyle(element, '::before'); return style.width === '24px' && style.maskImage.includes('data:image/png;base64,'); })).toBeTruthy();
     if (!testInfo.project.use.isMobile) {
       for (const width of [1440, 1200, 1024]) {
         await page.setViewportSize({ width, height: 1000 });
@@ -68,7 +69,8 @@ test.describe('Jellyfin integration', () => {
         await expect(movies.locator('.MuiButton-startIcon')).toBeHidden();
         await expect(movies).toHaveCSS('padding-left', width < 1200 ? '12px' : '24px');
         const before = await movies.boundingBox(); await movies.hover();
-        await expect(movies).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.094)');
+        await expect(movies).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+        await expect(movies).toHaveCSS('color', 'rgb(24, 26, 29)');
         expect(await movies.boundingBox()).toEqual(before);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
         const search = await header.locator('a[href="#/search"]').boundingBox();
@@ -76,8 +78,9 @@ test.describe('Jellyfin integration', () => {
         expect(lastLink.x + lastLink.width).toBeLessThanOrEqual(search.x);
       }
       await page.keyboard.press('Tab'); await brand.focus();
-      await expect(brand).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+      await expect(brand).toHaveCSS('background-color', 'rgb(255, 255, 255)');
       await expect(brand).toHaveCSS('color', 'rgb(24, 26, 29)');
+      expect(await brand.evaluate(element => getComputedStyle(element, '::before').backgroundColor)).toBe('rgb(24, 26, 29)');
     }
     await expect(header.locator('a[href="#/search"]')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
@@ -182,12 +185,12 @@ test.describe('Jellyfin integration', () => {
     await page.mouse.move(0, 0);
     await expect(filter).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await page.keyboard.press('Tab'); await filter.focus();
-    await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+    await expect(filter).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
     await filter.click();
     const popover = page.locator('#filter-popover');
     await expect(popover).toBeVisible();
-    await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+    await expect(filter).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
     await popover.getByRole('button', { name: 'Filters', exact: true }).click();
     const unplayed = popover.getByRole('checkbox', { name: 'Unplayed', exact: true });
     await expect(unplayed).toBeVisible();
@@ -197,8 +200,12 @@ test.describe('Jellyfin integration', () => {
       // Jellyfin updates these values through router state, after the click returns.
       await unplayed.click(); await expect(unplayed).toBeChecked();
       await dismiss(); await page.mouse.move(0, 0);
-      await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+      await expect(filter).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
       await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
+      if (!testInfo.project.use.isMobile) {
+        await filter.hover(); await expect(filter).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+        await page.mouse.move(0, 0); await expect(filter).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
+      }
       await page.screenshot({ path: testInfo.outputPath('movies-active-filter.png') });
     } finally {
       if (!await popover.isVisible()) await filter.click();
@@ -211,10 +218,37 @@ test.describe('Jellyfin integration', () => {
     await section.click();
     const selected = page.getByRole('menuitem', { name: 'Movies', exact: true });
     await expect(selected).toBeVisible();
-    await expect(selected).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+    await selected.blur(); await page.mouse.move(0, 0);
+    await expect(selected).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
     await expect(selected).toHaveCSS('color', 'rgb(24, 26, 29)');
     await expect(selected).toHaveCSS('border-radius', '999px');
+    await page.keyboard.press('Tab'); await selected.focus();
+    await expect(selected).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     await page.keyboard.press('Escape');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+  });
+  test('primary collection action brightens instead of darkening', async ({ page }, testInfo) => {
+    const link = page.locator('header a[href*="/boxsets?"]').first();
+    const library = page.locator('.homePage .MyMedia .card').filter({ hasText: /^Collections$/ }).first();
+    await library.waitFor();
+    const href = await link.count() ? await link.getAttribute('href') : '#/boxsets?topParentId=' + await library.getAttribute('data-id');
+    await page.goto(server.replace(/\/$/, '') + '/web/' + href);
+    // Jellyfin replaces this label with an Add icon on narrow screens.
+    const button = page.locator('header button.MuiButton-containedPrimary').filter({ has: page.locator('[data-testid="AddIcon"]') });
+    await expect(button).toBeVisible(); await page.mouse.move(0, 0);
+    await expect(button).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
+    const before = await button.boundingBox();
+    await page.keyboard.press('Tab'); await button.focus();
+    await expect(button).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(button).toHaveCSS('color', 'rgb(24, 26, 29)');
+    await button.blur();
+    if (!testInfo.project.use.isMobile) {
+      await button.hover(); await expect(button).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      await page.mouse.move(0, 0); await expect(button).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
+    }
+    expect(await button.boundingBox()).toEqual(before);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+    await page.locator('.card[data-type="BoxSet"]').first().waitFor();
+    await page.screenshot({ path: testInfo.outputPath('collection-primary-action.png') });
   });
 });

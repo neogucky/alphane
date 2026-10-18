@@ -27,14 +27,45 @@ test('library actions have separate complete hit areas and invert on selection',
   await expect(filter).toHaveCSS('color', 'rgb(243, 244, 246)');
   const before = await filter.boundingBox();
   await page.keyboard.press('Tab'); await filter.focus();
-  await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(filter).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(filter).toHaveCSS('color', 'rgb(24, 26, 29)');
   expect(await filter.boundingBox()).toEqual(before);
   await filter.blur(); await filter.evaluate(button => button.setAttribute('aria-pressed', 'true'));
-  await expect(filter).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(filter).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
   await expect(filter.locator('svg')).toHaveCSS('color', 'rgb(24, 26, 29)');
+  if (await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)) {
+    await filter.hover(); await expect(filter).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await page.mouse.move(0, 0); await expect(filter).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
+  }
   if (!testInfo.project.use.isMobile) await expect(toolbar.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
+test('primary actions brighten on focus and hover, including inside the app bar', async ({ page }) => {
+  const primary = page.locator('.MuiAppBar-root .MuiButton-containedPrimary').first();
+  await primary.evaluate(button => button.parentElement.insertAdjacentHTML('afterend', '<button class="MuiButton-root MuiButton-containedPrimary" id="primary-action">Create</button>'));
+  for (const button of [page.locator('#primary-action'), page.getByRole('button', { name: 'Save changes', exact: true }), page.getByRole('button', { name: 'Resume', exact: true })]) {
+    await page.mouse.move(0, 0); await button.blur();
+    await button.scrollIntoViewIfNeeded();
+    await expect(button).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
+    const before = await button.boundingBox();
+    await page.keyboard.press('Tab'); await button.focus();
+    await expect(button).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(button).toHaveCSS('color', 'rgb(24, 26, 29)');
+    await button.blur();
+    if (await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)) {
+      await button.hover(); await expect(button).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      await page.mouse.move(0, 0); await expect(button).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)');
+    }
+    const after = await button.boundingBox();
+    expect({ width: after.width, height: after.height }).toEqual({ width: before.width, height: before.height });
+  }
+});
+test('the header symbol follows the server name and inverts with it', async ({ page }) => {
+  const brand = page.locator('.MuiAppBar-root a[href="#/"]');
+  expect(await brand.evaluate(element => { const style = getComputedStyle(element, '::before'); return style.width === '24px' && style.height === '26px' && style.maskImage.includes('data:image/png;base64,'); })).toBeTruthy();
+  await page.keyboard.press('Tab'); await brand.focus();
+  await expect(brand).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  expect(await brand.evaluate(element => getComputedStyle(element, '::before').backgroundColor)).toBe('rgb(24, 26, 29)');
 });
 test('selection frames the full artwork without moving it or blocking actions', async ({ page }, testInfo) => {
   const card = page.locator('.card').first(), artwork = card.locator('.cardScalable');

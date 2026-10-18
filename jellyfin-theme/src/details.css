@@ -11,10 +11,13 @@
 .detailPagePrimaryContainer .itemTags { opacity: .8; }
 .detailPagePrimaryContainer .detailButton { border-radius: 999px; }
 .detailPagePrimaryContainer .btnPlay {
-  color: #181a1d; background: var(--alphane-text);
+  color: #181a1d; background: var(--alphane-control-active);
   border-radius: 999px; font-weight: 650;
 }
-.detailPagePrimaryContainer .btnPlay:hover { background: #fff; color: #181a1d; }
+.detailPagePrimaryContainer .btnPlay:focus-visible { background: var(--alphane-control-highlight); color: #181a1d; }
+@media (hover: hover) and (pointer: fine) {
+  .detailPagePrimaryContainer .btnPlay:hover { background: var(--alphane-control-highlight); color: #181a1d; }
+}
 .detailImageContainer .card { border-radius: var(--alphane-radius); }
 .listItem { border-radius: 10px; }
 .listItem:hover { background: #ffffff08; }
