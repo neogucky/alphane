@@ -55,6 +55,34 @@ test.describe('Jellyfin integration', () => {
     }
     await page.screenshot({ path: testInfo.outputPath('home.png') });
   });
+  test('header uses text labels and padded highlights without overflowing', async ({ page }, testInfo) => {
+    const header = page.locator('header.MuiAppBar-root');
+    await page.locator('.homePage .cardImageContainer').first().waitFor();
+    const brand = header.locator('a[href="#/"]');
+    await expect(brand.locator('.MuiButton-startIcon')).toBeHidden();
+    if (!testInfo.project.use.isMobile) {
+      for (const width of [1440, 1200, 1024]) {
+        await page.setViewportSize({ width, height: 1000 });
+        const movies = header.locator('a[href*="/movies?"]');
+        await expect(movies).toBeVisible();
+        await expect(movies.locator('.MuiButton-startIcon')).toBeHidden();
+        await expect(movies).toHaveCSS('padding-left', width < 1200 ? '12px' : '24px');
+        const before = await movies.boundingBox(); await movies.hover();
+        await expect(movies).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.094)');
+        expect(await movies.boundingBox()).toEqual(before);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+        const search = await header.locator('a[href="#/search"]').boundingBox();
+        const lastLink = await header.locator('a.MuiButton-root').last().boundingBox();
+        expect(lastLink.x + lastLink.width).toBeLessThanOrEqual(search.x);
+      }
+      await page.keyboard.press('Tab'); await brand.focus();
+      await expect(brand).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+      await expect(brand).toHaveCSS('color', 'rgb(24, 26, 29)');
+    }
+    await expect(header.locator('a[href="#/search"]')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+    await page.screenshot({ path: testInfo.outputPath('header.png') });
+  });
   test('artwork selection stays visible at carousel edges', async ({ page }, testInfo) => {
     const card = page.locator('.homePage .NextUp .card').first();
     await card.waitFor(); await card.scrollIntoViewIfNeeded();

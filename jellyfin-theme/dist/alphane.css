@@ -85,21 +85,28 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: #ffffff14; }
    present. Scope this correction to that hybrid, leaving legacy tabs alone. */
 body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 0 !important; height: 100% !important; }
 .MuiAppBar-root .MuiButton-root {
+  box-sizing: border-box;
   border-radius: 999px;
-  font-size: .85rem;
+  font-size: .9rem;
   font-weight: 550;
   text-transform: none;
   letter-spacing: -.015em;
   min-height: 40px;
+  min-width: 0;
+  padding: 8px 24px;
+  line-height: 1.4;
+  white-space: nowrap;
 }
-.MuiAppBar-root .MuiButton-root:hover { background: #ffffff0c; }
-.MuiAppBar-root a[href="#/"] { font-size: 1.1rem; font-weight: 700; letter-spacing: -.045em; margin-inline-end: 16px; }
-.MuiAppBar-root a[href="#/"] .MuiButton-startIcon {
+.MuiAppBar-root .MuiButton-root .MuiButton-startIcon { display: none; }
+.MuiAppBar-root .MuiButton-root:hover { background: #ffffff18; }
+.MuiAppBar-root .MuiButton-root:is(:focus-visible, [aria-current="page"], [aria-selected="true"], .Mui-selected) {
   background: var(--alphane-text);
-  mask: var(--alphane-symbol) center / contain no-repeat;
-  -webkit-mask: var(--alphane-symbol) center / contain no-repeat;
+  color: var(--alphane-background);
 }
-.MuiAppBar-root a[href="#/"] img { opacity: 0; }
+@media (min-width: 900px) and (max-width: 1199px) {
+  .MuiAppBar-root .MuiButton-root { padding-inline: 12px; font-size: .85rem; }
+}
+.MuiAppBar-root a[href="#/"] { font-size: 1.1rem; font-weight: 700; letter-spacing: -.045em; margin-inline-end: 16px; }
 .MuiAppBar-root .MuiIconButton-root { color: #c4cbd5; }
 .MuiAppBar-root .MuiIconButton-root:hover { color: #fff; background: #ffffff0c; }
 .skinHeader { box-shadow: none; color: var(--alphane-text); }
