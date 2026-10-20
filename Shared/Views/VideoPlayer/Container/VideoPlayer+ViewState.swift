@@ -257,6 +257,11 @@ extension VideoPlayer {
         var visibleElements: Set<Element> {
             guard !isGestureLocked else { return [] }
 
+            #if os(tvOS)
+            guard loadingPresentation != .startup else { return [] }
+
+            #endif
+
             if isScrubbing {
                 return [.progress]
             }
@@ -311,24 +316,17 @@ extension VideoPlayer {
         private var cancellables: Set<AnyCancellable> = []
         @ObservationIgnored
         private var playbackStatusCancellable: AnyCancellable?
+        #if os(tvOS)
+        private(set) var loadingPresentation: PlaybackLoadingPresentation = .none
+        @ObservationIgnored
+        private var loadingCancellable: AnyCancellable?
+        #endif
         @ObservationIgnored
         private var playbackItemCancellable: AnyCancellable?
         @ObservationIgnored
         private var supplementsCancellable: AnyCancellable?
         @ObservationIgnored
         private var supplementActionCancellables: [AnyCancellable] = []
-
-        #if os(iOS)
-        var panHandlingAction: (any _PanHandlingAction)?
-        var didSwipe: Bool = false
-        var lastTapLocation: CGPoint?
-
-        func cancelTapGesture() {
-            lastTapLocation = nil
-            jumpProgressObserver.timer.stop()
-            jumpProgressObserver.reset()
-        }
-        #endif
 
         #if os(tvOS)
         var isPresentingCloseConfirmation: Bool = false {
@@ -395,14 +393,6 @@ extension VideoPlayer {
                     self.refreshAutoDismiss()
                 }
                 .store(in: &cancellables)
-
-            #if os(iOS)
-            jumpProgressObserver.timer
-                .sink { [weak self] in
-                    self?.lastTapLocation = nil
-                }
-                .store(in: &cancellables)
-            #endif
         }
 
         func connect(manager: MediaPlayerManager) {
@@ -411,6 +401,34 @@ extension VideoPlayer {
                     self.manager = manager
                 }
             }
+            #if os(tvOS)
+            loadingPresentation = manager.loadingPresentation
+            loadingCancellable = Publishers.CombineLatest4(
+                manager.$state,
+                manager.$hasPresentedVideoFrame,
+                manager.$isBuffering,
+                manager.$playbackRequestStatus
+            )
+            .map { state, hasFrame, isBuffering, status in
+                PlaybackLoadingPresentation(
+                    state: state,
+                    hasPresentedVideoFrame: hasFrame,
+                    isBuffering: isBuffering,
+                    playbackRequestStatus: status
+                )
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] presentation in
+                guard let self else { return }
+
+                self.loadingPresentation = presentation
+                if presentation == .buffering, self.presentation == .hidden {
+                    showProgress()
+                }
+                refreshAutoDismiss()
+            }
+            #endif
             observeSupplementActions()
             supplementsCancellable = manager.$supplements
                 .dropFirst()
@@ -438,9 +456,6 @@ extension VideoPlayer {
                 }
             playbackItemCancellable = manager.$playbackItem
                 .sink { [weak self] _ in
-                    #if os(iOS)
-                    self?.cancelTapGesture()
-                    #endif
                     self?.fitVideo()
                 }
             playbackStatusCancellable = manager.$playbackRequestStatus
@@ -553,6 +568,8 @@ extension VideoPlayer {
                   manager?.playbackRequestStatus != .paused else { return false }
 
             #if os(tvOS)
+            guard loadingPresentation != .buffering else { return false }
+
             // Menus take focus out of the player, including nested system menus.
             // Resume the countdown only after focus returns to our controls.
             guard !isPresentingCloseConfirmation,
@@ -565,12 +582,8 @@ extension VideoPlayer {
         }
 
         private var autoDismissInterval: TimeInterval {
-            #if os(tvOS)
             // Short interval for progress only
             presentation == .progress ? 2 : 10
-            #else
-            5
-            #endif
         }
 
         func refreshAutoDismiss() {
@@ -582,12 +595,6 @@ extension VideoPlayer {
         }
 
         private func transition(to presentation: Presentation) {
-            #if os(iOS)
-            // A presentation change outside the tap handler ends the tap sequence.
-            if self.presentation != presentation {
-                lastTapLocation = nil
-            }
-            #endif
             if case .supplement = presentation {
                 resetZoom()
             }

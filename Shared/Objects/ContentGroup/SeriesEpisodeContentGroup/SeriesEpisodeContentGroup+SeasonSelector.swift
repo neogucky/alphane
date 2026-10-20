@@ -11,7 +11,7 @@ import SwiftUI
 
 extension SeriesEpisodeContentGroup {
 
-    struct SeasonSelector: PlatformView {
+    struct SeasonSelector: View {
 
         let seasons: [PagingLibraryViewModel<EpisodeLibrary>]
 
@@ -35,7 +35,7 @@ extension SeriesEpisodeContentGroup {
                 .edgePadding(.horizontal)
         }
 
-        var tvOSView: some View {
+        var body: some View {
             if seasons.isEmpty {
                 title(L10n.episodes)
             } else {
@@ -67,27 +67,6 @@ extension SeriesEpisodeContentGroup {
                     // Episode retrieval can finish later; selection follows focus immediately.
                     selection = seasonID
                 }
-            }
-        }
-
-        var iOSView: some View {
-            if seasons.count <= 1 {
-                title(selectedSeason?.library.parent.displayTitle ?? L10n.episodes)
-            } else {
-                Menu(
-                    selectedSeason?.library.parent.displayTitle ?? L10n.episodes,
-                    systemImage: "chevron.down"
-                ) {
-                    Picker(L10n.seasons, selection: $selection) {
-                        ForEach(seasons) { season in
-                            Text(season.library.parent.displayTitle)
-                                .tag(season.id)
-                        }
-                    }
-                }
-                .labelStyle(.trailingIcon)
-                .buttonStyle(.capsule)
-                .edgePadding(.horizontal)
             }
         }
     }

@@ -27,13 +27,6 @@ extension VideoPlayer.PlaybackControls {
             content
                 .font(.system(size: UIDevice.isTV ? 30 : 20, weight: .semibold))
                 .buttonStyle(OverlayButtonStyle(isInBar: true))
-                #if os(iOS)
-                .if(UIDevice.supportsLiquidGlass) { view in
-                    view
-                        .backport
-                        .glassEffect(.regular.interactive(true), in: .capsule)
-                }
-                #endif
         }
     }
 
@@ -88,7 +81,7 @@ extension VideoPlayer.PlaybackControls {
 
         @ViewBuilder
         private func styledLabel(_ configuration: Configuration) -> some View {
-            if #available(iOS 26.0, tvOS 26.0, *), UIDevice.supportsLiquidGlass {
+            if #available(tvOS 26.0, *), UIDevice.supportsLiquidGlass {
                 if isInBar, !UIDevice.isTV {
                     // The bar supplies one glass surface for all of its buttons.
                     label(configuration)
@@ -118,10 +111,10 @@ extension VideoPlayer.PlaybackControls {
                 }
                 .animation(.linear(duration: 0.1).delay(configuration.isPressed ? 0.2 : 0), value: configuration.isPressed)
                 .padding(Self.padding / 2)
-                #if os(tvOS)
+            #if os(tvOS)
                 .backport
                 .glassEffect(.regular.tint(isFocused ? .white : nil), in: .circle)
-                #endif
+            #endif
                 .contentShape(.circle)
         }
     }

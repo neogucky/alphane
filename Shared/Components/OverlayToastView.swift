@@ -30,11 +30,7 @@ struct OverlayToastView<Content: View>: View {
     private var safeAreaInsets
 
     private var topPadding: CGFloat {
-        #if os(tvOS)
         60
-        #else
-        safeAreaInsets.top + 10
-        #endif
     }
 
     init(
@@ -78,16 +74,7 @@ private struct OverlayToastContent: View {
     private var proxy: ToastProxy
 
     var body: some View {
-        #if os(tvOS)
         content
-        #else
-        Button {
-            proxy.dismiss()
-        } label: {
-            content
-        }
-        .buttonStyle(ToastButtonStyle())
-        #endif
     }
 
     private var content: some View {
@@ -115,35 +102,19 @@ private struct OverlayToastContent: View {
     }
 
     private var contentPadding: EdgeInsets {
-        #if os(tvOS)
         EdgeInsets(top: 24, leading: 24, bottom: 24, trailing: 24)
-        #else
-        EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16)
-        #endif
     }
 
     private var iconSize: CGFloat {
-        #if os(tvOS)
         30
-        #else
-        25
-        #endif
     }
 
     private var minHeight: CGFloat {
-        #if os(tvOS)
         60
-        #else
-        40
-        #endif
     }
 
     private var textFont: Font {
-        #if os(tvOS)
         .subheadline
-        #else
-        .body
-        #endif
     }
 
     private struct ToastButtonStyle: ButtonStyle {

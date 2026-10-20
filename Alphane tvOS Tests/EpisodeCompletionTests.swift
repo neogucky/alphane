@@ -6,18 +6,181 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+@testable import Alphane
 import Combine
 import Defaults
+import FactoryKit
 import Get
 import JellyfinAPI
-@testable import Alphane
 import SwiftUI
+import UIKit
 import XCTest
 
 @MainActor
 final class EpisodeCompletionTests: XCTestCase {
 
-    func testStopWaitsForAnOlderInFlightProgressReport() async {
+    func testRetainedDetailPageFocusesNextAfterCompletionAndResumeAfterPartialRewatch() async throws {
+        // Finish the host app's session initialization before overriding its
+        // factories; a later startup reset would otherwise discard this fixture.
+        await FactoryKit.Container.shared.userSessionManager().start()
+        let factories = FactoryKit.Container.shared.manager
+        factories.push()
+        defer { factories.pop() }
+        let session = makeStubSession(userID: "focus-\(UUID().uuidString)")
+        let previousUserData = session.user.data
+        session.user.data = UserDto(id: session.user.id, policy: UserPolicy(
+            authenticationProviderID: "test", enableMediaPlayback: true, passwordResetProviderID: "test"
+        ))
+        defer { session.user.data = previousUserData }
+        FactoryKit.Container.shared.currentUserSession.register { session }
+        let provider = ItemContentGroupProvider(item: episode("episode"))
+        provider.userSession = session
+        let coordinator = NavigationCoordinator(usesNavigationStack: true)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        window.rootViewController = UIHostingController(rootView:
+            NavigationInjectionView(coordinator: coordinator) { ItemView(provider: provider) }
+                .preferredColorScheme(.dark))
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previous?.makeKeyAndVisible()
+        }
+        for _ in 0 ..< 60 {
+            if provider.mediaPlayerItemProvider != nil, provider.nextEpisodeItemProvider != nil {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertNotNil(provider.mediaPlayerItemProvider)
+        XCTAssertNotNil(provider.nextEpisodeItemProvider)
+        XCTAssertTrue(provider.item.presentPlayButton)
+        let initialItemRecord = provider.$item.item
+
+        for finished in [true, false, true] {
+            // The real player uses this same full-screen route. No stream,
+            // server progress report or real watch history is needed here.
+            coordinator.push(NavigationRoute(id: "focus-test-player", style: .fullscreen) {
+                Color.black.ignoresSafeArea().focusable()
+            })
+            try await Task.sleep(for: .milliseconds(700))
+            var report = PlaybackStopInfo()
+            report.itemID = "episode"
+            report.positionTicks = Duration.seconds(finished ? 120 : 38).ticks
+            XCTAssertTrue(provider.prepareForPlaybackStop(report, didReachEnd: finished))
+            XCTAssertEqual(provider.shouldFocusNextEpisode, finished)
+            coordinator.presentedFullScreen = nil
+            try await Task.sleep(for: .milliseconds(900))
+            let focus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
+            let rect = focus.focusItemContainer?.coordinateSpace.convert(focus.frame, to: window) ?? focus.frame
+            let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
+            let capture = renderer.image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+            let attachment = XCTAttachment(image: capture)
+            attachment.name = finished ? "completed-next-focus" : "unfinished-resume-focus"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            if finished {
+                XCTAssertGreaterThan(rect.minX, 1400, "The next-episode thumbnail must actually receive native focus after dismissal")
+                XCTAssertEqual(provider.mediaPlayerItemProvider?.item.playButtonLabel, L10n.playAgain)
+            } else {
+                XCTAssertLessThan(rect.maxX, 1000, "An unfinished rewatch must focus Resume instead of Next")
+                XCTAssertGreaterThan(rect.width, 160, "Focus must be on Resume, not the watched/liked icons")
+                XCTAssertNotNil(provider.mediaPlayerItemProvider?.item.progressLabel)
+            }
+            XCTAssertTrue(provider.$item.item === initialItemRecord, "Focus restoration must not reload the detail page")
+        }
+    }
+
+    func testAutomaticEndingPreparesNextBeforeAcknowledgementWithoutReloadingThePage() async {
+        let previous = Defaults[.sendProgressReports]
+        Defaults[.sendProgressReports] = true
+        defer { Defaults[.sendProgressReports] = previous }
+        let session = makeStubSession()
+        let provider = ItemContentGroupProvider(item: episode("episode"))
+        provider.userSession = session
+        let viewModel = ContentGroupViewModel(provider: provider)
+        await viewModel.refresh()
+        XCTAssertEqual(viewModel.state, .content)
+        XCTAssertEqual(provider.nextEpisodeItemProvider?.item.id, "next")
+        XCTAssertFalse(provider.shouldFocusNextEpisode)
+        let groups = viewModel.groups.map(\.id)
+        XCTAssertFalse(groups.isEmpty)
+        var showedLoading = false
+        let stateSubscription = viewModel.$state.sink { state in
+            if state != .content {
+                showedLoading = true
+            }
+        }
+        defer { stateSubscription.cancel() }
+        let sharedItem = provider.$item.item
+        provider.select(.audioStreamIndex(2))
+
+        let (manager, observer) = makePlaybackSession(sourceRuntime: .seconds(60))
+        // The engine's last clock is behind both its file runtime and metadata.
+        manager.seconds = .seconds(38)
+        let started = expectation(description: "Stop awaiting acknowledgement")
+        observer.onStopRequest = { started.fulfill() }
+        await manager.ended()
+        await fulfillment(of: [started], timeout: 2)
+
+        XCTAssertEqual(observer.stopInfo?.positionTicks, Duration.seconds(60).ticks)
+        XCTAssertEqual(provider.item.userData?.isPlayed, true)
+        XCTAssertEqual(provider.item.userData?.playbackPositionTicks, 0)
+        XCTAssertTrue(provider.shouldFocusNextEpisode)
+        XCTAssertTrue(provider.$item.item === sharedItem)
+        XCTAssertEqual(provider.mediaPlayerItemProvider?.audioStreamIndex, 2)
+
+        let acknowledged = expectation(description: "Server acknowledged Stop")
+        let subscription = Notifications[.didSendStopReport].publisher.sink { _ in acknowledged.fulfill() }
+        defer { subscription.cancel() }
+        observer.completeStopReport()
+        await fulfillment(of: [acknowledged], timeout: 2)
+        viewModel.refreshIfPendingChanges()
+        await Task.yield()
+        XCTAssertEqual(viewModel.state, .content)
+        XCTAssertEqual(viewModel.groups.map(\.id), groups)
+        XCTAssertFalse(showedLoading)
+        XCTAssertEqual(provider.mediaPlayerItemProvider?.audioStreamIndex, 2)
+        XCTAssertTrue(provider.shouldFocusNextEpisode)
+    }
+
+    func testStaleServerStateIsPersistedWithoutRestoringResumeOnTheSharedRecord() async throws {
+        let session = makeStubSession()
+        let entry = try await session.getFullItem(id: "episode")
+        var report = PlaybackStopInfo()
+        report.itemID = "episode"
+        report.positionTicks = Duration.seconds(60).ticks
+        try PlaybackCompletion.applyStop(report, didReachEnd: true, to: entry, in: session.items)
+
+        let playbackItem = try MediaPlayerItem(
+            baseItem: entry.snapshot,
+            mediaSource: MediaSourceInfo(id: "source"),
+            playSessionID: "session",
+            url: XCTUnwrap(URL(string: "https://completion.example/video")),
+            deviceProfile: DeviceProfile()
+        )
+        let observer = MediaProgressObserver(item: playbackItem)
+        observer.userSession = session
+        var restoredResume = false
+        let subscription = session.items.changes.sink { _ in
+            if entry.snapshot.userData?.isPlayed != true || entry.snapshot.userData?.playbackPositionTicks != 0 {
+                restoredResume = true
+            }
+        }
+        defer { subscription.cancel() }
+
+        await observer.settlePlaybackState(for: entry.snapshot, stoppedAt: report.positionTicks, didReachEnd: true)
+        XCTAssertFalse(restoredResume)
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, true)
+        XCTAssertEqual(entry.snapshot.userData?.playbackPositionTicks, 0)
+        XCTAssertEqual(entry.snapshot.userData?.playCount, 1, "Jellyfin's mark-played endpoint must confirm completion")
+    }
+
+    func testStopWaitsForAnOlderInFlightProgressReport() async throws {
         let previous = Defaults[.sendProgressReports]
         Defaults[.sendProgressReports] = true
         defer { Defaults[.sendProgressReports] = previous }
@@ -26,7 +189,7 @@ final class EpisodeCompletionTests: XCTestCase {
         let (manager, observer) = makePlaybackSession()
         observer.onProgressRequest = { progressStarted.fulfill() }
         observer.onStopRequest = { stopStarted.fulfill() }
-        observer.sendProgressReport(for: manager.playbackItem!, seconds: .seconds(90))
+        try observer.sendProgressReport(for: XCTUnwrap(manager.playbackItem), seconds: .seconds(90))
         await fulfillment(of: [progressStarted], timeout: 2)
         await manager.stop()
         await Task.yield()
@@ -175,12 +338,12 @@ final class EpisodeCompletionTests: XCTestCase {
         BaseItemDto(id: id, seriesID: "series", type: .episode)
     }
 
-    private func makePlaybackSession() -> (MediaPlayerManager, RecordingProgressObserver) {
+    private func makePlaybackSession(sourceRuntime: Duration? = nil) -> (MediaPlayerManager, RecordingProgressObserver) {
         var item = episode("episode")
         item.runTimeTicks = Duration.seconds(120).ticks
         let playbackItem = MediaPlayerItem(
             baseItem: item,
-            mediaSource: MediaSourceInfo(id: "source"),
+            mediaSource: MediaSourceInfo(id: "source", runTimeTicks: sourceRuntime?.ticks),
             playSessionID: "session",
             url: URL(string: "http://localhost/video")!,
             deviceProfile: DeviceProfile()
@@ -191,6 +354,55 @@ final class EpisodeCompletionTests: XCTestCase {
         observer.manager = manager
         manager.seconds = .seconds(120)
         return (manager, observer)
+    }
+
+    private func makeStubSession(userID: String = "user") -> UserSession {
+        let url = URL(string: "https://completion.example")!
+        let session = UserSession(
+            server: ServerState(urls: [url], currentURL: url, name: "Test", id: "server", userIDs: [userID]),
+            user: UserState(id: userID, serverID: "server", username: "User")
+        )
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CompletionProtocol.self]
+        session.client = JellyfinClient(
+            configuration: .alphaneConfiguration(url: url, accessToken: "test-token"),
+            sessionConfiguration: configuration
+        )
+        return session
+    }
+}
+
+private final class CompletionProtocol: URLProtocol, @unchecked Sendable {
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func stopLoading() {}
+
+    override func startLoading() {
+        let path = request.url!.path
+        let json: String = if path.contains("/UserPlayedItems/") {
+            #"{"ItemId":"episode","Key":"episode","Played":true,"PlaybackPositionTicks":0,"PlayedPercentage":100,"PlayCount":1}"#
+        } else if path.hasSuffix("/Items/episode") {
+            #"{"Id":"episode","Name":"Current episode","Type":"Episode","SeriesId":"series","IndexNumber":1,"Genres":["Drama"],"RunTimeTicks":1200000000,"UserData":{"Key":"episode","Played":false,"PlaybackPositionTicks":380000000}}"#
+        } else if path.hasSuffix("/Episodes") {
+            #"{"Items":[{"Id":"episode","Type":"Episode","SeriesId":"series","IndexNumber":1},{"Id":"next","Name":"Next episode","Type":"Episode","SeriesId":"series","IndexNumber":2}]}"#
+        } else if path.hasSuffix("/LocalTrailers") || path.hasSuffix("/SpecialFeatures") {
+            "[]"
+        } else {
+            #"{"Items":[],"TotalRecordCount":0}"#
+        }
+        let response = HTTPURLResponse(
+            url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"]
+        )!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(json.utf8))
+        client?.urlProtocolDidFinishLoading(self)
     }
 }
 
@@ -222,8 +434,9 @@ private final class RecordingProgressObserver: MediaProgressObserver {
         }
     }
 
-    override func settlePlaybackState(for item: BaseItemDto, stoppedAt positionTicks: Int?) async {
+    override func settlePlaybackState(for item: BaseItemDto, stoppedAt positionTicks: Int?, didReachEnd: Bool = false) async {
         guard let onSettlementRequest else { return }
+
         await withCheckedContinuation {
             settlementContinuation = $0
             onSettlementRequest()

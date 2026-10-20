@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Defaults
 import SwiftUI
 
 enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiable, Storable, SystemImageable {
@@ -18,9 +19,6 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
     case subtitles
     case refresh
     case delete
-    #if os(iOS)
-    case editMetadata
-    #endif
 
     var displayTitle: String {
         switch self {
@@ -31,11 +29,7 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
         case .trailers:
             L10n.trailers
         case .playback:
-            #if os(tvOS)
             L10n.sourceAndTracks
-            #else
-            L10n.playback
-            #endif
         case .record:
             L10n.record
         case .refresh:
@@ -44,10 +38,6 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
             L10n.subtitles
         case .delete:
             L10n.delete
-        #if os(iOS)
-        case .editMetadata:
-            L10n.edit
-        #endif
         }
     }
 
@@ -64,11 +54,7 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
         case .trailers:
             "movieclapper"
         case .playback:
-            #if os(tvOS)
             "slider.horizontal.3"
-            #else
-            "list.and.film"
-            #endif
         case .record:
             "record.circle.fill"
         case .refresh:
@@ -77,10 +63,6 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
             "captions.bubble"
         case .delete:
             "trash"
-        #if os(iOS)
-        case .editMetadata:
-            "pencil"
-        #endif
         }
     }
 
@@ -98,11 +80,7 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
     var activeColor: Color? {
         switch self {
         case .played:
-            #if os(tvOS)
-            AlphaneTheme.accent
-            #else
-            .jellyfinPurple
-            #endif
+            Defaults[.accentColor]
 
         case .favorited:
             .pink
@@ -128,7 +106,4 @@ enum ItemActionButton: String, CaseIterable, Displayable, Equatable, Identifiabl
         .subtitles,
         .delete
     ]
-    #if os(iOS)
-    .prepending(.editMetadata)
-    #endif
 }

@@ -175,19 +175,11 @@ private struct UserViewLibraryGridElement: View {
     let element: UserViewLibraryElement
 
     private var titleColor: Color {
-        #if os(tvOS)
         isFocused ? .white : AlphaneTheme.secondaryText
-        #else
-        .primary
-        #endif
     }
 
     private var placeholderColor: Color {
-        #if os(tvOS)
         AlphaneTheme.surface
-        #else
-        Color.secondarySystemFill.opacity(0.75)
-        #endif
     }
 
     private var isTitleLabelVisible: Bool {
@@ -203,27 +195,33 @@ private struct UserViewLibraryGridElement: View {
         Button {
             element.libraryDidSelectElement(router: router, in: namespace)
         } label: {
-            ImageView(imageSources)
-                .image { image in
-                    if isTitleLabelVisible {
-                        titleLabelOverlay(with: image)
-                    } else {
-                        image
-                    }
-                }
-                .placeholder { imageSource in
-                    titleLabelOverlay(with: DefaultPlaceholderView(blurHash: imageSource.blurHash))
-                }
-                .failure {
-                    placeholderColor
-                        .overlay {
-                            titleLabel
-                                .foregroundStyle(titleColor)
+            // Artwork may be a portrait collection poster. Keep its natural
+            // proportions without letting it determine the tile's bounds.
+            AlternateLayoutView {
+                Color.clear
+            } content: {
+                ImageView(imageSources)
+                    .image { image in
+                        if isTitleLabelVisible {
+                            titleLabelOverlay(with: image.aspectRatio(contentMode: .fill))
+                        } else {
+                            image.aspectRatio(contentMode: .fill)
                         }
-                }
-                .id(imageSources.hashValue)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .posterStyle(.landscape)
+                    }
+                    .placeholder { imageSource in
+                        titleLabelOverlay(with: DefaultPlaceholderView(blurHash: imageSource.blurHash))
+                    }
+                    .failure {
+                        placeholderColor
+                            .overlay {
+                                titleLabel
+                                    .foregroundStyle(titleColor)
+                            }
+                    }
+                    .id(imageSources.hashValue)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .posterStyle(.landscape)
             #if os(tvOS)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
             #endif
@@ -234,12 +232,8 @@ private struct UserViewLibraryGridElement: View {
         .onChange(of: useRandomImage) {
             setImageSources()
         }
-        #if os(tvOS)
         .buttonStyle(.focusBorder)
         .focused($isFocused)
-        #else
-        .buttonStyle(.card)
-        #endif
     }
 
     @ViewBuilder
@@ -302,9 +296,6 @@ private struct UserViewLibraryListElement: View {
         } action: {
             element.libraryDidSelectElement(router: router, in: namespace)
         }
-        #if !os(tvOS)
-        .matchedTransitionSource(id: "item", in: namespace)
-        #endif
         .onFirstAppear(perform: setImageSources)
         .onChange(of: useRandomImage) {
             setImageSources()
@@ -317,17 +308,25 @@ private struct UserViewLibraryListElement: View {
             Color.secondarySystemFill
                 .opacity(0.75)
 
-            ImageView(imageSources)
-                .placeholder { imageSource in
-                    DefaultPlaceholderView(blurHash: imageSource.blurHash)
-                }
-                .failure {
-                    Image(systemName: element.systemImage)
-                        .foregroundStyle(.secondary)
-                }
-                .id(imageSources.hashValue)
+            AlternateLayoutView {
+                Color.clear
+            } content: {
+                ImageView(imageSources)
+                    .image { image in
+                        image.aspectRatio(contentMode: .fill)
+                    }
+                    .placeholder { imageSource in
+                        DefaultPlaceholderView(blurHash: imageSource.blurHash)
+                    }
+                    .failure {
+                        Image(systemName: element.systemImage)
+                            .foregroundStyle(.secondary)
+                    }
+                    .id(imageSources.hashValue)
+            }
         }
         .posterStyle(.landscape)
+        .clipped()
         .subtleShadow()
         .frame(width: userViewLibraryListImageWidth)
     }

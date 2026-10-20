@@ -27,6 +27,55 @@ struct EditLocalServerView: View {
     }
 
     var body: some View {
+        content
+            .alert(L10n.deleteServer, isPresented: $isPresentingConfirmDeletion) {
+                Button(L10n.delete, role: .destructive) {
+                    viewModel.delete()
+                    router.dismiss()
+                }
+            } message: {
+                Text(L10n.confirmDeleteServerAndUsers(viewModel.server.name))
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        TVManagementPage(title: viewModel.server.name, width: 1080) {
+            EmptyView()
+        } content: {
+            if let version = StoredValues[.Server.publicInfo(id: viewModel.server.id)].version {
+                TVManagementNote(text: "\(L10n.version) \(version)")
+            }
+            Button {
+                router.route(to: .serverConnections(viewModel: viewModel))
+            } label: {
+                HStack(spacing: 24) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.connections).font(.system(size: 24, weight: .medium))
+                        Text((viewModel.activeConnection?.url ?? viewModel.server.effectiveServerURL).absoluteString)
+                            .font(.system(size: 20))
+                            .lineLimit(2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "chevron.right").font(.system(size: 16))
+                }
+                .padding(.vertical, 12)
+            }
+            if !viewModel.server.isVersionCompatible {
+                TVManagementNote(text: L10n.serverVersionWarning(viewModel.server.client.version.majorMinor.description))
+            }
+            if isDeletePresented {
+                HStack {
+                    Spacer()
+                    Button(L10n.deleteServer, role: .destructive) { isPresentingConfirmDeletion = true }
+                }
+                .padding(.top, 12)
+            }
+        }
+        .onExitCommand { router.dismiss() }
+    }
+
+    private var legacyContent: some View {
         Form(systemImage: "server.rack") {
 
             Section(L10n.server) {
@@ -81,13 +130,5 @@ struct EditLocalServerView: View {
             }
         }
         .navigationTitle(L10n.server)
-        .alert(L10n.deleteServer, isPresented: $isPresentingConfirmDeletion) {
-            Button(L10n.delete, role: .destructive) {
-                viewModel.delete()
-                router.dismiss()
-            }
-        } message: {
-            Text(L10n.confirmDeleteServerAndUsers(viewModel.server.name))
-        }
     }
 }

@@ -86,9 +86,6 @@ extension VideoPlayer {
             var body: some View {
                 VideoViewport(videoSize: videoSize) { videoLayout in
                     player(videoLayout)
-                        #if os(iOS)
-                            .overlay(Color.black.opacity(shouldPresentDimOverlay ? 0.5 : 0.0))
-                        #endif
                         .overlay {
                             Group {
                                 if viewState.isPresentingFullScreenSupplement {
@@ -105,11 +102,6 @@ extension VideoPlayer {
                         }
                         .allowsHitTesting(false)
                 }
-                #if os(iOS)
-                .overlay {
-                        VideoZoomBorder(isVisible: viewState.zoom.isFillBorderPresented)
-                    }
-                #endif
             }
         }
 
@@ -143,89 +135,14 @@ extension VideoPlayer {
             var body: some View {
                 OverlayToastView(proxy: viewState.toastProxy) {
                     ZStack {
-                        #if os(iOS)
-                        GestureView()
-                            .environment(\.panGestureDirection, panGestureDirection)
-                        #endif
 
                         playbackControls
                     }
                     .environmentObject(viewState.scrubbedSeconds)
                     .environmentObject(viewState.centerOffsetBox)
                 }
-                #if os(iOS)
-                .environment(
-                        \.longPressAction,
-                        .init(
-                            action: {
-                                viewState.containerView?.handleLongPressGesture(
-                                    location: $0,
-                                    unitPoint: $1,
-                                    state: $2
-                                )
-                            }
-                        )
-                    )
-                    .environment(
-                        \.panAction,
-                        .init(
-                            action: {
-                                viewState.containerView?.handlePanGesture(
-                                    translation: $0,
-                                    velocity: $1,
-                                    location: $2,
-                                    unitPoint: $3,
-                                    state: $4
-                                )
-                            }
-                        )
-                    )
-                    .environment(
-                        \.pinchAction,
-                        .init(
-                            action: {
-                                viewState.containerView?.handlePinchGesture(
-                                    scale: $0,
-                                    location: $1,
-                                    state: $2
-                                )
-                            }
-                        )
-                    )
-                    .environment(
-                        \.tapGestureAction,
-                        .init(
-                            action: {
-                                viewState.containerView?.handleTapGesture(
-                                    location: $0,
-                                    unitPoint: $1,
-                                    count: $2
-                                )
-                            }
-                        )
-                    )
-                #endif
             }
         }
-
-        #if os(iOS)
-        private let zoomHaptic = UIImpactFeedbackGenerator(style: .light)
-        private var zoomStopFeedback = VideoZoom.StopFeedback()
-
-        func prepareZoomHaptics() {
-            zoomStopFeedback = VideoZoom.StopFeedback(stop: viewState.zoom.stop)
-            zoomHaptic.prepare()
-        }
-
-        func updateZoomHaptics() {
-            guard let transform = viewState.zoom.transform,
-                  zoomStopFeedback.update(scale: transform.scale, stop: viewState.zoom.stop)
-            else { return }
-
-            zoomHaptic.impactOccurred()
-            zoomHaptic.prepare()
-        }
-        #endif
 
         private lazy var initialHitBlockView: UIView = {
             let view = UIView(frame: .zero)
@@ -525,9 +442,6 @@ extension VideoPlayer {
             isPanning = false
             verticalPanGestureStartConstant = nil
             viewState.setInteraction(.pan, active: false)
-            #if os(iOS)
-            viewState.panHandlingAction = nil
-            #endif
             presentSupplementContainer(viewState.isPresentingSupplement)
         }
 
@@ -548,7 +462,6 @@ extension VideoPlayer {
             viewState.centerOffsetBox.value = centerOffset
 
             let completion: (Bool) -> Void
-            #if os(tvOS)
             let supplementID = viewState.selectedSupplementID
             let playbackFocusRequest = !didPresent && viewState.isPresentingProgress ? UUID() : nil
             pendingPlaybackFocusRequest = playbackFocusRequest
@@ -561,9 +474,6 @@ extension VideoPlayer {
                     restorePlaybackFocusIfNeeded(playbackFocusRequest)
                 }
             }
-            #else
-            completion = { _ in }
-            #endif
 
             UIView.animate(
                 withDuration: viewState.isCompact ? 0.75 : 0.6,
@@ -606,7 +516,7 @@ extension VideoPlayer {
 
             view.backgroundColor = .black
 
-            let isCompact = UIDevice.isPhone && view.bounds.size.isPortrait
+            let isCompact = false
 
             setupOnLoadViews()
             setupOnLoadConstraints()
@@ -672,7 +582,7 @@ extension VideoPlayer {
 
         private func setupOnLoadConstraints() {
 
-            let isCompact = UIDevice.isPhone && view.bounds.size.isPortrait
+            let isCompact = false
 
             let bottomAnchor = supplementContainerView.topAnchor.constraint(
                 equalTo: view.bottomAnchor,
@@ -691,16 +601,10 @@ extension VideoPlayer {
                 heightAnchor,
             ])
 
-            #if os(tvOS)
             let playbackControlsBottomAnchor = playbackControlsView.bottomAnchor.constraint(
                 equalTo: view.bottomAnchor,
                 constant: -36
             )
-            #else
-            let playbackControlsBottomAnchor = playbackControlsView.bottomAnchor.constraint(
-                equalTo: supplementContainerView.topAnchor
-            )
-            #endif
             playbackControlsBottomAnchor.priority = .defaultHigh
 
             NSLayoutConstraint.activate([
@@ -714,28 +618,11 @@ extension VideoPlayer {
                 ),
             ])
 
-            #if os(tvOS)
             NSLayoutConstraint.activate([
                 overlayActionsView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: EdgeInsets.edgePadding),
                 overlayActionsView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -EdgeInsets.edgePadding),
                 overlayActionsView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -36),
             ])
-            #else
-            NSLayoutConstraint.activate([
-                overlayActionsView.leadingAnchor.constraint(
-                    equalTo: view.safeAreaLayoutGuide.leadingAnchor,
-                    constant: EdgeInsets.edgePadding
-                ),
-                overlayActionsView.trailingAnchor.constraint(
-                    equalTo: view.safeAreaLayoutGuide.trailingAnchor,
-                    constant: -EdgeInsets.edgePadding
-                ),
-                overlayActionsView.bottomAnchor.constraint(
-                    equalTo: view.safeAreaLayoutGuide.bottomAnchor,
-                    constant: -EdgeInsets.edgePadding
-                ),
-            ])
-            #endif
 
             NSLayoutConstraint.activate([
                 initialHitBlockView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -756,7 +643,7 @@ extension VideoPlayer {
 
             lastSupplementLayout = (size, safeAreaInsets)
             cancelSupplementPan()
-            adjustConstraints(isCompact: UIDevice.isPhone && size.isPortrait)
+            adjustConstraints(isCompact: false)
         }
 
         private func adjustConstraints(isCompact: Bool) {
@@ -784,13 +671,6 @@ extension VideoPlayer {
             playerCompactBottomAnchor.constant = compactPlayerBottomOffset
             viewState.centerOffsetBox.value = centerOffset
         }
-
-        #if os(iOS)
-        override func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-            viewState.cancelTapGesture()
-        }
-        #endif
 
         // MARK: - tvOS
 
@@ -1052,6 +932,7 @@ extension VideoPlayer {
 
         private var canHandleBack: Bool {
             guard !viewState.isPresentingCloseConfirmation else { return false }
+
             if viewState.presentation == .hidden {
                 return true
             }

@@ -17,6 +17,9 @@ struct Stepper<
     Content: View
 >: View {
 
+    @Environment(\.usesPlaybackSettingsStyle)
+    private var usesPlaybackSettingsStyle
+
     @Binding
     private var value: Value
 
@@ -58,6 +61,16 @@ struct Stepper<
 
     // MARK: - Body
 
+    @ViewBuilder
+    private func adjustmentButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        let button = Button(title, systemImage: systemImage, action: action)
+        if usesPlaybackSettingsStyle {
+            button.buttonStyle(TVSettingsButtonStyle())
+        } else {
+            button.buttonStyle(.bordered)
+        }
+    }
+
     var body: some View {
         ChevronButton {
             isPresented = true
@@ -71,10 +84,9 @@ struct Stepper<
                     .edgePadding(.bottom)
 
                 HStack(spacing: 24) {
-                    Button(L10n.decrement, systemImage: "minus") {
+                    adjustmentButton(L10n.decrement, systemImage: "minus") {
                         value = min(range.upperBound, value.advanced(by: -step))
                     }
-                    .buttonStyle(.bordered)
                     .enabled(canDecrement)
 
                     Text(value, format: format)
@@ -94,10 +106,9 @@ struct Stepper<
                                 .strokeBorder(.white.opacity(0.18), lineWidth: 1)
                         )
 
-                    Button(L10n.increment, systemImage: "plus") {
+                    adjustmentButton(L10n.increment, systemImage: "plus") {
                         value = min(range.upperBound, value.advanced(by: step))
                     }
-                    .buttonStyle(.bordered)
                     .enabled(canIncrement)
                 }
                 .labelStyle(.iconOnly)
@@ -113,6 +124,9 @@ struct Stepper<
                     } content: {
                         Text(L10n.close)
                     }
+                }
+                .if(usesPlaybackSettingsStyle) { button in
+                    button.buttonStyle(TVSettingsButtonStyle())
                 }
                 .edgePadding(.top)
             }

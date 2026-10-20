@@ -51,11 +51,7 @@ final class FocusCoordinator: ObservableObject {
     #endif
 
     init(initial: String? = nil) {
-        #if os(tvOS)
         initialFocusID = initial
-        #else
-        request = initial.map { Request(id: $0) }
-        #endif
     }
 
     /// Defers secondary controls until the target receives focus naturally.

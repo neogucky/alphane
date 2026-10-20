@@ -11,7 +11,7 @@ import SwiftUI
 
 extension VideoPlayer.PlaybackControls {
 
-    struct SplitTimeStamp: PlatformView {
+    struct SplitTimeStamp: View {
 
         @Default(.VideoPlayer.Overlay.trailingTimestampType)
         private var trailingTimestampType
@@ -104,42 +104,7 @@ extension VideoPlayer.PlaybackControls {
             }
         }
 
-        var iOSView: some View {
-            HStack {
-                Button {
-                    switch trailingTimestampType {
-                    case .timeLeft:
-                        trailingTimestampType = .totalTime
-                    case .totalTime:
-                        trailingTimestampType = .timeLeft
-                    }
-                } label: {
-                    leadingTimestamp
-                }
-                .foregroundStyle(.primary, .secondary)
-
-                Spacer()
-
-                Button {
-                    switch trailingTimestampType {
-                    case .timeLeft:
-                        trailingTimestampType = .totalTime
-                    case .totalTime:
-                        trailingTimestampType = .timeLeft
-                    }
-                } label: {
-                    trailingTimestamp
-                }
-                .foregroundStyle(.primary, .secondary)
-            }
-            .font(.caption2)
-            .monospacedDigit()
-            .lineLimit(1)
-            .foregroundStyle(isScrubbing ? .primary : .secondary, .secondary)
-            .assign(manager.secondsBox.$value, to: $activeSeconds)
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             HStack {
                 Text(scrubbedSeconds, format: .runtime)
 

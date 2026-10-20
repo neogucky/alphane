@@ -56,6 +56,7 @@ class AVMediaPlayerProxy: NSObject,
     private var statusObserver: NSKeyValueObservation?
     private var timeControlStatusObserver: NSKeyValueObservation?
     private var videoSizeObserver: NSKeyValueObservation?
+    private var frameReadyObserver: NSKeyValueObservation?
     private var timeObserver: Any?
     private var itemEndObserver: NSObjectProtocol?
     private var accessLogObserver: NSObjectProtocol?
@@ -204,10 +205,6 @@ extension AVMediaPlayerProxy {
         pipController?.delegate = self
         pipController?.requiresLinearPlayback = false
 
-        #if os(iOS)
-        pipController?.canStartPictureInPictureAutomaticallyFromInline = false
-        #endif
-
         pipAvailableObserver = pipController?.observe(
             \.isPictureInPicturePossible,
             options: [.initial, .new]
@@ -290,6 +287,16 @@ extension AVMediaPlayerProxy {
 
         player.replaceCurrentItem(with: playerItem)
 
+        frameReadyObserver = avPlayerLayer.observe(\.isReadyForDisplay, options: [.new]) { [weak self] layer, _ in
+            guard layer.isReadyForDisplay else { return }
+
+            DispatchQueue.main.async {
+                guard let self, self.player.currentItem === playerItem, self.avPlayerLayer.isReadyForDisplay else { return }
+
+                self.manager?.videoFramePresented(for: item)
+            }
+        }
+
         observeTimeControlStatus()
         observeVideoSize(of: playerItem)
         observeItemEnd(of: playerItem)
@@ -341,6 +348,9 @@ extension AVMediaPlayerProxy {
     }
 
     private func removeItemObservers() {
+        frameReadyObserver?.invalidate()
+        frameReadyObserver = nil
+
         statusObserver?.invalidate()
         statusObserver = nil
 
@@ -372,12 +382,8 @@ extension AVMediaPlayerProxy {
 
             DispatchQueue.main.async {
 
-                #if os(tvOS)
                 self.isBuffering.value = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
                     || self.displayManager?.isDisplayModeSwitchInProgress == true
-                #else
-                self.isBuffering.value = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
-                #endif
 
                 switch status {
                 case .playing:

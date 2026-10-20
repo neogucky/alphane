@@ -46,6 +46,67 @@ extension CustomDeviceProfilesView {
         }
 
         var body: some View {
+            tvOSContent
+                .interactiveDismissDisabled(true)
+                .alert(L10n.profileNotSaved, isPresented: $isPresentingNotSaved) {
+                    Button(L10n.close, role: .destructive) { router.dismiss() }
+                }
+                .onExitCommand { isPresentingNotSaved = true }
+        }
+
+        private func saveProfile() {
+            guard isValid else { return }
+
+            if createProfile {
+                customDeviceProfiles.append(profile)
+            } else {
+                source?.wrappedValue = profile
+            }
+
+            router.dismiss()
+        }
+
+        #if os(tvOS)
+        private var tvOSContent: some View {
+            TVManagementPage(title: L10n.customProfile.localizedCapitalized, width: 1080) {
+                Button(L10n.cancel) { isPresentingNotSaved = true }
+                Button(L10n.save, action: saveProfile).disabled(!isValid)
+            } content: {
+                Toggle(L10n.useAsTranscodingProfile, isOn: $profile.useAsTranscodingProfile)
+                VStack(spacing: 18) {
+                    Button {
+                        router.route(to: .editDeviceProfileAudio(selection: $profile.audio))
+                    } label: {
+                        TVSettingsRow(
+                            title: L10n.audio,
+                            value: profile.audio.isEmpty ? L10n.none : profile.audio.map(\.displayTitle).joined(separator: ", ")
+                        )
+                    }
+                    Button {
+                        router.route(to: .editDeviceProfileVideo(selection: $profile.video))
+                    } label: {
+                        TVSettingsRow(
+                            title: L10n.video,
+                            value: profile.video.isEmpty ? L10n.none : profile.video.map(\.displayTitle).joined(separator: ", ")
+                        )
+                    }
+                    Button {
+                        router.route(to: .editDeviceProfileContainer(selection: $profile.container))
+                    } label: {
+                        TVSettingsRow(
+                            title: L10n.containers,
+                            value: profile.container.isEmpty ? L10n.none : profile.container.map(\.displayTitle).joined(separator: ", ")
+                        )
+                    }
+                }
+                if !isValid {
+                    TVManagementNote(text: L10n.missingCodecValues)
+                }
+            }
+        }
+        #endif
+
+        private var legacyContent: some View {
             contentView
                 .interactiveDismissDisabled(true)
                 .navigationTitle(L10n.customProfile.localizedCapitalized)
@@ -61,36 +122,18 @@ extension CustomDeviceProfilesView {
                         } else {
                             source?.wrappedValue = profile
                         }
-                        UIDevice.impact(.light)
+
                         router.dismiss()
                     }
 
                     Group {
-                        #if os(iOS)
-                        if #available(iOS 26, *) {
-                            Button(L10n.save, role: .confirm, action: saveAction)
-                        } else {
-                            Button(L10n.save, action: saveAction)
-                                .backport
-                                .buttonStyle(.glassProminent)
-                                .controlSize(.small)
-                        }
-                        #else
                         Button(L10n.save, action: saveAction)
-                        #endif
                     }
                     .enabled(isValid)
                 }
-                #if os(iOS)
-                .navigationBarBackButtonHidden()
-                .navigationBarCloseButton {
-                    isPresentingNotSaved = true
-                }
-                #else
                 .onExitCommand {
                     isPresentingNotSaved = true
                 }
-                #endif
         }
 
         @ViewBuilder

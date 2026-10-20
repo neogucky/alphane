@@ -30,7 +30,6 @@ struct PlaybackAdjustmentSlider: View {
 
     @ViewBuilder
     private var slider: some View {
-        #if os(tvOS)
         SliderContainer(
             value: Binding(
                 get: { sliderValue.wrappedValue - range.lowerBound },
@@ -43,19 +42,6 @@ struct PlaybackAdjustmentSlider: View {
         .ifLet(focusID) { view, id in
             view.coordinatedFocus(id)
         }
-        #else
-        Group {
-            if #available(iOS 26, *) {
-                // The binding snaps to steps without the native slider's automatic tick marks.
-                Slider(value: sliderValue, in: range, neutralValue: resetValue) {
-                    EmptyView()
-                }
-            } else {
-                Slider(value: sliderValue, in: range, step: step)
-            }
-        }
-        .tint(.white)
-        #endif
     }
 
     @ViewBuilder
@@ -136,10 +122,10 @@ struct PlaybackAdjustmentSlider: View {
             }
             .frame(maxWidth: .infinity)
             #if os(tvOS)
-            .focusSection()
+                .focusSection()
             #endif
-            .buttonStyle(.capsule)
-            .padding(.top, UIDevice.isTV ? 8 : 4)
+                .buttonStyle(.capsule)
+                .padding(.top, UIDevice.isTV ? 8 : 4)
         }
         .controlSize(UIDevice.isTV ? .large : .regular)
         .accessibilityElement(children: .contain)

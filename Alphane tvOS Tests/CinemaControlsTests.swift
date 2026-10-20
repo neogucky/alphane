@@ -64,8 +64,8 @@ final class CinemaControlsTests: XCTestCase {
     private struct TestSupplement: MediaPlayerSupplement {
         let id = "episodes"
         let displayTitle = "Episodes"
-        var videoPlayerBody: some PlatformView {
-            InlinePlatformView(iOSView: { EmptyView() }, tvOSView: { EmptyView() })
+        var videoPlayerBody: some View {
+            EmptyView()
         }
     }
 }

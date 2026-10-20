@@ -146,7 +146,7 @@ struct EditRecordingView: View {
         .onReceive(viewModel.events) { event in
             switch event {
             case .updated:
-                UIDevice.feedback(.success)
+
                 router.dismiss()
             }
         }

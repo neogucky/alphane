@@ -68,6 +68,10 @@ struct ServerConnectionView: View {
     }
 
     var body: some View {
+        TVServerConnectionContent(viewModel: viewModel, editMode: $editMode)
+    }
+
+    private var legacyContent: some View {
         Form(systemImage: "network") {
             if isAutoSwitchFeatureEnabled {
                 Section {
@@ -123,11 +127,6 @@ struct ServerConnectionView: View {
                 Button(isEditing ? L10n.done : L10n.edit) {
                     editMode = isEditing ? .inactive : .active
                 }
-                #if os(iOS)
-                .backport
-                    .buttonStyle(.glass)
-                    .controlSize(.small)
-                #endif
             }
         }
     }

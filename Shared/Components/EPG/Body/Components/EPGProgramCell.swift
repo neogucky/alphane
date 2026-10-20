@@ -49,21 +49,23 @@ struct EPGProgramCell: View {
     }
 
     private var backgroundColor: Color {
-        if isFocused {
-            .white
-        } else if isCurrent {
-            accentColor.opacity(0.5)
-        } else {
-            Color.secondarySystemFill.opacity(0.5)
-        }
+        isFocused ? .white : AlphaneTheme.surface
     }
 
     private var primaryColor: Color {
-        isFocused ? .black : .primary
+        isFocused ? .black : .white.opacity(0.8)
     }
 
     private var secondaryColor: Color {
-        isFocused ? .black.opacity(0.6) : .secondary
+        isFocused ? .black.opacity(0.8) : .white.opacity(0.8)
+    }
+
+    private var titleFont: Font {
+        .system(size: 22, weight: isCurrent ? .medium : .regular)
+    }
+
+    private var timeFont: Font {
+        .system(size: 18)
     }
 
     private var stickyOffsetPublisher: AnyPublisher<CGFloat, Never> {
@@ -80,21 +82,26 @@ struct EPGProgramCell: View {
             ) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(presentation.title)
-                        .font(.footnote.weight(isCurrent ? .semibold : .regular))
+                        .font(titleFont)
                         .foregroundStyle(primaryColor)
 
                     Text(presentation.time)
-                        .font(.caption2)
+                        .font(timeFont)
                         .foregroundStyle(secondaryColor)
                 }
                 .lineLimit(1)
             }
-            .background(backgroundColor)
-            .overlay {
-                Rectangle()
-                    .strokeBorder(Color.secondarySystemFill.opacity(0.5), lineWidth: isFocused ? 0 : 1)
+            .background(backgroundColor, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(alignment: .bottomLeading) {
+                if isCurrent {
+                    Capsule()
+                        .fill(accentColor.opacity(isFocused ? 1 : 0.6))
+                        .frame(width: 36, height: 3)
+                        .padding(12)
+                }
             }
-            .contentShape(Rectangle())
+            .contentShape(RoundedRectangle(cornerRadius: 14))
+            .padding(6)
         }
         .buttonStyle(EPGButtonStyle())
         .accessibilityValue(isCurrent ? L10n.onNow : "")

@@ -14,20 +14,11 @@ extension UIDevice {
         current.identifierForVendor!.uuidString
     }
 
-    static var isPad: Bool {
-        current.userInterfaceIdiom == .pad
-    }
-
-    static var isPhone: Bool {
-        current.userInterfaceIdiom == .phone
-    }
-
     static var isTV: Bool {
         current.userInterfaceIdiom == .tv
     }
 
     static let supportsLiquidGlass: Bool = {
-        #if os(tvOS)
         var systemInfo = utsname()
         uname(&systemInfo)
         let model = withUnsafeBytes(of: systemInfo.machine) { buffer in
@@ -37,74 +28,9 @@ extension UIDevice {
         /// - https://support.apple.com/en-us/106336
         /// - See tvOS 26, footnote 2
         return !["AppleTV5,3", "AppleTV6,2"].contains(model)
-        #else
-        if #available(iOS 26.0, *) {
-            return true
-        } else {
-            return false
-        }
-        #endif
     }()
 
     static var platform: String {
-        #if os(tvOS)
         L10n.tvOS
-        #else
-        if UIDevice.isPad {
-            return L10n.iPadOS
-        } else {
-            return L10n.iOS
-        }
-        #endif
-    }
-
-    /// - Important: Does nothing on non-iOS platforms.
-    ///
-    /// - Note: For real-time interactions, manually manage a
-    ///         `UIImpactFeedbackGenerator` with `prepare()`.
-    static func feedback(_ type: UINotificationFeedbackGenerator.FeedbackType) {
-        #if os(iOS)
-        UINotificationFeedbackGenerator().notificationOccurred(type)
-        #endif
-    }
-
-    // TODO: make more custom feedback types with Core Haptics
-    //       - soft with intensity
-    /// - Important: Does nothing on non-iOS platforms.
-    ///
-    /// - Note: For real-time interactions, manually manage a
-    ///         `UIImpactFeedbackGenerator` with `prepare()`.
-    static func impact(_ type: UIImpactFeedbackGenerator.FeedbackStyle) {
-        #if os(iOS)
-        UIImpactFeedbackGenerator(style: type).impactOccurred()
-        #endif
-    }
-
-    #if os(iOS)
-    static var isPortrait: Bool {
-        current.orientation.isPortrait
-    }
-
-    static var isLandscape: Bool {
-        isPad || current.orientation.isLandscape
-    }
-    #endif
-}
-
-#if os(tvOS)
-enum UINotificationFeedbackGenerator {
-    enum FeedbackType {
-        case success
-        case warning
-        case error
     }
 }
-
-enum UIImpactFeedbackGenerator {
-    enum FeedbackStyle {
-        case light
-        case medium
-        case heavy
-    }
-}
-#endif

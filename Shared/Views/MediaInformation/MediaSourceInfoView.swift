@@ -9,7 +9,7 @@
 import JellyfinAPI
 import SwiftUI
 
-struct MediaSourceInfoView: PlatformView {
+struct MediaSourceInfoView: View {
 
     @FocusState
     private var focusedStream: MediaStream?
@@ -70,21 +70,7 @@ struct MediaSourceInfoView: PlatformView {
         }
     }
 
-    var iOSView: some View {
-        contentView
-            .navigationTitle(source.displayTitle)
-            .toolbarTitleDisplayMode(.inline)
-            .navigationBarCloseButton {
-                router.dismiss()
-            }
-            #if os(iOS)
-            .topBarTrailing {
-                source.shareLink
-            }
-            #endif
-    }
-
-    var tvOSView: some View {
+    var body: some View {
         HStack {
             contentView
 

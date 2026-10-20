@@ -93,12 +93,8 @@ extension ItemView {
                 }
                 .trackingFrame(for: .scrollView)
                 .mainNavigationScrollObserver()
-                #if os(tvOS)
-                    .ignoresSafeArea(.container, edges: isEnhanced ? .all : [.horizontal, .top])
-                #else
-                    .ignoresSafeArea(edges: isEnhanced ? .all : .horizontal)
-                #endif
-                    .scrollIndicators(.hidden)
+                .ignoresSafeArea(.container, edges: isEnhanced ? .all : [.horizontal, .top])
+                .scrollIndicators(.hidden)
             }
         }
     }

@@ -56,14 +56,6 @@ struct ListRow<Leading: View, Content: View>: View {
             #if os(tvOS)
                 .buttonStyle(.focusBorder)
             #endif
-
-            #if !os(tvOS)
-            if isListRowSeparatorVisible {
-                Color.secondarySystemFill
-                    .frame(width: contentSize.width, height: 1)
-                    .padding(.trailing, insets.trailing)
-            }
-            #endif
         }
     }
 }

@@ -28,58 +28,15 @@ struct PosterHStack<
     let elements: Data
     let displayType: PosterDisplayType
     let size: PosterDisplayType.Size
-    var onFocus: ((Data.Element) -> Void)? = nil
+    var onFocus: ((Data.Element) -> Void)?
     let action: (Data.Element, Namespace.ID) -> Void
 
     private var layout: CollectionHStackLayout {
-        #if os(tvOS)
         .grid(
             columns: displayType == .landscape ? 5 : 7,
             rows: 1,
             columnTrailingInset: 0
         )
-        #else
-        if UIDevice.isPad {
-            let minWidth: CGFloat = {
-                switch (displayType, size) {
-                case (.landscape, .small):
-                    220
-                case (.landscape, .medium):
-                    300
-                case (_, .small):
-                    140
-//                case (_, .medium):
-                default:
-                    200
-                }
-            }()
-
-            return .minimumWidth(
-                columnWidth: minWidth,
-                rows: 1
-            )
-        } else {
-            let columnCount: CGFloat = {
-                switch (displayType, size) {
-                case (.landscape, .small):
-                    2
-                case (.landscape, .medium):
-                    1.5
-                case (_, .small):
-                    3
-//                case (_, .medium):
-                default:
-                    2
-                }
-            }()
-
-            return .grid(
-                columns: columnCount,
-                rows: 1,
-                columnTrailingInset: 0
-            )
-        }
-        #endif
     }
 
     var body: some View {
@@ -99,8 +56,8 @@ struct PosterHStack<
             // CollectionHStack creates independent UIHostingControllers for its cells.
             // Pass the originating page's focus context into those roots explicitly.
             .environment(\.navigationFocusStore, navigationFocusStore)
-            .environment(\.navigationFocusPageID, navigationFocusPageID)
-            .environment(\.navigationFocusScopeID, navigationFocusScopeID.isEmpty ? focusScopeID : navigationFocusScopeID)
+                .environment(\.navigationFocusPageID, navigationFocusPageID)
+                .environment(\.navigationFocusScopeID, navigationFocusScopeID.isEmpty ? focusScopeID : navigationFocusScopeID)
             #endif
         }
         .clipsToBounds(false)

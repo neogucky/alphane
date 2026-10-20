@@ -25,51 +25,6 @@ struct LocalUserSettingsView: View {
 
     var body: some View {
         Form {
-            #if os(iOS)
-            if let userSession = imageViewModel.userSession {
-                StateAdapter(initialValue: false) { isPhotoPickerPresented in
-                    UserProfileHeroImage(
-                        user: imageViewModel.user,
-                        source: userSession.user.profileImageSource(
-                            client: userSession.client
-                        )
-                    ) {
-                        isPhotoPickerPresented.wrappedValue = true
-                    } onDelete: {
-                        imageViewModel.delete()
-                    }
-                    .photoPicker(
-                        isPresented: isPhotoPickerPresented,
-                        isSaving: imageViewModel.background.is(.updating),
-                        presetRatio: .alwaysUsingOnePresetFixedRatio(ratio: 1)
-                    ) {
-                        imageViewModel.upload($0)
-                    }
-                    .onReceive(imageViewModel.events) { event in
-                        switch event {
-                        case .updated:
-                            UIDevice.feedback(.success)
-                            isPhotoPickerPresented.wrappedValue = false
-
-                        case .deleted:
-                            UIDevice.feedback(.success)
-                        }
-                    }
-                }
-            }
-
-            if let userSession = imageViewModel.userSession {
-                Section {
-                    ChevronButton(L10n.quickConnect) {
-                        router.route(to: .quickConnectAuthorize(user: userSession.user.data))
-                    }
-
-                    ChevronButton(L10n.password) {
-                        router.route(to: .resetUserPassword(userID: userSession.user.id))
-                    }
-                }
-            }
-            #endif
 
             Section {
                 ChevronButton(L10n.security) {

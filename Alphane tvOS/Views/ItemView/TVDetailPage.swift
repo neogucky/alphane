@@ -36,6 +36,12 @@ extension ItemView {
         let groups: [any ContentGroup]
         let preferredPlaybackFocus: String
 
+        init(provider: ItemContentGroupProvider, groups: [any ContentGroup], preferredPlaybackFocus: String) {
+            self.provider = provider
+            self.groups = groups
+            self.preferredPlaybackFocus = preferredPlaybackFocus
+        }
+
         private var infoGroups: [any ContentGroup] {
             groups.filter { $0.id == "item-metadata" } + groups.filter { $0.id != "item-metadata" }
         }

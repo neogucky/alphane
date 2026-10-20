@@ -58,22 +58,7 @@ func Section(
     @ViewBuilder footer: @escaping () -> some View,
     @LabeledContentBuilder learnMore: @escaping () -> AnyView
 ) -> some View {
-    InlinePlatformView {
-        Section {
-            content()
-        } header: {
-            Text(title)
-        } footer: {
-            VStack(alignment: .leading) {
-                footer()
-
-                LearnMoreButton(
-                    title,
-                    content: learnMore
-                )
-            }
-        }
-    } tvOSView: {
+    Group {
         Section {
             content()
                 .focusedValue(\.formLearnMore, learnMore())
@@ -81,55 +66,6 @@ func Section(
             Text(title)
         } footer: {
             footer()
-        }
-    }
-}
-
-// MARK: - LearnMoreButton
-
-private struct LearnMoreButton: View {
-
-    @State
-    private var isPresented = false
-
-    private let content: AnyView
-    private let title: String
-
-    init(
-        _ title: String,
-        @LabeledContentBuilder content: @escaping () -> AnyView
-    ) {
-        self.content = content()
-        self.title = title
-    }
-
-    var body: some View {
-        Button(L10n.learnMore + .ellipsis) {
-            isPresented = true
-        }
-        .foregroundStyle(Color.accentColor)
-        .buttonStyle(.plain)
-        .sheet(isPresented: $isPresented) {
-            NavigationStack {
-                ScrollView {
-                    SeparatorVStack(alignment: .leading) {
-                        Divider()
-                            .padding(.vertical, 8)
-                    } content: {
-                        content
-                            .labeledContentStyle(LearnMoreLabeledContentStyle())
-                            .foregroundStyle(Color.primary, Color.secondary)
-                    }
-                    .edgePadding()
-                }
-                .navigationTitle(title.localizedCapitalized)
-                .toolbarTitleDisplayMode(.inline)
-                #if os(iOS)
-                .navigationBarCloseButton {
-                    isPresented = false
-                }
-                #endif
-            }
         }
     }
 }

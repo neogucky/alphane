@@ -21,9 +21,17 @@ struct EPGView: View {
     private var contentView: some View {
         VStack(spacing: 0) {
             #if os(tvOS)
-            EPGDateBar(viewModel: viewModel)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 8)
+            HStack(spacing: 24) {
+                Text(L10n.guide)
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(.white)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                EPGDateBar(viewModel: viewModel)
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 32)
+            .padding(.bottom, 24)
             #endif
 
             EPGContentView(
@@ -49,15 +57,9 @@ struct EPGView: View {
                 await viewModel.refresh(startDate: nil)
             }
         }
-        #if os(iOS)
-        .topBarTrailing {
-            EPGDateMenu(viewModel: viewModel)
-        }
-        .navigationTitle(L10n.guide)
-        .toolbarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        #else
+        .padding(.horizontal, 60)
+        .background(AlphaneTheme.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .ignoresSafeArea(edges: [.horizontal])
-        #endif
     }
 }

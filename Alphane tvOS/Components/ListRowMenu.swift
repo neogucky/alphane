@@ -10,6 +10,9 @@ import SwiftUI
 
 struct ListRowMenu<Content: View, Subtitle: View>: View {
 
+    @Environment(\.usesPlaybackSettingsStyle)
+    private var usesPlaybackSettingsStyle
+
     @FocusState
     private var isFocused: Bool
 
@@ -75,12 +78,32 @@ struct ListRowMenu<Content: View, Subtitle: View>: View {
     }
 
     var body: some View {
-        Menu(content: content) {
-            buttonView
+        if usesPlaybackSettingsStyle {
+            Menu(content: content) {
+                HStack(spacing: 14) {
+                    title
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let subtitle {
+                        subtitle
+                            .font(.system(size: 20))
+                    }
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 16, weight: .medium))
+                }
+            }
+            .menuStyle(.button)
+            .buttonStyle(TVSettingsButtonStyle())
+            .listRowBackground(Color.clear)
+            .listRowInsets(.zero)
+            .focused($isFocused)
+        } else {
+            Menu(content: content) {
+                buttonView
+            }
+            .menuStyle(.borderlessButton)
+            .listRowInsets(.zero)
+            .focused($isFocused)
         }
-        .menuStyle(.borderlessButton)
-        .listRowInsets(.zero)
-        .focused($isFocused)
     }
 }
 

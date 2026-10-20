@@ -12,7 +12,7 @@ import SwiftUI
 
 extension VideoPlayer {
 
-    struct PosterCollectionView<Data: RandomAccessCollection, Content: View>: PlatformView
+    struct PosterCollectionView<Data: RandomAccessCollection, Content: View>: View
         where Data.Element: Poster, Data.Index == Int
     {
 
@@ -84,40 +84,7 @@ extension VideoPlayer {
             .accessibilityAddTraits(isCurrent(element) ? .isSelected : [])
         }
 
-        var iOSView: some View {
-            CompactOrRegularView(isCompact: isCompact) {
-                CollectionVGrid(
-                    uniqueElements: data,
-                    id: \.id,
-                    layout: .columns(
-                        1,
-                        insets: .edgeInsets,
-                        itemSpacing: EdgeInsets.itemSpacing,
-                        lineSpacing: EdgeInsets.itemSpacing
-                    ),
-                    viewProvider: elementRow
-                )
-            } regularView: {
-                CollectionHStack(
-                    uniqueElements: data,
-                    id: \.id,
-                    layout: .minimumWidth(columnWidth: 170, rows: 1),
-                    content: elementButton
-                )
-                .initialElement(id: initialElementID)
-                .clipsToBounds(false)
-                .insets(horizontal: max(safeAreaInsets.leading, safeAreaInsets.trailing) + EdgeInsets.edgePadding)
-                .itemSpacing(EdgeInsets.itemSpacing)
-                .scrollBehavior(.continuousLeadingEdge)
-            }
-            .onChange(of: currentElementID) { _, newID in
-                if initialElementID == nil {
-                    initialElementID = newID
-                }
-            }
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             CollectionHStack(
                 uniqueElements: data,
                 id: \.id,

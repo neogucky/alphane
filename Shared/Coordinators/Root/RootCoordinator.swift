@@ -111,14 +111,11 @@ final class RootCoordinator: ObservableObject {
         appearanceCancellable?.cancel()
         splashScreenCancellable?.cancel()
 
-        accentColorCancellable = Task {
-            applyAccentColor(Defaults[.userAccentColor])
-
-            for await newValue in Defaults.updates(.userAccentColor) {
-                applyAccentColor(newValue)
-            }
-        }
-        .asAnyCancellable()
+        applyUserColorTheme()
+        accentColorCancellable = Defaults.publisher(.userColorTheme)
+            .combineLatest(Defaults.publisher(.userAccentColor))
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.applyUserColorTheme() }
 
         appearanceCancellable = Task {
             applyAppearance(Defaults[.userAppearance])
@@ -130,15 +127,22 @@ final class RootCoordinator: ObservableObject {
         .asAnyCancellable()
     }
 
+    #if os(tvOS)
+    private func applyUserColorTheme() {
+        let custom = Defaults[.userAccentColor]
+        let theme = AlphaneColorTheme.resolved(stored: Defaults[.userColorTheme], custom: custom)
+        Defaults[.colorTheme] = theme
+        applyAccentColor(theme.color(custom: custom))
+    }
+    #endif
+
     private func setAppDefaultsObservation() {
         accentColorCancellable?.cancel()
         appearanceCancellable?.cancel()
         splashScreenCancellable?.cancel()
 
-        accentColorCancellable = Task {
-            applyAccentColor(.jellyfinPurple)
-        }
-        .asAnyCancellable()
+        // Resolve before appearance observation can reapply the initial colour.
+        applyAccentColor(Defaults[.accentColor])
 
         appearanceCancellable = Task {
             applyAppAppearance()
@@ -173,10 +177,6 @@ final class RootCoordinator: ObservableObject {
         ) : color
 
         Defaults[.accentColor] = resolvedColor
-
-        #if os(iOS)
-        UIApplication.shared.setAccentColor(resolvedColor.uiColor)
-        #endif
     }
 
     @MainActor

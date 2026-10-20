@@ -125,8 +125,6 @@ extension View {
         }
         .onChange(of: error.wrappedValue != nil) {
             guard error.wrappedValue != nil else { return }
-
-            UIDevice.feedback(.error)
         }
     }
 
@@ -361,24 +359,12 @@ extension View {
         switch type {
         case .landscape:
             posterAspectRatio(type, contentMode: contentMode)
-                #if !os(tvOS)
-                    .posterBorder()
-                    .posterCornerRadius(type)
-                #endif
 
         case .portrait:
             posterAspectRatio(type, contentMode: contentMode)
-                #if !os(tvOS)
-                    .posterBorder()
-                    .posterCornerRadius(type)
-                #endif
 
         case .square:
             posterAspectRatio(type, contentMode: contentMode)
-                #if os(iOS)
-                    .posterBorder()
-                    .posterCornerRadius(type)
-                #endif
         }
     }
 

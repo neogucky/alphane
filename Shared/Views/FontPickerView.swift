@@ -13,6 +13,10 @@ struct FontPickerView: View {
     let selection: Binding<String>
 
     var body: some View {
+        TVFontPickerContent(selection: selection)
+    }
+
+    private var legacyContent: some View {
         Form(systemImage: "textformat.characters") {
             SelectorView(
                 selection: selection,

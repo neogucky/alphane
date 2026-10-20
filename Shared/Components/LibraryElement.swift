@@ -61,6 +61,8 @@ extension LibraryElement {
 
     @ViewBuilder
     func makeBody(libraryStyle: LibraryStyle) -> Body {
+        // By default, have conformers determine action
+        // internally for navigation with their namespace
         makeBody(libraryStyle: libraryStyle, action: nil)
     }
 
@@ -71,34 +73,6 @@ extension LibraryElement {
     ) -> CollectionVGridLayout {
         let libraryStyle = options.normalized(libraryStyle)
 
-        #if os(iOS)
-        switch libraryStyle.displayType {
-        case .grid:
-            if UIDevice.isPhone {
-                return .columns(
-                    libraryStyle.posterDisplayType == .landscape ? 2 : 3,
-                    insets: insets,
-                    itemSpacing: EdgeInsets.itemSpacing,
-                    lineSpacing: EdgeInsets.itemSpacing
-                )
-            }
-
-            return .minWidth(
-                libraryStyle.posterDisplayType == .landscape ? 220 : 140,
-                insets: insets,
-                itemSpacing: EdgeInsets.itemSpacing,
-                lineSpacing: EdgeInsets.itemSpacing
-            )
-
-        case .list:
-            return .columns(
-                libraryStyle.listColumnCount,
-                insets: insets,
-                itemSpacing: 0,
-                lineSpacing: 0
-            )
-        }
-        #else
         let columnCount = switch libraryStyle.displayType {
         case .grid:
             libraryStyle.posterDisplayType == .landscape ? 4 : 7
@@ -112,6 +86,5 @@ extension LibraryElement {
             itemSpacing: EdgeInsets.itemSpacing,
             lineSpacing: EdgeInsets.itemSpacing
         )
-        #endif
     }
 }

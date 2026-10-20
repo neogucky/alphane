@@ -18,6 +18,8 @@ struct QuickConnectView: View {
     private var code: String? = nil
     @State
     private var error: Error? = nil
+    @State
+    private var requestID = UUID()
 
     let client: JellyfinClient
     let action: (String) async -> Void
@@ -47,6 +49,38 @@ struct QuickConnectView: View {
     }
 
     var body: some View {
+        TVQuickConnectContent(
+            code: code,
+            error: error,
+            retry: { requestID = UUID() },
+            dismiss: { router.dismiss() }
+        )
+        .task(id: requestID) { await connect() }
+    }
+
+    private func connect() async {
+        code = nil
+        error = nil
+        do {
+            for try await event in client.quickConnect.connect() {
+                guard !Task.isCancelled else { return }
+
+                switch event {
+                case let .polling(code: code):
+                    self.code = code
+                case let .authenticated(secret: secret):
+                    router.dismiss()
+                    await action(secret)
+                }
+            }
+        } catch {
+            guard !Task.isCancelled else { return }
+
+            self.error = error
+        }
+    }
+
+    private var legacyContent: some View {
         ZStack {
             if let error {
                 ErrorView(error: error)
@@ -58,27 +92,6 @@ struct QuickConnectView: View {
         }
         .animation(.linear(duration: 0.2), value: code)
         .edgePadding()
-        .task {
-            do {
-                for try await event in client.quickConnect.connect() {
-                    switch event {
-                    case let .polling(code: code):
-                        self.code = code
-                    case let .authenticated(secret: secret):
-                        router.dismiss()
-                        await action(secret)
-                    }
-                }
-            } catch {
-                self.error = error
-            }
-        }
         .navigationTitle(L10n.quickConnect)
-        #if os(iOS)
-        .toolbarTitleDisplayMode(.inline)
-        .navigationBarCloseButton {
-            router.dismiss()
-        }
-        #endif
     }
 }

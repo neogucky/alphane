@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// Keep large surfaces neutral. Aqua is reserved for progress and small status marks.
+// Keep large surfaces neutral across colour modes; aqua is the Cold preset.
 enum AlphaneTheme {
 
     static let background = Color(hex: "181A1D")

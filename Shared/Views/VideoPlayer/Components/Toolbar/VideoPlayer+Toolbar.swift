@@ -66,18 +66,13 @@ extension VideoPlayer.PlaybackControls {
             content
                 .font(.system(size: UIDevice.isTV ? 30 : 24, weight: .semibold))
                 .menuStyle(OverlayMenuStyle())
-                #if os(iOS)
-                .background {
-                    EmptyHitTestView()
-                }
-                #endif
         }
     }
 }
 
 extension VideoPlayer.PlaybackControls.Toolbar {
 
-    struct TitleView: PlatformView {
+    struct TitleView: View {
 
         @State
         private var subtitleContentSize: CGSize = .zero
@@ -104,21 +99,7 @@ extension VideoPlayer.PlaybackControls.Toolbar {
                 .trackingSize($subtitleContentSize)
         }
 
-        var iOSView: some View {
-            Text(_titleSubtitle.title)
-                .fontWeight(.semibold)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(alignment: .bottomLeading) {
-                    if let subtitle = _titleSubtitle.subtitle {
-                        _subtitle(subtitle)
-                            .lineLimit(1)
-                            .offset(y: subtitleContentSize.height)
-                    }
-                }
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             VStack(alignment: .leading, spacing: 6) {
                 if item.type == .episode, let parentTitle = item.parentTitle {
                     Text(parentTitle)

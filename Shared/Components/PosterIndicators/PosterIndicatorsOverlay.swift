@@ -14,6 +14,10 @@ struct PosterIndicatorsOverlay: View {
 
     @Default(.accentColor)
     private var accentColor
+    #if os(tvOS)
+    @Default(.colorTheme)
+    private var colorTheme
+    #endif
 
     @Environment(\.isSelected)
     private var isSelected
@@ -32,11 +36,12 @@ struct PosterIndicatorsOverlay: View {
     }
 
     private var playedBadgeColor: Color {
-        #if os(tvOS)
         AlphaneTheme.surface
-        #else
-        accentColor
-        #endif
+    }
+
+    private var favoriteBadgeColor: Color {
+        // Neutral badges share the watched badge surface; the filled heart carries state.
+        colorTheme == .noAccent ? AlphaneTheme.surface : accentColor
     }
 
     private var indicatorSize: CGFloat {
@@ -44,23 +49,11 @@ struct PosterIndicatorsOverlay: View {
     }
 
     private var unplayedIndicatorAlignment: Alignment {
-        #if os(tvOS)
         .bottomLeading
-        #else
-        .topTrailing
-        #endif
     }
 
     private var showsUnplayedIndicator: Bool {
-        #if os(tvOS)
         false
-        #else
-        indicators.contains(.unplayed) &&
-            item.canBePlayed &&
-            !item.isLiveStream &&
-            item.userData?.isPlayed == false &&
-            (item.userData?.playbackPositionTicks ?? 0) == 0
-        #endif
     }
 
     private var showsProgressIndicator: Bool {
@@ -91,7 +84,7 @@ struct PosterIndicatorsOverlay: View {
         }
 
         if showsFavoriteIndicator {
-            QuadrantItem(color: .pink) {
+            QuadrantItem(color: favoriteBadgeColor) {
                 Text(Image(systemName: "heart.fill"))
                     .accessibilityLabel(L10n.favorited)
             }

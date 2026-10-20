@@ -14,29 +14,17 @@ import SwiftUI
 
 struct UserSignInView: View {
 
-    private enum Field: Hashable {
-        case username
-        case password
-    }
-
     @Environment(\.localUserAuthenticationAction)
     private var authenticationAction
 
     @Injected(\.userSessionManager)
     private var userSessionManager: UserSessionManager
 
-    @FocusState
-    private var focusedTextField: Field?
-
     @Router
     private var router
 
     @State
     private var accessPolicy: LocalUserAccessPolicy = .none
-    @State
-    private var existingUser: UserSignInViewModel.UserStateDataPair? = nil
-    @State
-    private var isPresentingExistingUser: Bool = false
     @State
     private var password: String = ""
     @State
@@ -47,9 +35,9 @@ struct UserSignInView: View {
     @StateObject
     private var viewModel: UserSignInViewModel
 
-    init(server: ServerState, username: String? = nil) {
-        self._username = State(initialValue: username ?? "")
-        self._viewModel = StateObject(wrappedValue: UserSignInViewModel(server: server))
+    init(server: ServerState, profile: UserSignInProfile? = nil) {
+        self._username = State(initialValue: profile?.username ?? "")
+        self._viewModel = StateObject(wrappedValue: UserSignInViewModel(server: server, profile: profile))
     }
 
     private func handleEvent(_ event: UserSignInViewModel._Event) {
@@ -70,30 +58,37 @@ struct UserSignInView: View {
             )
 
         case let .existingUser(existingUser):
-            if existingUser.state.state.requiresServerSignIn, let authenticationAction {
-                let user = existingUser.state.state
-                viewModel.saveExisting(
-                    user: existingUser,
-                    replaceForAccessToken: true,
-                    authenticationAction: (authenticationAction, user.accessPolicy, user.accessPolicy.authenticateReason(user: user)),
-                    evaluatedPolicyMap: .init(action: processEvaluatedPolicy)
-                )
-                return
-            }
-            self.existingUser = existingUser
-            self.isPresentingExistingUser = true
+            guard let authenticationAction else { return }
+
+            let user = existingUser.state.state
+            viewModel.saveExisting(
+                user: existingUser,
+                replaceForAccessToken: true,
+                authenticationAction: (authenticationAction, user.accessPolicy, user.accessPolicy.authenticateReason(user: user)),
+                evaluatedPolicyMap: .init(action: processEvaluatedPolicy)
+            )
 
         case let .saved(user):
             Task { @MainActor in
                 do {
                     try await userSessionManager.signIn(userID: user.id)
-                    UIDevice.feedback(.success)
+
                     router.dismiss()
                 } catch {
                     await viewModel.error(error)
                 }
             }
         }
+    }
+
+    private func signIn() {
+        viewModel.signIn(username: username, password: password)
+    }
+
+    private func quickConnect() {
+        router.route(to: .quickConnect(client: viewModel.server.client) { secret in
+            await viewModel.signInQuickConnect(secret: secret)
+        })
     }
 
     private func processEvaluatedPolicy(
@@ -110,240 +105,15 @@ struct UserSignInView: View {
     }
 
     @ViewBuilder
-    private func disclaimerText(_ disclaimer: String) -> some View {
-        if let attributedString = try? AttributedString(
-            markdown: disclaimer,
-            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        ) {
-            Text(attributedString)
-        } else {
-            Text(disclaimer)
-        }
-    }
-
-    // MARK: - Sign In Section
-
-    @ViewBuilder
-    private var signInSection: some View {
-        Section {
-            TextField(L10n.username, text: $username)
-                .autocorrectionDisabled()
-                .textContentType(.username)
-                .textInputAutocapitalization(.never)
-                .focused($focusedTextField, equals: .username)
-                .onSubmit {
-                    focusedTextField = .password
-                }
-
-            SecureField(
-                L10n.password,
-                text: $password,
-                maskToggle: .enabled
-            ) {
-                focusedTextField = nil
-
-                viewModel.signIn(
-                    username: username,
-                    password: password
-                )
-            }
-            .autocorrectionDisabled()
-            .textContentType(.password)
-            .textInputAutocapitalization(.never)
-            .focused($focusedTextField, equals: .password)
-        } header: {
-            Text(L10n.signInToServer(viewModel.server.name))
-        } footer: {
-            switch accessPolicy {
-            case .requireDeviceAuthentication:
-                Label(L10n.userDeviceAuthRequiredDescription, systemImage: "exclamationmark.circle.fill")
-                    .labelStyle(.sectionFooterWithImage(imageStyle: .orange))
-
-            case .requirePin:
-                Label(L10n.userPinRequiredDescription, systemImage: "exclamationmark.circle.fill")
-                    .labelStyle(.sectionFooterWithImage(imageStyle: .orange))
-
-            case .none:
-                EmptyView()
-            }
-        }
-
-        if case .signingIn = viewModel.state {
-            Button(role: .cancel) {
-                viewModel.cancel()
-            } label: {
-                Text(L10n.cancel)
-                    .frame(maxWidth: .infinity)
-            }
-            .listRowInsets(.zero)
-            .listRowBackground(Color.clear)
-            .fontWeight(.semibold)
-            .backport
-            .buttonStyle(.glassProminent.shadow(false))
-            #if os(iOS)
-            .controlSize(.large)
-            #endif
-            #if os(iOS)
-            .listRowSeparator(.hidden)
-            #endif
-            .frame(maxHeight: 75)
-        } else {
-            Button {
-                viewModel.signIn(
-                    username: username,
-                    password: password
-                )
-            } label: {
-                Text(L10n.signIn)
-                    .frame(maxWidth: .infinity)
-            }
-            .listRowInsets(.zero)
-            .listRowBackground(Color.clear)
-            .fontWeight(.semibold)
-            .backport
-            .buttonStyle(.glassProminent.shadow(false))
-            .tint(.jellyfinPurple)
-            #if os(iOS)
-            .controlSize(.large)
-            .listRowSeparator(.hidden)
-            #endif
-            .frame(maxHeight: 75)
-            .disabled(username.isEmpty)
-        }
-
-        if viewModel.isQuickConnectEnabled {
-            Section {
-                Button {
-                    router.route(
-                        to: .quickConnect(
-                            client: viewModel.server.client
-                        ) { secret in
-                            await viewModel.signInQuickConnect(secret: secret)
-                        }
-                    )
-                } label: {
-                    Text(L10n.quickConnect)
-                        .frame(maxWidth: .infinity)
-                }
-                .listRowInsets(.zero)
-                .listRowBackground(Color.clear)
-                .fontWeight(.semibold)
-                .backport
-                .buttonStyle(.glassProminent.shadow(false))
-                .tint(.jellyfinPurple)
-                #if os(iOS)
-                .controlSize(.large)
-                #endif
-                #if os(iOS)
-                .listRowSeparator(.hidden)
-                #endif
-                .disabled(viewModel.state == .signingIn)
-            }
-        }
-
-        if let disclaimer = viewModel.serverDisclaimer {
-            Section(L10n.disclaimer) {
-                disclaimerText(disclaimer)
-                    .font(.callout)
-            }
-        }
-    }
-
-    // MARK: - Public Users Section
-
-    @ViewBuilder
-    private var publicUsersSection: some View {
-        Section(L10n.publicUsers) {
-            if viewModel.publicUsers.isEmpty {
-                Text(L10n.noPublicUsers)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            } else {
-                #if os(iOS)
-                ForEach(viewModel.publicUsers) { user in
-                    ChevronButton {
-                        username = user.name ?? ""
-                        password = ""
-                        focusedTextField = .password
-                    } label: {
-                        HStack {
-                            UserProfileImage(
-                                userID: user.id,
-                                source: user.profileImageSource(
-                                    client: viewModel.server.client,
-                                    maxWidth: 50
-                                )
-                            )
-                            .frame(width: 50, height: 50)
-
-                            Text(user.name ?? .emptyDash)
-                                .fontWeight(.semibold)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                #else
-                LazyVGrid(
-                    columns: Array(
-                        repeating: GridItem(.flexible(), spacing: EdgeInsets.itemSpacing),
-                        count: 4
-                    ),
-                    spacing: EdgeInsets.itemSpacing
-                ) {
-                    ForEach(viewModel.publicUsers) { user in
-                        UserButton(
-                            user: user,
-                            client: viewModel.server.client
-                        ) {
-                            username = user.name ?? ""
-                            password = ""
-                            focusedTextField = .password
-                        }
-                        .withViewContext(.isOverComplexContent)
-                    }
-                }
-                #endif
-            }
-        }
-        .disabled(viewModel.state == .signingIn)
-    }
-
-    @ViewBuilder
     private var contentView: some View {
-        #if os(iOS)
-        List {
-            signInSection
-            publicUsersSection
-        }
-        .toolbarTitleDisplayMode(.inline)
-        .navigationBarCloseButton(disabled: viewModel.state == .signingIn) {
-            router.dismiss()
-        }
-        .topBarTrailing {
-            if viewModel.state == .signingIn || viewModel.background.is(.gettingPublicData) {
-                ProgressView()
-            }
-
-            Button(L10n.security, systemImage: "gearshape.fill") {
-                router.route(
-                    to: .userSecurity(
-                        pinHint: $pinHint,
-                        accessPolicy: $accessPolicy
-                    )
-                )
-            }
-        }
-        #else
-        SplitLoginWindowView(
-            isLoading: viewModel.state == .signingIn,
-            backgroundImageSource: viewModel.server.splashScreenImageSource
-        ) {
-            signInSection
-        } trailingContentView: {
-            publicUsersSection
-        }
-        #endif
+        TVSignInContent(
+            username: $username,
+            password: $password,
+            viewModel: viewModel,
+            signIn: signIn,
+            quickConnect: quickConnect,
+            dismiss: { router.dismiss() }
+        )
     }
 
     // MARK: - Body
@@ -354,52 +124,8 @@ struct UserSignInView: View {
             .interactiveDismissDisabled(viewModel.state == .signingIn)
             .onReceive(viewModel.events, perform: handleEvent)
             .onFirstAppear {
-                focusedTextField = username.isEmpty ? .username : .password
                 viewModel.getPublicData()
             }
-            .alert(
-                L10n.duplicateUser,
-                isPresented: $isPresentingExistingUser,
-                presenting: existingUser
-            ) { existingUser in
-
-                let userState = existingUser.state.state
-                let existingUserAccessPolicy = userState.accessPolicy
-
-                Button(L10n.signIn) {
-                    viewModel.saveExisting(
-                        user: existingUser,
-                        replaceForAccessToken: false,
-                        authenticationAction: (
-                            authenticationAction!,
-                            existingUserAccessPolicy,
-                            existingUserAccessPolicy.authenticateReason(
-                                user: userState
-                            )
-                        ),
-                        evaluatedPolicyMap: .init(action: processEvaluatedPolicy)
-                    )
-                }
-
-                Button(L10n.replace) {
-                    viewModel.saveExisting(
-                        user: existingUser,
-                        replaceForAccessToken: true,
-                        authenticationAction: (
-                            authenticationAction!,
-                            existingUserAccessPolicy,
-                            existingUserAccessPolicy.authenticateReason(
-                                user: userState
-                            )
-                        ),
-                        evaluatedPolicyMap: .init(action: processEvaluatedPolicy)
-                    )
-                }
-
-                Button(L10n.dismiss, role: .cancel) {}
-            } message: { existingUser in
-                Text(L10n.duplicateUserSaved(existingUser.state.state.username))
-            }
-            .errorMessage($viewModel.error)
+            .toolbar(.hidden, for: .navigationBar)
     }
 }

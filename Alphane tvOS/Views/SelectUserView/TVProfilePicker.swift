@@ -36,6 +36,7 @@ extension SelectUserView {
         let serverSelection: SelectUserServerSelection
         let action: (UserState) -> Void
         let onDelete: (UserState) -> Void
+        var showsChrome = true
 
         private var visibleServers: [ServerState] {
             switch serverSelection {
@@ -52,7 +53,9 @@ extension SelectUserView {
         }
 
         private var preferredProfileID: String {
-            guard let item = userItems.first else { return "add-user" }
+            guard let item = userItems.first else {
+                return !showsChrome ? publicProfiles.first?.id ?? "add-user" : "add-user"
+            }
 
             return Self.profileID(userID: item.user.id, serverID: item.server.id)
         }
@@ -90,6 +93,9 @@ extension SelectUserView {
             }
             publicProfiles = profiles
             isLoadingPublicUsers = false
+            if !showsChrome, userItems.isEmpty, focusedProfileID == "add-user" {
+                focusedProfileID = preferredProfileID
+            }
         }
 
         private var cornerControls: some View {
@@ -151,7 +157,7 @@ extension SelectUserView {
 
         private func publicProfile(_ profile: PublicProfile) -> some View {
             Button {
-                router.route(to: .userSignIn(server: profile.server, username: profile.user.name))
+                router.route(to: .userSignIn(server: profile.server, profile: UserSignInProfile(user: profile.user)))
             } label: {
                 profileLabel(
                     userID: profile.user.id,
@@ -239,15 +245,19 @@ extension SelectUserView {
         var body: some View {
             GeometryReader { proxy in
                 VStack(spacing: 0) {
-                    cornerControls
-                        .padding(.horizontal, 72)
-                        .padding(.top, 40)
+                    if showsChrome {
+                        cornerControls
+                            .padding(.horizontal, 72)
+                            .padding(.top, 40)
+                    }
 
                     ScrollView(.vertical) {
                         VStack(spacing: 32) {
-                            Text(L10n.profilePickerTitle)
-                                .font(.system(size: 44, weight: .medium))
-                                .foregroundStyle(.white)
+                            if showsChrome {
+                                Text(L10n.profilePickerTitle)
+                                    .font(.system(size: 44, weight: .medium))
+                                    .foregroundStyle(.white)
+                            }
 
                             if !userItems.isEmpty {
                                 VStack(spacing: 24) {
@@ -285,7 +295,7 @@ extension SelectUserView {
                                 .focusSection()
                             }
                         }
-                        .frame(minHeight: max(proxy.size.height - 136, 0))
+                        .frame(minHeight: max(proxy.size.height - (showsChrome ? 136 : 48), 0))
                         .padding(.vertical, 24)
                     }
                     .scrollIndicators(.hidden)
@@ -296,6 +306,5 @@ extension SelectUserView {
             .onAppear { focusedProfileID = preferredProfileID }
             .task(id: requestKey) { await loadPublicUsers() }
         }
-
     }
 }

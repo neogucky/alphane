@@ -35,14 +35,14 @@ class MediaChaptersSupplement: ObservableObject, MediaPlayerSupplement {
         return chapters[safe: max(0, nextIndex - 1)]?.id
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         ChapterOverlay(supplement: self)
     }
 }
 
 extension MediaChaptersSupplement {
 
-    private struct ChapterOverlay: PlatformView {
+    private struct ChapterOverlay: View {
 
         @Environment(VideoPlayer.ViewState.self)
         private var viewState
@@ -75,11 +75,7 @@ extension MediaChaptersSupplement {
             }
         }
 
-        var iOSView: some View {
-            content
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             content
         }
     }

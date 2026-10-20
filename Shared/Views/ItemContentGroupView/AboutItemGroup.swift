@@ -87,12 +87,8 @@ struct AboutItemGroup: ContentGroup {
                     )
                 }
                 .foregroundStyle(.primary, .secondary)
-                #if os(tvOS)
-                    .buttonStyle(.focusBorder)
-                #else
-                    .buttonStyle(.card)
-                #endif
-                    .buttonBorderShape(.roundedRectangle(radius: 20))
+                .buttonStyle(.focusBorder)
+                .buttonBorderShape(.roundedRectangle(radius: 20))
             }
         }
 
@@ -186,17 +182,12 @@ struct AboutItemGroup: ContentGroup {
         }
 
         private var cardHeight: CGFloat {
-            #if os(tvOS)
             400
-            #else
-            200
-            #endif
         }
 
         private let cardAspectRatio: CGFloat = 1.77
 
         var body: some View {
-            #if os(tvOS)
             // Synopsis and ratings are already in the hero. Keep technical
             // details reachable without another heading or oversized cards.
             ScrollView(.horizontal) {
@@ -221,44 +212,6 @@ struct AboutItemGroup: ContentGroup {
             .focusSection()
             .accessibilityElement(children: .contain)
             .accessibilityLabel(L10n.media)
-            #else
-            ContentGroupSection {
-                ScrollView(.horizontal) {
-                    HStack(spacing: EdgeInsets.itemSpacing) {
-                        descriptionCard
-
-                        if let mediaSources = item.mediaSources {
-                            ForEach(mediaSources) { source in
-                                mediaSourceCard(for: source, hasMultipleSources: mediaSources.count > 1)
-                            }
-                        }
-
-                        if item.criticRating != nil || item.communityRating != nil {
-                            ratingsCard(
-                                criticRating: item.criticRating ?? -1,
-                                communityRating: item.communityRating ?? -1
-                            )
-                        }
-                    }
-                    .edgePadding(.horizontal)
-                }
-                .scrollIndicators(.hidden)
-                .scrollClipDisabled()
-                #if os(tvOS)
-                    .withViewContext(.isOverComplexContent)
-                #endif
-                    .frame(height: cardHeight)
-                    .frame(maxWidth: .infinity)
-            } header: {
-                Text(L10n.about)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .accessibilityAddTraits(.isHeader)
-                    .edgePadding(.horizontal)
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(L10n.about)
-            #endif
         }
     }
 }

@@ -144,10 +144,6 @@ extension View {
 
     @ViewBuilder
     func mainNavigationScrollObserver() -> some View {
-        #if os(tvOS)
         modifier(MainNavigationScrollModifier())
-        #else
-        self
-        #endif
     }
 }

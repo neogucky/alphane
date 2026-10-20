@@ -13,7 +13,7 @@ import SwiftUI
 
 extension SelectUserView {
 
-    struct GridView: PlatformView {
+    struct GridView: View {
 
         @Binding
         private var isEditing: Bool
@@ -59,20 +59,7 @@ extension SelectUserView {
             .isSelected(selectedUsers.contains(item.user))
         }
 
-        var iOSView: some View {
-            CenteredLazyVGrid(
-                data: userItems,
-                id: \.user.id,
-                columns: UIDevice.isPhone ? 2 : 5,
-                spacing: EdgeInsets.itemSpacing
-            ) { item in
-                userGridButton(for: item)
-            }
-            .edgePadding(UIDevice.isPhone ? [.horizontal, .vertical] : .horizontal)
-            .scrollIfLargerThanContainer(axes: .vertical, padding: 100)
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             HStack(spacing: EdgeInsets.itemSpacing) {
                 ForEach(userItems, id: \.user.id) { item in
                     userGridButton(for: item)
@@ -84,7 +71,7 @@ extension SelectUserView {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .scrollIfLargerThanContainer(axes: .horizontal)
             #if os(tvOS)
-            .scrollClipDisabled()
+                .scrollClipDisabled()
             #endif
         }
     }

@@ -106,7 +106,6 @@ extension LabeledContentStyle where Self == FocusableLabeledContentStyle {
 struct FocusableLabeledContentStyle: LabeledContentStyle {
 
     func makeBody(configuration: Configuration) -> some View {
-        #if os(tvOS)
         Button {} label: {
             LabeledContent {
                 configuration.content
@@ -114,12 +113,5 @@ struct FocusableLabeledContentStyle: LabeledContentStyle {
                 configuration.label
             }
         }
-        #else
-        LabeledContent {
-            configuration.content
-        } label: {
-            configuration.label
-        }
-        #endif
     }
 }

@@ -13,11 +13,7 @@ extension CustomizeSettingsView {
 
     struct LibrarySection: View {
 
-        #if os(tvOS)
         typealias PlatformPicker = ListRowMenu
-        #else
-        typealias PlatformPicker = Picker
-        #endif
 
         @Default(.Customization.Library.showFavorites)
         private var showFavorites
@@ -64,7 +60,7 @@ extension CustomizeSettingsView {
 
                     PlatformPicker(L10n.posters, selection: $libraryStyle.posterDisplayType)
 
-                    if libraryStyle.displayType == .list, !UIDevice.isPhone {
+                    if libraryStyle.displayType == .list {
                         Stepper(L10n.columns, value: $libraryStyle.listColumnCount, in: 1 ... 4, step: 1) {
                             LabeledContent(L10n.columns, value: libraryStyle.listColumnCount.description)
                         }

@@ -27,21 +27,4 @@ public extension TextTransferable {
             return SentTransferredFile(url)
         }
     }
-
-    #if os(iOS)
-    var shareLink: some View {
-        ShareLink(
-            item: self,
-            preview: SharePreview(transferTitle)
-        )
-    }
-
-    func shareLink(@ViewBuilder label: () -> some View) -> some View {
-        ShareLink(
-            item: self,
-            preview: SharePreview(transferTitle),
-            label: label
-        )
-    }
-    #endif
 }

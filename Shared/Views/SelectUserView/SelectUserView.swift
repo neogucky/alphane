@@ -14,6 +14,8 @@ import SwiftUI
 
 struct SelectUserView: View {
 
+    var isOnboarding = false
+
     typealias UserItem = (user: UserState, server: ServerState)
 
     @Default(.accentColor)
@@ -119,7 +121,7 @@ struct SelectUserView: View {
     }
 
     private func addUser(server: ServerState) {
-        UIDevice.impact(.light)
+
         router.route(to: .userSignIn(server: server))
     }
 
@@ -132,7 +134,7 @@ struct SelectUserView: View {
         if user.requiresServerSignIn {
             guard let server = viewModel.servers.keys.first(where: { $0.id == user.serverID }) else { return }
 
-            router.route(to: .userSignIn(server: server, username: user.username))
+            router.route(to: .userSignIn(server: server, profile: UserSignInProfile(savedUser: user)))
             return
         }
         Task { @MainActor in
@@ -275,23 +277,16 @@ struct SelectUserView: View {
                 ProgressView()
             case .content:
                 if viewModel.servers.isEmpty {
-                    #if os(tvOS)
                     ConnectToServerView()
-                    #else
-                    ConnectToJellyfinView()
-                    #endif
                 } else {
-                    #if os(tvOS)
                     TVProfilePicker(
                         userItems: userItems,
                         servers: viewModel.servers.keys,
                         serverSelection: serverSelection,
                         action: { select(user: $0) },
-                        onDelete: { delete(user: $0) }
+                        onDelete: { delete(user: $0) },
+                        showsChrome: !isOnboarding
                     )
-                    #else
-                    contentView
-                    #endif
                 }
             }
         }
@@ -302,101 +297,21 @@ struct SelectUserView: View {
         .onFirstAppear {
             viewModel.getServers()
         }
-        .toolbar {
-            #if os(iOS)
-            ToolbarItem(placement: .principal) {
-                Image(.alphaneMark)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: UIDevice.isTV ? 100 : 30)
-            }
-
-            if horizontalSizeClass == .compact {
-                ToolbarItem(placement: .topBarLeading) {
-                    if isEditing {
-                        Button(
-                            areAllUsersSelected ? L10n.removeAll : L10n.selectAll,
-                            action: toggleAllUsersSelected
-                        )
-                        .foregroundStyle(.primary, .secondary)
-                        .if(true) { view in
-                            if #available(iOS 26.0, *) {
-                                view
-                            } else {
-                                view
-                                    .backport
-                                    .buttonStyle(.glass)
-                            }
-                        }
-                        .controlSize(.small)
-                    }
-                }
-
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    if isEditing {
-                        Button(L10n.cancel, role: .cancel) {
-                            isEditing = false
-                        }
-                        .foregroundStyle(.primary, .secondary)
-                        .if(true) { view in
-                            if #available(iOS 26.0, *) {
-                                view
-                            } else {
-                                view
-                                    .backport
-                                    .buttonStyle(.glass)
-                            }
-                        }
-                        .controlSize(.small)
-                    } else {
-                        Menu(
-                            L10n.advanced,
-                            systemImage: "gearshape.fill"
-                        ) {
-                            AdvancedMenuContent(
-                                hasUsers: userItems.isNotEmpty,
-                                isEditing: $isEditing
-                            )
-                        }
-                        .backport
-                        .buttonStyle(.glass)
-                        .controlSize(.small)
-                    }
-                }
-
-                ToolbarItem(placement: .bottomBar) {
-                    if isEditing {
-                        Button(L10n.delete, role: .destructive) {
-                            isPresentingConfirmDeleteUsers = true
-                        }
-                        .backport
-                        .buttonStyle(.glassProminent)
-                        .disabled(selectedUsers.isEmpty)
-                    }
-                }
-            }
-            #endif
-        }
+        .toolbar {}
         .background {
-            #if os(tvOS)
-            AlphaneTheme.background
-                .overlay {
-                    RadialGradient(
-                        colors: [.white.opacity(0.04), .clear],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 700
-                    )
-                }
-                .ignoresSafeArea()
-            #else
-            splashScreenBackground
-                .ignoresSafeArea()
-            #endif
+            if !isOnboarding {
+                AlphaneTheme.background
+                    .overlay {
+                        RadialGradient(
+                            colors: [.white.opacity(0.04), .clear],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 700
+                        )
+                    }
+                    .ignoresSafeArea()
+            }
         }
-        #if os(iOS)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        #endif
         .onChange(of: isEditing) {
             guard !isEditing, !isPresentingConfirmDeleteUsers else { return }
 
@@ -419,8 +334,6 @@ struct SelectUserView: View {
         }
         .onReceive(viewModel.$error) { error in
             guard error != nil else { return }
-
-            UIDevice.feedback(.error)
         }
         .onReceive(viewModel.events) { event in
             switch event {
@@ -428,7 +341,7 @@ struct SelectUserView: View {
                 Task { @MainActor in
                     do {
                         try await userSessionManager.signIn(userID: user.id)
-                        UIDevice.feedback(.success)
+
                     } catch {
                         await viewModel.error(error)
                     }
@@ -453,7 +366,6 @@ struct SelectUserView: View {
                 viewModel.deleteUsers(selectedUsers)
                 selectedUsers.removeAll()
                 isEditing = false
-                UIDevice.feedback(.success)
             }
         } message: {
             if selectedUsers.count == 1, let first = selectedUsers.first {

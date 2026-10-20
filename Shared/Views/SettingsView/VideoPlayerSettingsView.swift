@@ -21,11 +21,7 @@ struct VideoPlayerSettingsView: View {
 
     private let page: Page
 
-    #if os(tvOS)
     typealias PlatformPicker = ListRowMenu
-    #else
-    typealias PlatformPicker = Picker
-    #endif
 
     // MARK: - Player Defaults
 
@@ -100,10 +96,6 @@ struct VideoPlayerSettingsView: View {
                 engineSettings
             }
 
-            #if os(iOS)
-            gestureSettings
-            #endif
-
             if page != .audioAndSubtitles {
                 buttonSettings
 
@@ -112,10 +104,6 @@ struct VideoPlayerSettingsView: View {
                 sliderSettings
 
                 supplementSettings
-
-                #if !os(tvOS)
-                timestampSettings
-                #endif
             }
 
             if page != .playbackPreferences {
@@ -123,16 +111,21 @@ struct VideoPlayerSettingsView: View {
                 subtitleSettings
             }
         }
+        #if os(tvOS)
+        .if(page != .all) { form in
+            form.playbackSettingsStyle()
+        }
+        #endif
         .onFirstAppear {
-            viewModel.refresh()
-        }
-        .toolbarTitleDisplayMode(.inline)
-        .navigationTitle(page == .audioAndSubtitles ? "Audio & subtitles" : L10n.videoPlayer.localizedCapitalized)
-        .topBarTrailing {
-            if viewModel.background.is(.updating) || viewModel.background.is(.refreshing) {
-                ProgressView()
+                viewModel.refresh()
             }
-        }
+            .toolbarTitleDisplayMode(.inline)
+            .navigationTitle(page == .audioAndSubtitles ? "Audio & subtitles" : L10n.videoPlayer.localizedCapitalized)
+            .topBarTrailing {
+                if viewModel.background.is(.updating) || viewModel.background.is(.refreshing) {
+                    ProgressView()
+                }
+            }
     }
 
     // MARK: - Engine Settings
@@ -149,13 +142,9 @@ struct VideoPlayerSettingsView: View {
     @ViewBuilder
     private var engineSettings: some View {
         Section(L10n.playback) {
-            #if os(iOS)
-            videoPlayerPicker
-            #else
             ListRowMenu(L10n.player, subtitle: videoPlayerType.displayTitle) {
                 videoPlayerPicker
             }
-            #endif
 
             ChevronButton(L10n.playbackQuality) {
                 router.route(to: .playbackQualitySettings)
@@ -173,17 +162,6 @@ struct VideoPlayerSettingsView: View {
     }
 
     // MARK: - Gesture Settings
-
-    #if os(iOS)
-    @ViewBuilder
-    private var gestureSettings: some View {
-        Section(L10n.gestures) {
-            ChevronButton(L10n.gestures) {
-                router.route(to: .gestureSettings)
-            }
-        }
-    }
-    #endif
 
     // MARK: - Button Settings
 
@@ -252,7 +230,7 @@ struct VideoPlayerSettingsView: View {
             Stepper(L10n.resumeOffset, value: $resumeOffset, in: 0 ... 30, step: 1) {
                 LabeledContent(L10n.resumeOffset) {
                     Text(resumeOffset, format: SecondFormatter())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(UIDevice.isTV && page != .all ? .primary : .secondary)
                 }
             }
 
@@ -266,6 +244,7 @@ struct VideoPlayerSettingsView: View {
             Text(L10n.resume)
         } footer: {
             Text(L10n.resumeOffsetDescription)
+                .playbackSettingsFooter()
         }
     }
 
@@ -372,6 +351,7 @@ struct VideoPlayerSettingsView: View {
             )
         } footer: {
             Text(L10n.forceSubtitleBurnInMessage)
+                .playbackSettingsFooter()
         } learnMore: {
             LabeledContent(
                 SubtitlePlaybackMode.default.displayTitle,
@@ -407,7 +387,7 @@ struct VideoPlayerSettingsView: View {
             Stepper(L10n.subtitleSize, value: $subtitleConfiguration.size, in: 1 ... 20, step: 1) {
                 LabeledContent(L10n.subtitleSize) {
                     Text(subtitleConfiguration.size.description)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(UIDevice.isTV && page != .all ? .primary : .secondary)
                 }
             }
 
@@ -415,6 +395,7 @@ struct VideoPlayerSettingsView: View {
         } footer: {
             // TODO: better wording
             Text(L10n.subtitlesDisclaimer)
+                .playbackSettingsFooter()
         }
     }
 }

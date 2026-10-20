@@ -107,6 +107,10 @@ final class MediaPlayerManager: ViewModel {
     @Published
     var playbackItem: MediaPlayerItem? = nil {
         didSet {
+            if oldValue !== playbackItem {
+                hasPresentedVideoFrame = false
+            }
+            completedPlaybackItemID = nil
             if let playbackItem {
                 if oldValue?.baseItem.id != playbackItem.baseItem.id || oldValue == nil {
                     resetPlaybackOffsets()
@@ -146,6 +150,28 @@ final class MediaPlayerManager: ViewModel {
 
     @Published
     private(set) var playbackRequestStatus: PlaybackRequestStatus = .playing
+
+    @Published
+    private(set) var hasPresentedVideoFrame = false
+    @Published
+    private(set) var isBuffering = false
+
+    var loadingPresentation: PlaybackLoadingPresentation {
+        .init(
+            state: state,
+            hasPresentedVideoFrame: hasPresentedVideoFrame,
+            isBuffering: isBuffering,
+            playbackRequestStatus: playbackRequestStatus
+        )
+    }
+
+    /// Ignore late renderer callbacks belonging to a replaced episode or stream.
+    func videoFramePresented(for playbackItem: MediaPlayerItem) {
+        guard self.playbackItem === playbackItem, !hasPresentedVideoFrame else { return }
+
+        hasPresentedVideoFrame = true
+    }
+
     @Published
     var rate: Double = Defaults[.VideoPlayer.Playback.playbackRate] {
         didSet {
@@ -223,6 +249,9 @@ final class MediaPlayerManager: ViewModel {
     /// The current seconds media playback is set to.
     let secondsBox: PublishedBox<Duration> = .init(initialValue: .zero)
 
+    /// Latched at EOF so an engine clock reset cannot restore an old resume point.
+    private(set) var completedPlaybackItemID: String?
+
     var seconds: Duration {
         get { secondsBox.value }
         set { secondsBox.value = newValue }
@@ -235,11 +264,19 @@ final class MediaPlayerManager: ViewModel {
     /// Holds a weak reference to the current media player proxy.
     weak var proxy: (any MediaPlayerProxy)? {
         didSet {
+            bufferingCancellable?.cancel()
+            isBuffering = proxy?.isBuffering.value ?? false
             if var proxy {
                 proxy.manager = self
+                bufferingCancellable = proxy.isBuffering
+                    .$value
+                    .removeDuplicates()
+                    .sink { [weak self] in self?.isBuffering = $0 }
             }
         }
     }
+
+    private var bufferingCancellable: AnyCancellable?
 
     private var initialMediaPlayerItemProvider: MediaPlayerItemProvider?
 
@@ -281,22 +318,13 @@ final class MediaPlayerManager: ViewModel {
 
     @Function(\Action.Cases.ended)
     private func _ended() async throws {
-        // TODO: change to observe given seconds against runtime
-        //       instead of sent action?
+        // All proxies send this only for a natural EOF. Their final clock can
+        // lag or reset, so it must not veto completion or the final stop report.
+        guard !item.isLiveStream else { return }
 
-        // Ended should represent natural ending of playback, which
-        // is verifiable by given seconds being near item runtime.
-        // VLC proxy will send ended early.
-        guard let runtime = item.runtime else {
-            await self.stop()
-            return
-        }
-
-        let isNearEnd = (runtime - seconds) <= .seconds(1)
-
-        guard isNearEnd else {
-            // If not near end, ignore.
-            return
+        completedPlaybackItemID = playbackItem?.baseItem.id
+        if let runtime = item.runtime {
+            seconds = runtime
         }
 
         if let nextItem = queue?.nextItem, try authenticatedUser.data.configuration?.enableNextEpisodeAutoPlay == true {

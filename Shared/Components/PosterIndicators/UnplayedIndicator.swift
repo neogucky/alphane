@@ -17,19 +17,11 @@ struct UnplayedIndicator: View {
     let count: Int?
 
     private var badgeColor: Color {
-        #if os(tvOS)
         AlphaneTheme.surface
-        #else
-        accentColor
-        #endif
     }
 
     private var badgeCorner: QuadrantCorner {
-        #if os(tvOS)
         .bottomLeading
-        #else
-        .topTrailing
-        #endif
     }
 
     var body: some View {
@@ -43,14 +35,7 @@ struct UnplayedIndicator: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(L10n.posterAccessibilityUnplayedCount(count.formatted()))
-        } else {
-            #if !os(tvOS)
-            Q3RightTriangle()
-                .fill(accentColor)
-                .aspectRatio(1, contentMode: .fit)
-                .accessibilityLabel(L10n.unplayed)
-            #endif
-        }
+        } else {}
     }
 }
 

@@ -198,6 +198,6 @@ Alphane offers two standard player options: **VLC** (SwiftVLC) and **Native** (A
 | Feature                      | VLC | Native (AVPlayer) | Notes                                                                                                                                 |
 |------------------------------|-------------------|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | **External Display Support** | 🔶                | ✅                | VLC player can only be mirrored. As a result, the player will retain the source device dimensions.                               |
-| **Energy Consumption**       | 🔶                | ✅                | VLC player will use a software decoder if the media cannot be handled by iOS natively. This results in higher power consumption. |
+| **Energy Consumption**       | 🔶                | ✅                | VLC player will use a software decoder if the media cannot be handled by tvOS natively. This results in higher power consumption. |
 
 ---

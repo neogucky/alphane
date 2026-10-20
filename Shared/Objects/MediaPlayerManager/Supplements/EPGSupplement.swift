@@ -15,14 +15,14 @@ struct EPGSupplement: MediaPlayerSupplement {
     let id: String = "EPG"
     let presentationStyle: MediaPlayerSupplementPresentationStyle = .expanded
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         GuideOverlay()
     }
 }
 
 extension EPGSupplement {
 
-    private struct GuideOverlay: PlatformView {
+    private struct GuideOverlay: View {
 
         @Environment(\.safeAreaInsets)
         private var safeAreaInsets
@@ -48,10 +48,6 @@ extension EPGSupplement {
                     selectedChannelID: manager.item.id,
                     action: select
                 )
-            }
-            .if(UIDevice.isPhone) { view in
-                view
-                    .padding(.leading, safeAreaInsets.leading)
             }
             .onFirstAppear {
                 viewModel.refresh(startDate: nil)
@@ -83,11 +79,7 @@ extension EPGSupplement {
             .focusSection()
         }
 
-        var iOSView: some View {
-            content
-        }
-
-        var tvOSView: some View {
+        var body: some View {
             content
                 .focusSection()
         }

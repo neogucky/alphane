@@ -23,26 +23,14 @@ extension EdgeInsets {
     /// The padding for Views against contextual edges,
     /// typically the edges of the View's scene
     static let edgePadding: CGFloat = {
-        #if os(tvOS)
         60
-        #else
-        if UIDevice.isPad {
-            24
-        } else {
-            16
-        }
-        #endif
     }()
 
     static let edgeInsets: EdgeInsets = .init(edgePadding)
 
     /// The gap between collection items
     static let itemSpacing: CGFloat = {
-        #if os(tvOS)
         40
-        #else
-        10
-        #endif
     }()
 
     init(_ constant: CGFloat) {

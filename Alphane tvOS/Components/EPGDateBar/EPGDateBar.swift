@@ -9,13 +9,9 @@
 import Defaults
 import SwiftUI
 
-// TODO: Have pills use `SelectionTrack` instead
-
 struct EPGDateBar: View {
-
     @FocusState
     private var focusedDate: Date?
-
     @ObservedObject
     var viewModel: EPGViewModel
 
@@ -28,37 +24,16 @@ struct EPGDateBar: View {
     }
 
     var body: some View {
-        AlternateLayoutView {
-            ZStack {
-                ForEach(viewModel.availableDates, id: \.self) { date in
-                    Text(date.formatted(.dateTime.weekday(.abbreviated).day()))
-                }
-
-                Image(systemName: "paintpalette")
-            }
-            .font(.footnote)
-            .fontWeight(.semibold)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 16)
-        } content: { size in
-            HStack(spacing: 16) {
-                ForEach(viewModel.availableDates, id: \.self) { date in
-                    DatePill(date: date) {
-                        viewModel.setDate(date: date)
-                    }
+        HStack(spacing: 12) {
+            ForEach(viewModel.availableDates, id: \.self) { date in
+                DatePill(date: date) { viewModel.setDate(date: date) }
                     .isSelected(isSelected(date))
                     .focused($focusedDate, equals: date)
-                    .frame(width: size.width, height: size.height)
-                }
             }
-            .buttonStyle(EPGButtonStyle())
-            .labelStyle(.iconOnly)
-            .activeSelectionFocus(
-                $focusedDate,
-                selection: viewModel.availableDates.first {
-                    isSelected($0)
-                }
-            )
         }
+        .activeSelectionFocus(
+            $focusedDate,
+            selection: viewModel.availableDates.first { isSelected($0) }
+        )
     }
 }

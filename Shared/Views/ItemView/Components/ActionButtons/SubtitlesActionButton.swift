@@ -21,11 +21,7 @@ extension ItemActionButtons {
         var title = ItemActionButton.subtitles.displayTitle
 
         private func action() {
-            #if os(iOS)
-            router.route(to: .editSubtitles(item: provider.item))
-            #else
             router.route(to: .searchSubtitle(viewModel: .init(item: provider.item)))
-            #endif
         }
 
         var body: some View {

@@ -41,6 +41,10 @@ struct FilterView: View {
     }
 
     var body: some View {
+        TVFilterContent(viewModel: viewModel, type: type)
+    }
+
+    private var legacyContent: some View {
         Form(systemImage: type.systemImage) {
             ForEach(type.group) { element in
                 Section {

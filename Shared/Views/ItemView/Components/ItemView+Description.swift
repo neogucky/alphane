@@ -35,16 +35,7 @@ extension ItemView {
                     }
 
                     if let itemOverview = item.overview, itemOverview.isNotEmpty {
-                        InlinePlatformView {
-                            Button {
-                                router.route(to: .itemOverview(item: item))
-                            } label: {
-                                SeeMoreText(itemOverview)
-                                    .font(.footnote)
-                                    .lineLimit(3)
-                            }
-                            .buttonStyle(.plain)
-                        } tvOSView: {
+                        Group {
                             Text(itemOverview)
                                 .font(.footnote)
                                 .lineLimit(3)

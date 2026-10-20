@@ -12,6 +12,9 @@ import SwiftUI
 
 struct ChevronButton<Label: View>: View {
 
+    @Environment(\.usesPlaybackSettingsStyle)
+    private var usesPlaybackSettingsStyle
+
     @Environment(\.isEditing)
     private var isEditing
 
@@ -30,13 +33,21 @@ struct ChevronButton<Label: View>: View {
                     ListRowCheckbox()
                 } else {
                     Image(systemName: isExternal ? "arrow.up.forward" : "chevron.right")
-                        .font(.body)
+                        .font(UIDevice.isTV && usesPlaybackSettingsStyle ? .system(size: 16, weight: .medium) : .body)
                         .fontWeight(.regular)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(usesPlaybackSettingsStyle ? .primary : .secondary)
                 }
             }
         }
         .foregroundStyle(.primary, .secondary)
+        #if os(tvOS)
+            .if(usesPlaybackSettingsStyle) { button in
+                button
+                    .buttonStyle(TVSettingsButtonStyle())
+                    .listRowInsets(.zero)
+                    .listRowBackground(Color.clear)
+            }
+        #endif
     }
 }
 
@@ -200,6 +211,9 @@ extension ChevronButton where Label == ChevronButtonValueContent<SwiftUI.Label<T
 
 struct ChevronButtonValueContent<Label: View, Value: View>: View {
 
+    @Environment(\.usesPlaybackSettingsStyle)
+    private var usesPlaybackSettingsStyle
+
     private let label: Label
     private let value: Value
 
@@ -219,7 +233,12 @@ struct ChevronButtonValueContent<Label: View, Value: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             value
-                .foregroundStyle(.secondary)
+                .foregroundStyle(usesPlaybackSettingsStyle ? .primary : .secondary)
+            #if os(tvOS)
+                .if(usesPlaybackSettingsStyle) { value in
+                    value.font(.system(size: 20))
+                }
+            #endif
         }
         .frame(maxWidth: .infinity)
     }

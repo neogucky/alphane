@@ -58,18 +58,11 @@ extension LetterPickerBar {
                     )
                     .isSelected(isGlassVisible)
             }
-            #if os(tvOS)
             .buttonStyle(ArtworkButtonStyle())
             .tvFocusBorder(isFocused: isFocused, shape: RoundedRectangle(cornerRadius: 5))
-            #else
-            .buttonStyle(.borderless)
-            #endif
             .buttonBorderShape(.roundedRectangle)
             .focused($isFocused)
-            #if !os(tvOS)
-                .scaleEffect(isFocused ? 1.2 : 1)
-            #endif
-                .animation(.easeInOut(duration: 0.15), value: isFocused)
+            .animation(.easeInOut(duration: 0.15), value: isFocused)
         }
     }
 }

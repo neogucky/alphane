@@ -37,11 +37,7 @@ extension ItemActionButtons {
         }
 
         private var canFindSubtitles: Bool {
-            #if os(tvOS)
             provider.item.canEditSubtitles
-            #else
-            false
-            #endif
         }
 
         private var supportedBitrates: [PlaybackBitrate] {

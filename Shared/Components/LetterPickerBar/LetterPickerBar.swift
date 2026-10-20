@@ -9,7 +9,7 @@
 import Defaults
 import SwiftUI
 
-struct LetterPickerBar: PlatformView {
+struct LetterPickerBar: View {
 
     @Default(.accentColor)
     private var accentColor
@@ -127,53 +127,7 @@ struct LetterPickerBar: PlatformView {
         .font(UIDevice.isTV ? .system(size: 22, weight: .semibold) : .footnote)
     }
 
-    var iOSView: some View {
-        letterBar
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay {
-                #if os(iOS)
-                GestureView()
-                    .environment(\.panGestureDirection, .vertical)
-                    .environment(\.panAction, PanAction { _, _, location, _, state in
-                        switch state {
-                        case .began, .changed:
-                            guard let target = letter(atY: location.y), target != activeLetter else { return }
-
-                            activeLetter = target
-                            UIDevice.impact(.light)
-
-                        case .ended, .cancelled, .failed:
-                            if let target = letter(atY: location.y) {
-                                viewModel.currentFilters.letter = [target]
-                            }
-                            activeLetter = nil
-
-                        default:
-                            break
-                        }
-                    })
-                    .environment(\.tapGestureAction, TapAction { location, _, _ in
-                        switch row(atY: location.y) {
-                        case let .letter(letter)?:
-                            toggleLetter(letter)
-                        case .dot?:
-                            viewModel.currentFilters.letter = []
-                        case nil:
-                            break
-                        }
-                    })
-                #endif
-            }
-            .onSizeChanged { size, _ in
-                barHeight = size.height
-            }
-            .frame(width: dimension)
-            .padding(.vertical, EdgeInsets.edgePadding / 2)
-            .preference(key: PresentationControllerShouldDismissPreferenceKey.self, value: activeLetter == nil)
-            .preference(key: LetterPickerActiveLetterKey.self, value: activeLetter)
-    }
-
-    var tvOSView: some View {
+    var body: some View {
         letterBar
             .scrollIfLargerThanContainer()
             .frame(width: dimension)

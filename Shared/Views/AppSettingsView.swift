@@ -25,11 +25,6 @@ struct AppSettingsView: View {
     @Default(.signOutOnClose)
     private var signOutOnClose
 
-    #if os(iOS)
-    @Default(.appAppearance)
-    private var appearance
-    #endif
-
     @Router
     private var router
 
@@ -70,15 +65,6 @@ struct AppSettingsView: View {
                 ChevronButton(L10n.appIcon) {
                     router.route(to: .appIconSelector)
                 }
-
-                #if os(iOS)
-                if !selectUserUseSplashscreen {
-                    Picker(
-                        L10n.appearance,
-                        selection: $appearance
-                    )
-                }
-                #endif
             }
 
             Section {
@@ -86,7 +72,6 @@ struct AppSettingsView: View {
 
                 if selectUserUseSplashscreen {
 
-                    #if os(tvOS)
                     ListRowMenu(L10n.servers) {
                         if selectUserAllServersSplashscreen == .all {
                             Label(L10n.random, systemImage: "dice.fill")
@@ -98,9 +83,6 @@ struct AppSettingsView: View {
                     } content: {
                         serverPicker
                     }
-                    #else
-                    serverPicker
-                    #endif
                 }
             } header: {
                 Text(L10n.splashscreen)

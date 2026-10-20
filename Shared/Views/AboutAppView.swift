@@ -17,24 +17,6 @@ struct AboutAppView: View {
     var body: some View {
         Form(image: .alphaneMark) {
 
-            #if os(iOS)
-            Section {
-                VStack(alignment: .center, spacing: 10) {
-
-                    Image(.alphaneMark)
-                        .resizable()
-                        .aspectRatio(1, contentMode: .fit)
-                        .frame(height: 150)
-
-                    Text(verbatim: L10n.alphane)
-                        .fontWeight(.semibold)
-                        .font(.title2)
-                }
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-            }
-            #endif
-
             Section {
                 #if DEBUG
                 // swiftlint:disable:next hard_coded_display_string
@@ -47,15 +29,6 @@ struct AboutAppView: View {
                     L10n.version,
                     value: "\(UIApplication.appVersion ?? .emptyDash) (\(UIApplication.bundleVersion ?? .emptyDash))"
                 )
-                #endif
-
-                #if os(iOS)
-                ChevronButton(
-                    L10n.permissions,
-                    systemName: "hand.raised.fill"
-                ) {
-                    router.route(to: .appPermissions)
-                }
                 #endif
 
                 ChevronButton(
@@ -72,33 +45,6 @@ struct AboutAppView: View {
             Section {
 
                 // tvOS cannot open generic web links
-                #if !os(tvOS)
-                ChevronButton(
-                    L10n.sourceCode,
-                    image: .logoGithub,
-                    external: true
-                ) {
-                    UIApplication.shared.open(.alphaneGithub)
-                }
-
-                ChevronButton(
-                    L10n.license,
-                    content: L10n.mlp2,
-                    systemName: "text.document",
-                    external: true
-                ) {
-                    UIApplication.shared.open(.alphaneGithubLicense)
-                }
-
-                ChevronButton(
-                    L10n.bugsAndFeatures,
-                    systemName: "plus.circle.fill",
-                    external: true
-                ) {
-                    UIApplication.shared.open(.alphaneGithubIssues)
-                }
-                .symbolRenderingMode(.monochrome)
-                #endif
             }
             Section {
                 Text(L10n.upstreamAttribution)

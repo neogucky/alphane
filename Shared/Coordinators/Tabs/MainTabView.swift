@@ -38,13 +38,6 @@ struct MainTabView: View {
     }
 
     private static var defaultTabCoordinator: TabCoordinator {
-        #if os(iOS)
-        TabCoordinator {
-            TabItem.contentGroup(provider: DefaultContentGroupProvider())
-            TabItem.search
-            TabItem.media
-        }
-        #else
         TabCoordinator {
             TabItem.contentGroup(provider: DefaultContentGroupProvider())
             TabItem.library(
@@ -61,7 +54,6 @@ struct MainTabView: View {
             TabItem.media
             TabItem.settings
         }
-        #endif
     }
 
     private func routePendingDeepLink(_ deepLink: DeepLink?) {
@@ -69,12 +61,15 @@ struct MainTabView: View {
 
         Task { @MainActor in
             guard let session = userSessionManager.currentSession else { return }
+
             do {
                 let route = try await deepLink.route(userSession: session)
                 guard userSessionManager.currentSession === session else { return }
+
                 await tabCoordinator.route(to: route)
             } catch {
                 guard userSessionManager.currentSession === session else { return }
+
                 userSessionManager.logger.error("Unable to open Top Shelf item: \(error.localizedDescription)")
                 if case let .play(id) = deepLink.destination {
                     await tabCoordinator.route(to: .item(id: id))
@@ -94,19 +89,11 @@ struct MainTabView: View {
                     view.safeAreaPadding(.top, MainNavigationScrollController.headerHeight)
                 }
             #endif
-            #if os(iOS)
-                .if(tabCoordinator.tabs.first?.item.id == tab.item.id) { view in
-                    view.topBarTrailing {
-                        FirstTabSettingsBarButton()
-                    }
-                }
-            #endif
         }
         .environmentObject(tabCoordinator)
         .environment(\.tabItemSelected, tab.publisher)
     }
 
-    #if os(tvOS)
     private func selectTab(_ item: TabItem) {
         if let tab = tabCoordinator.tabs.first(where: { $0.item.id == item.id }) {
             tab.coordinator.path.removeAll()
@@ -203,34 +190,10 @@ struct MainTabView: View {
             scrollController.revealHeader()
         } : nil)
     }
-    #else
-    private var iOSTabContent: some View {
-        TabView(selection: $tabCoordinator.selectedTabID) {
-            ForEach(tabCoordinator.tabs, id: \.item.id) { tab in
-                Tab(
-                    value: tab.item.id,
-                    role: tab.item.id == TabItem.search.id ? .search : nil
-                ) {
-                    tabRoot(tab)
-                } label: {
-                    Label(
-                        tab.item.displayTitle,
-                        systemImage: tab.item.systemImage
-                    )
-                    .symbolRenderingMode(.monochrome)
-                }
-            }
-        }
-    }
-    #endif
 
     @ViewBuilder
     private func tabContent() -> some View {
-        #if os(tvOS)
         tvOSTabContent
-        #else
-        iOSTabContent
-        #endif
     }
 
     var body: some View {
@@ -254,27 +217,3 @@ struct MainTabView: View {
         #endif
     }
 }
-
-#if os(iOS)
-private struct FirstTabSettingsBarButton: View {
-
-    @Injected(\.currentUserSession)
-    private var userSession
-
-    @Router
-    private var router
-
-    var body: some View {
-        if router.isRootOfPath,
-           let userSession
-        {
-            SettingsBarButton(
-                server: userSession.server,
-                user: userSession.user
-            ) {
-                router.route(to: .settings)
-            }
-        }
-    }
-}
-#endif

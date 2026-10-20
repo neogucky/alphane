@@ -314,21 +314,19 @@ class Fastfile: LaneFile {
     }
 
     private func sdk(forScheme scheme: String) -> String {
-        if scheme.localizedCaseInsensitiveContains("tvos") {
-            return "appletvos"
+        guard scheme == "Alphane tvOS" else {
+            fail("Unsupported scheme: \(scheme). Alphane builds only the Apple TV app.")
         }
-
-        return "iphoneos"
+        return "appletvos"
     }
 
     private func appPlatform(forSDK sdk: String) -> String {
         let normalizedSDK = sdk.lowercased()
 
-        if normalizedSDK.contains("appletv") || normalizedSDK.contains("tvos") {
-            return "appletvos"
+        guard normalizedSDK.contains("appletv") || normalizedSDK.contains("tvos") else {
+            fail("Unsupported SDK: \(sdk). Alphane builds only for tvOS.")
         }
-
-        return "ios"
+        return "appletvos"
     }
 
     private func sanitizedName(for scheme: String) -> String {

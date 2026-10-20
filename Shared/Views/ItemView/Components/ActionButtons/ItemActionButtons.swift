@@ -23,52 +23,19 @@ private struct ItemActionButtonLabelStyle: LabelStyle {
     }
 
     private var tint: Color {
-        #if os(tvOS)
-        return AlphaneTheme.surface
-        #else
-        guard isSelected, let activeColor else {
-            return .gray.opacity(0.15)
-        }
-
-        return activeColor
-        #endif
+        AlphaneTheme.surface
     }
 
     private var foregroundColor: Color {
-        #if os(tvOS)
         let color = isSelected ? activeColor ?? .white : .white
         return color.opacity(isFocused ? 1 : 0.8)
-        #else
-        guard isSelected, let activeColor else {
-            return .primary
-        }
-
-        return activeColor.overlayColor
-        #endif
     }
 
     func makeBody(configuration: Configuration) -> some View {
-        #if os(tvOS)
         Label(configuration)
             .labelStyle(.iconOnly)
             .font(.system(size: 28, weight: .medium))
             .frame(width: 32, height: 36)
-        #else
-        Label(configuration)
-            .labelStyle(.iconOnly)
-            .font(UIDevice.isTV ? .system(size: 30) : .title3)
-            .frame(width: iconSize, height: iconSize)
-            .padding(UIDevice.isTV ? 16 : 8)
-            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
-            .backport
-            .glassEffect(
-                .regular.selection(
-                    tint: tint,
-                    foregroundColor: foregroundColor
-                ),
-                in: .capsule
-            )
-        #endif
     }
 }
 
@@ -121,10 +88,6 @@ struct ItemActionButtons: View {
             provider.item.canEditSubtitles
         case .delete:
             provider.item.canDelete == true
-        #if os(iOS)
-        case .editMetadata:
-            provider.item.canEditMetadata
-        #endif
         }
     }
 
@@ -138,6 +101,7 @@ struct ItemActionButtons: View {
             // Keep server administration out of the watching flow. Subtitle management
             // lives with source and track selection in the playback menu.
             guard $0 != .delete, $0 != .refresh, $0 != .subtitles else { return false }
+
             #endif
             return isAvailable($0, for: provider, enabledTrailers: enabledTrailers)
         }
@@ -149,17 +113,12 @@ struct ItemActionButtons: View {
         for provider: ItemContentGroupProvider,
         enabledTrailers: TrailerSelection
     ) -> (visible: [ItemActionButton], overflow: [ItemActionButton], menu: [ItemActionButton]) {
-        #if os(tvOS)
         // The source/track control stays discoverable even with a customized action bar.
         var bar = availableButtons(bar.filter { $0 != .playback }, for: provider, enabledTrailers: enabledTrailers)
         if isAvailable(.playback, for: provider, enabledTrailers: enabledTrailers) {
             bar.insert(.playback, at: min(2, bar.count))
         }
         let menu = availableButtons(menu.filter { $0 != .playback }, for: provider, enabledTrailers: enabledTrailers)
-        #else
-        let bar = availableButtons(bar, for: provider, enabledTrailers: enabledTrailers)
-        let menu = availableButtons(menu, for: provider, enabledTrailers: enabledTrailers)
-        #endif
 
         let hasBarMenu = UIDevice.isTV && (menu.isNotEmpty || bar.count > maximumButtons)
         let visible = Array(bar.prefix(hasBarMenu ? maximumButtons - 1 : maximumButtons))
@@ -192,10 +151,6 @@ struct ItemActionButtons: View {
                 Subtitles()
             case .delete:
                 Delete()
-            #if os(iOS)
-            case .editMetadata:
-                Edit()
-            #endif
             }
         }
         .symbolRenderingMode(.monochrome)
@@ -208,7 +163,6 @@ struct ItemActionButtons: View {
         if buttons.isNotEmpty || hasBarMenu {
             HStack(alignment: .center, spacing: UIDevice.isTV ? 24 : 8) {
                 ForEach(buttons) { button in
-                    #if os(tvOS)
                     if button == .played || button == .favorited {
                         Self.view(for: button)
                             .labelStyle(ItemActionButtonLabelStyle())
@@ -219,11 +173,6 @@ struct ItemActionButtons: View {
                             .labelStyle(ItemActionButtonLabelStyle(activeColor: button.activeColor))
                             .coordinatedFocus(button.id, selection: focusedButton)
                     }
-                    #else
-                    Self.view(for: button)
-                        .labelStyle(ItemActionButtonLabelStyle(activeColor: button.activeColor))
-                        .focused(focusedButton, equals: button.id)
-                    #endif
                 }
 
                 if hasBarMenu {
@@ -240,22 +189,14 @@ struct ItemActionButtons: View {
                     .labelStyle(ItemActionButtonLabelStyle())
                     .symbolRenderingMode(.monochrome)
                     .foregroundStyle(.primary, .secondary)
-                    #if os(tvOS)
                     .coordinatedFocus(ItemView.Component.menu, selection: focusedButton)
-                    #else
-                    .focused(focusedButton, equals: ItemView.Component.menu)
-                    #endif
                 }
             }
             .frame(height: UIDevice.isTV ? 56 : 44)
             .environmentObject(provider)
             .buttonBorderShape(.capsule)
-            #if os(tvOS)
             .buttonStyle(.capsule(isSelectionActive: false))
             .controlSize(.large)
-            #else
-            .buttonStyle(BasicHoverButtonStyle())
-            #endif
             .font(.title3)
             .fontWeight(.semibold)
         }
@@ -324,6 +265,8 @@ private struct TVAccentItemActionButtonStyle: ButtonStyle {
 
     @Default(.accentColor)
     private var accentColor
+    @Default(.colorTheme)
+    private var colorTheme
 
     @Environment(\.isFocused)
     private var isFocused
@@ -335,6 +278,7 @@ private struct TVAccentItemActionButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let hasFocus = isEnabled && isFocused
         let tint: Color = isSelected ? accentColor : .white
+        let unfocusedOpacity: Double = colorTheme == .noAccent && isSelected ? 1 : 0.8
 
         ZStack {
             Capsule()
@@ -342,7 +286,7 @@ private struct TVAccentItemActionButtonStyle: ButtonStyle {
 
             configuration.label
                 .symbolRenderingMode(.monochrome)
-                .foregroundStyle(hasFocus ? Color.black : tint.opacity(0.8))
+                .foregroundStyle(hasFocus ? Color.black : tint.opacity(unfocusedOpacity))
                 .padding(.horizontal, 24)
                 .padding(.vertical, 6)
                 .frame(minHeight: 36)

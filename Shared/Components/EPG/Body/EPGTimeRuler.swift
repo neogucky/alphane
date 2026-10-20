@@ -50,9 +50,8 @@ struct EPGTimeRuler: View {
                 ? date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
                 : date.formatted(date: .omitted, time: .shortened)
         )
-        .font(.caption2)
-        .fontWeight(.semibold)
-        .foregroundStyle(isDayStart ? Color.primary : Color.secondary)
+        .font(.system(size: 18, weight: .medium))
+        .foregroundStyle(Color.white.opacity(0.8))
         .lineLimit(1)
         .padding(.leading, 4)
     }

@@ -119,6 +119,11 @@ extension Notifications.Key {
         Key("didSendStopReport")
     }
 
+    /// The local final position, delivered before the player is dismissed.
+    static var didStopPlayback: Key<PlaybackCompletion.StopEvent> {
+        Key("didStopPlayback")
+    }
+
     static var didRequestGlobalRefresh: Key<Void> {
         Key("didRequestGlobalRefresh")
     }

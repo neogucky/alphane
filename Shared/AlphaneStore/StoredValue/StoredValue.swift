@@ -104,11 +104,7 @@ enum StoredValues {
             self.ownerID = ownerID
 
             // tvOS only supports user defaults storage
-            #if os(tvOS)
             self.storage = .defaults
-            #else
-            self.storage = storage
-            #endif
         }
 
         /// Always returns the given value and does not

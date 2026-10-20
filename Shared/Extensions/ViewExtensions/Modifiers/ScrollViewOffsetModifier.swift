@@ -21,8 +21,7 @@ struct ScrollViewOffsetModifier: ViewModifier {
     func body(content: Content) -> some View {
         content.introspect(
             .scrollView,
-            on: .iOS(.v15...),
-            .tvOS(.v15...)
+            on: .tvOS(.v15...)
         ) { scrollView in
             scrollView.delegate = scrollViewDelegate
         }

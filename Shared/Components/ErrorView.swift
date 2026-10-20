@@ -11,15 +11,9 @@ import FactoryKit
 import Foundation
 import SwiftUI
 
-#if os(iOS)
-private let buttonHeight: CGFloat = 44
-private let buttonMaxSize: CGFloat = 300
-private let iconSize: CGFloat = 72
-#else
 private let buttonHeight: CGFloat = 75
 private let buttonMaxSize: CGFloat = 600
 private let iconSize: CGFloat = 144
-#endif
 
 struct ErrorView<ErrorType: Error>: View {
 
@@ -274,11 +268,8 @@ struct ErrorView<ErrorType: Error>: View {
                 .backport
                 .buttonStyle(.glassProminent.shadow(false))
                 .tint(accentColor)
-                #if os(iOS)
-                    .controlSize(.large)
-                #endif
-                    .frame(height: buttonHeight)
-                    .frame(maxWidth: buttonMaxSize)
+                .frame(height: buttonHeight)
+                .frame(maxWidth: buttonMaxSize)
             }
 
             if requiresSignIn {
@@ -308,11 +299,7 @@ struct ErrorView<ErrorType: Error>: View {
 
     var body: some View {
         Group {
-            #if os(tvOS)
             tvBody
-            #else
-            legacyBody
-            #endif
         }
         #if os(tvOS)
         .task(id: diagnosticKey) {
@@ -320,9 +307,9 @@ struct ErrorView<ErrorType: Error>: View {
         }
         #endif
         .onDisappear {
-            retryTask?.cancel()
-        }
-        .errorMessage($signOutError)
+                retryTask?.cancel()
+            }
+            .errorMessage($signOutError)
     }
 }
 

@@ -8,7 +8,6 @@
 
 import SwiftUI
 
-#if os(tvOS)
 struct BasicHoverButtonStyle: ButtonStyle {
 
     @Environment(\.isFocused)
@@ -22,6 +21,3 @@ struct BasicHoverButtonStyle: ButtonStyle {
             .opacity(isEnabled ? (configuration.isPressed ? 0.75 : (isFocused ? 1 : 0.8)) : 0.5)
     }
 }
-#else
-typealias BasicHoverButtonStyle = BorderlessButtonStyle
-#endif

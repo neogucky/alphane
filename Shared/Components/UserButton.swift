@@ -74,25 +74,21 @@ struct UserButton: View {
     @ViewBuilder
     private var imageView: some View {
         image
-        #if os(tvOS)
-        .tvFocusBorder(isFocused: isFocused, shape: Circle())
-        #else
-        .hoverEffect(.highlight)
-        #endif
-        .overlay(alignment: .bottomTrailing) {
-            if onDelete != nil, isEditing, isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(
-                        width: UIDevice.isTV ? 75 : 40,
-                        height: UIDevice.isTV ? 75 : 40
-                    )
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(accentColor.overlayColor, accentColor)
-                    .hoverEffect(.lift)
+            .tvFocusBorder(isFocused: isFocused, shape: Circle())
+            .overlay(alignment: .bottomTrailing) {
+                if onDelete != nil, isEditing, isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(
+                            width: UIDevice.isTV ? 75 : 40,
+                            height: UIDevice.isTV ? 75 : 40
+                        )
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(accentColor.overlayColor, accentColor)
+                        .hoverEffect(.lift)
+                }
             }
-        }
     }
 
     @ViewBuilder

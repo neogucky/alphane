@@ -40,125 +40,21 @@ struct HourMinutePicker: View {
         }
         #if os(tvOS)
         .sheet(isPresented: $isPresented) {
-                VStack(spacing: 8) {
-                    Text(title.localizedCapitalized)
-                        .font(.title3)
-                        .edgePadding(.bottom)
+            VStack(spacing: 8) {
+                Text(title.localizedCapitalized)
+                    .font(.title3)
+                    .edgePadding(.bottom)
 
-                    _HourMinutePickerView(interval: interval, maximumHours: maximumHours)
-                        .frame(width: 500, height: 400)
-                }
-                .edgePadding()
+                _HourMinutePickerView(interval: interval, maximumHours: maximumHours)
+                    .frame(width: 500, height: 400)
             }
-        #endif
-
-        #if !os(tvOS)
-        if isPresented {
-            _HourMinutePickerView(interval: interval, maximumHours: maximumHours)
+            .edgePadding()
         }
         #endif
-    }
-}
-
-// MARK: - iOS Picker
-
-#if os(iOS)
-
-private struct _HourMinutePickerView: PlatformViewRepresentable {
-
-    let interval: Binding<TimeInterval>
-    var maximumHours: Int = 24
-
-    func makeUIView(context: Context) -> UIView {
-        guard maximumHours > 24 else {
-            let picker = UIDatePicker(frame: .zero)
-            picker.translatesAutoresizingMaskIntoConstraints = false
-            picker.datePickerMode = .countDownTimer
-            picker.countDownDuration = interval.wrappedValue
-
-            context.coordinator.add(picker: picker)
-
-            return picker
-        }
-
-        let picker = UIPickerView(frame: .zero)
-        picker.translatesAutoresizingMaskIntoConstraints = false
-        picker.dataSource = context.coordinator
-        picker.delegate = context.coordinator
-
-        let minutes = Int(interval.wrappedValue / 60)
-        picker.selectRow(minutes / 60, inComponent: 0, animated: false)
-        picker.selectRow(minutes % 60, inComponent: 1, animated: false)
-
-        return picker
-    }
-
-    func updateUIView(_ uiView: UIViewType, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(
-            interval: interval,
-            maximumHours: maximumHours
-        )
-    }
-
-    class Coordinator: NSObject, UIPickerViewDataSource, UIPickerViewDelegate {
-
-        private let interval: Binding<TimeInterval>!
-        private let maximumHours: Int
-
-        init(interval: Binding<TimeInterval>!, maximumHours: Int) {
-            self.interval = interval
-            self.maximumHours = maximumHours
-        }
-
-        func add(picker: UIDatePicker) {
-            picker.addTarget(
-                self,
-                action: #selector(
-                    dateChanged
-                ),
-                for: .valueChanged
-            )
-        }
-
-        @objc
-        func dateChanged(_ picker: UIDatePicker) {
-            interval.wrappedValue = picker.countDownDuration
-        }
-
-        func numberOfComponents(in pickerView: UIPickerView) -> Int {
-            2
-        }
-
-        func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-            if component == 0 {
-                maximumHours
-            } else {
-                60
-            }
-        }
-
-        func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-            if component == 0 {
-                "\(row) \(L10n.hours)"
-            } else {
-                "\(row) \(L10n.minutes)"
-            }
-        }
-
-        func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-            let hours = pickerView.selectedRow(inComponent: 0)
-            let minutes = pickerView.selectedRow(inComponent: 1)
-
-            interval.wrappedValue = TimeInterval(hours * 3600 + minutes * 60)
-        }
     }
 }
 
 // MARK: - tvOS Picker
-
-#elseif os(tvOS)
 
 private struct _HourMinutePickerView: PlatformViewRepresentable {
 
@@ -245,5 +141,3 @@ private struct _HourMinutePickerView: PlatformViewRepresentable {
         }
     }
 }
-
-#endif

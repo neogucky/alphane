@@ -18,7 +18,7 @@ Add these secrets:
 ## Certificate and Provisioning Profile
 
 > [!IMPORTANT]
-> Assumes that the same certificate is used for the provisioning profiles of all platforms.
+> Use the tvOS provisioning profile for Alphane.
 
 Follow GitHub’s guide to get the signing certificate: [Installing an Apple certificate on macOS runners](https://docs.github.com/en/actions/use-cases-and-examples/deploying/installing-an-apple-certificate-on-macos-runners-for-xcode-development)
 
@@ -28,9 +28,7 @@ Add these secrets:
 - `P12_PASSWORD`: password used when exporting the `.p12`
 - `CODE_SIGN_BASE64`: base64 of the certificate identity string  
   - Example: `Apple Distribution Firstname Lastname (ABCD123456)`
-- `BUILD_PROVISION_PROFILE_IOS_BASE64`: base64 of the iOS `.mobileprovision`
 - `BUILD_PROVISION_PROFILE_TVOS_BASE64`: base64 of the tvOS `.mobileprovision`
-- `PROFILE_NAME_IOS_BASE64`: base64 of the iOS provisioning profile name
 - `PROFILE_NAME_TVOS_BASE64`: base64 of the tvOS provisioning profile name
 
 ## Required secrets checklist
@@ -41,9 +39,7 @@ Add these secrets:
 - `BUILD_CERTIFICATE_BASE64`
 - `P12_PASSWORD`
 - `CODE_SIGN_BASE64`
-- `BUILD_PROVISION_PROFILE_IOS_BASE64`
 - `BUILD_PROVISION_PROFILE_TVOS_BASE64`
-- `PROFILE_NAME_IOS_BASE64`
 - `PROFILE_NAME_TVOS_BASE64`
 
 ### Debugging

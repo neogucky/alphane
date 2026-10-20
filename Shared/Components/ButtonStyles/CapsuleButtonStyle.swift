@@ -90,6 +90,8 @@ struct CapsuleButtonStyle: ButtonStyle {
     var selectionTint: Color = .white
     var focusTint: Color?
     var isSelectionActive: Bool = true
+    /// Option grids need flexible cells; other capsules retain their intrinsic width.
+    var fillsAvailableWidth = false
 
     private var metrics: CapsuleControlMetrics {
         CapsuleControlMetrics(controlSize)
@@ -142,9 +144,9 @@ struct CapsuleButtonStyle: ButtonStyle {
     private func tvOSBody(configuration: Configuration) -> some View {
         let hasFocus = isEnabled && isFocused
         let isHighlighted = isSelected || hasFocus
-        let pillOpacity: Double = isSelected
-            ? (hasFocus || isSelectionActive ? 1 : 0.8)
-            : (hasFocus ? 0.8 : 0)
+        let pillOpacity: Double = hasFocus
+            ? 1
+            : (isSelected ? (isSelectionActive ? 1 : 0.8) : 0)
 
         return ZStack {
             Capsule()
@@ -160,7 +162,7 @@ struct CapsuleButtonStyle: ButtonStyle {
                 .frame(minHeight: metrics.minimumHeight)
                 .blendMode(isHighlighted ? .destinationOut : .normal)
         }
-        .fixedSize()
+        .fixedSize(horizontal: !fillsAvailableWidth, vertical: true)
         .compositingGroup()
         .contentShape(.capsule)
         .opacity(opacity(isPressed: configuration.isPressed))
@@ -174,28 +176,6 @@ struct CapsuleButtonStyle: ButtonStyle {
 
     @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
-        #if os(tvOS)
         tvOSBody(configuration: configuration)
-        #else
-        configuration.label
-            .font(font ?? metrics.font)
-            .fontWeight(.semibold)
-            .foregroundStyle(foregroundStyle)
-            .symbolRenderingMode(.monochrome)
-            .padding(.horizontal, metrics.horizontalPadding)
-            .padding(.vertical, metrics.verticalPadding)
-            .frame(minHeight: metrics.minimumHeight)
-            .clipShape(.capsule)
-            .background { background }
-            .contentShape(.capsule)
-            .scaleEffect(isEnabled && isFocused ? 1.05 : 1)
-            .opacity(opacity(isPressed: configuration.isPressed))
-            .shadow(color: isEnabled && isFocused ? .black.opacity(0.5) : .clear, radius: 10)
-            .animation(.linear(duration: 0.1), value: isFocused)
-            .animation(.linear(duration: 0.1), value: isSelected)
-            .animation(.linear(duration: 0.1), value: isSelectionActive)
-            .animation(.linear(duration: 0.1), value: configuration.isPressed)
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
-        #endif
     }
 }

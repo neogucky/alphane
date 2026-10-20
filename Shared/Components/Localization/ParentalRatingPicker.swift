@@ -40,20 +40,14 @@ struct ParentalRatingPicker: View {
     }
 
     var body: some View {
-        Group {
-            #if os(tvOS)
-            ListRowMenu(
-                title,
-                subtitle: currentParentalRating?.displayTitle
-            ) {
-                picker
-            }
-            .menuStyle(.borderlessButton)
-            .listRowInsets(.zero)
-            #else
+        ListRowMenu(
+            title,
+            subtitle: currentParentalRating?.displayTitle
+        ) {
             picker
-            #endif
         }
+        .menuStyle(.borderlessButton)
+        .listRowInsets(.zero)
         .enabled(viewModel.state == .content)
         .onFirstAppear {
             viewModel.refresh()

@@ -652,6 +652,10 @@ internal enum L10n {
   internal static let endDate = L10n.tr("Localizable", "endDate", fallback: "End date")
   /// Ended
   internal static let ended = L10n.tr("Localizable", "ended", fallback: "Ended")
+  /// Ends at %@
+  internal static func endsAt(_ p1: Any) -> String {
+    return L10n.tr("Localizable", "endsAt", String(describing: p1), fallback: "Ends at %@")
+  }
   /// End time
   internal static let endTime = L10n.tr("Localizable", "endTime", fallback: "End time")
   /// Engineer
@@ -1250,6 +1254,8 @@ internal enum L10n {
   internal static let pixelFormat = L10n.tr("Localizable", "pixelFormat", fallback: "Pixel format")
   /// Play
   internal static let play = L10n.tr("Localizable", "play", fallback: "Play")
+  /// Play again
+  internal static let playAgain = L10n.tr("Localizable", "playAgain", fallback: "Play again")
   /// Play / Pause
   internal static let playAndPause = L10n.tr("Localizable", "playAndPause", fallback: "Play / Pause")
   /// Playback

@@ -16,10 +16,10 @@ struct EPGLayout: Equatable {
     let pointsPerMinute: CGFloat
 
     init(
-        channelColumnWidth: CGFloat = UIDevice.isTV ? 130 : UIDevice.isPad ? 110 : 84,
+        channelColumnWidth: CGFloat = 130,
         rowHeight: CGFloat? = nil,
         rulerHeight: CGFloat? = nil,
-        pointsPerMinute: CGFloat = UIDevice.isTV ? 10 : UIDevice.isPad ? 7 : 5
+        pointsPerMinute: CGFloat = 10
     ) {
         let minimumRowHeight: CGFloat = UIDevice.isTV ? 120 : 74
         let minimumRulerHeight: CGFloat = UIDevice.isTV ? 44 : 28

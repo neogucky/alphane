@@ -28,7 +28,7 @@ extension VideoPlayer.PlaybackControls {
                 isSpeedBoosting = true
                 viewState.originalPlaybackRate = manager.rate
 
-                let multiplier = Defaults[.VideoPlayer.Gesture.longPressSpeedMultiplier]
+                let multiplier = Defaults[.VideoPlayer.Playback.longPressSpeedMultiplier]
                 manager.setRate(rate: multiplier.rawValue)
 
                 toaster.present(

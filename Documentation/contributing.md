@@ -39,7 +39,7 @@ You can change the `ALPHANE_BUNDLE_IDENTIFIER` value to have multiple builds of 
 
 ### Xcode Version
 
-Alphane is built using the Xcode version pinned in our [CI workflow](https://github.com/neogucky/Irukandji/blob/main/.github/workflows/ci.yml#L27). This is the recommended version of Xcode for development.
+Alphane is built using the Xcode version pinned in our [CI workflow](https://github.com/neogucky/alphane/blob/main/.github/workflows/ci.yml). This is the recommended version of Xcode for development.
 
 ### Testing
 
@@ -64,7 +64,7 @@ If a Pull Request relates to an Issue, mention the issue correctly in the PR des
 [SwiftLint](https://github.com/realm/SwiftLint) enforces additional rules.
 
 The following must pass in order for a PR to be merged:
-- automated `iOS` and `tvOS` builds must succeed
+- the automated `tvOS` build must succeed
 - developer account cannot be attached
 - SwiftFormat linting check must pass. If this does not pass, you may need to update your version of `swiftformat`
 - SwiftLint check must pass. If this does not pass, fix the violation or add a justified `swiftlint:disable` directive
@@ -78,13 +78,13 @@ Documentation for advanced or complex features and other implementation reasonin
 
 ## Architecture
 
-Alphane is developed using SwiftUI. The iOS and tvOS Jellyfin clients share the same backend with each client containing their respective views. Due to this architecture, working on both clients at once may be necessary.
+Alphane is developed using SwiftUI and maintains the tvOS app. `Shared` contains its models, services and reusable views; `Alphane tvOS` contains the Apple TV presentation. The iOS app and its unused platform-specific code have been removed; keep new code focused on tvOS, following the upstream-update rules in `AGENTS.md`.
 
 The VLC player uses [SwiftVLC](https://github.com/harflabs/SwiftVLC) for its great codec support. Becoming familiar with SwiftVLC will be necessary for video playback development and debugging.
 
 ## Design
 
-While there are no design guidelines for UI/UX features, Alphane has the goal to use native SwiftUI/UIKit components while adhering to a Jellyfin theme. If a feature creates new UI/UX components, it may receive feedback during the PR process or may be re-designed later on.
+Follow Alphane’s existing tvOS controls, focus behavior and minimal streaming-app presentation. The design review decisions and upstream-update policy are recorded in `AGENTS.md`; review them before changing an interface or syncing Swiftfin.
 
 User customizable UI/UX features are welcome and intended, however not all customization may be accepted for code maintainability and to also establish a distinct Alphane design. Taking inspiration, but not always copying, from other applications is encouraged.
 

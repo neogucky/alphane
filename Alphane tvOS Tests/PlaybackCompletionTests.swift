@@ -6,12 +6,90 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
-import JellyfinAPI
 @testable import Alphane
+import JellyfinAPI
 import XCTest
 
 @MainActor
 final class PlaybackCompletionTests: XCTestCase {
+
+    func testNaturalEndUpdatesTheSharedRecordDespiteDifferentSourceRuntime() throws {
+        let store = ItemStore()
+        var episode = item(played: false)
+        episode.runTimeTicks = Duration.seconds(43 * 60).ticks
+        episode.name = "Behind the Red Curtain"
+        episode.userData?.isFavorite = true
+        let entry = try ItemEntry(item: store.record(for: episode))
+        let staleRequest = try store.beginRequest()
+        var report = PlaybackStopInfo()
+        report.itemID = episode.id
+        report.positionTicks = Duration.seconds(38 * 60).ticks
+
+        try PlaybackCompletion.applyStop(report, didReachEnd: true, to: entry, in: store)
+        // A request begun before Stop must not restore the old resume point.
+        try store.merge(ItemPatch.snapshot(episode), token: staleRequest)
+
+        XCTAssertTrue(entry.item === store["nine"])
+        XCTAssertEqual(entry.snapshot.name, episode.name)
+        XCTAssertEqual(entry.snapshot.userData?.isFavorite, true)
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, true)
+        XCTAssertEqual(entry.snapshot.userData?.playbackPositionTicks, 0)
+        XCTAssertEqual(entry.snapshot.userData?.playedPercentage, 100)
+        XCTAssertTrue(PlaybackCompletion.shouldPreferNextEpisode(
+            after: entry.snapshot, stoppedAt: report.positionTicks, didReachEnd: true, nextEpisode: nextEpisode
+        ))
+    }
+
+    func testManualStopPreservesResumeAndDoesNotCompleteAnUnwatchedEpisode() throws {
+        let store = ItemStore()
+        var episode = item(played: false)
+        episode.runTimeTicks = Duration.seconds(43 * 60).ticks
+        let entry = try ItemEntry(item: store.record(for: episode))
+        var report = PlaybackStopInfo()
+        report.itemID = "nine"
+        report.positionTicks = Duration.seconds(38 * 60).ticks
+        try PlaybackCompletion.applyStop(report, to: entry, in: store)
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, false)
+        XCTAssertEqual(entry.snapshot.userData?.playbackPositionTicks, report.positionTicks)
+        XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
+            after: entry.snapshot, stoppedAt: report.positionTicks, nextEpisode: nextEpisode
+        ))
+    }
+
+    func testInFlightCompletionKeepsLateSocketProgressOutOfTheVisibleTimeline() throws {
+        let store = ItemStore()
+        let episode = item(played: false)
+        let entry = try ItemEntry(item: store.record(for: episode))
+        let completionID = UUID()
+        entry.item.beginPlaybackCompletion(id: completionID)
+        var report = PlaybackStopInfo()
+        report.itemID = episode.id
+        report.positionTicks = episode.runTimeTicks
+        try PlaybackCompletion.applyStop(report, didReachEnd: true, to: entry, in: store)
+        // Socket messages acquire a new token when delivered, even if they
+        // describe a progress request sent before Stop.
+        try store.merge(ItemPatch.snapshot(episode), token: store.beginRequest())
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, true)
+        XCTAssertEqual(entry.snapshot.userData?.playbackPositionTicks, 0)
+        try PlaybackCompletion.applyStop(report, didReachEnd: true, to: entry, in: store)
+        entry.item.endPlaybackCompletion(id: completionID)
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, true)
+        XCTAssertEqual(entry.snapshot.userData?.playbackPositionTicks, 0)
+    }
+
+    func testNaturalEndCreatesMissingUserDataAndIgnoresUnrelatedStops() throws {
+        let store = ItemStore()
+        let entry = try ItemEntry(item: store.record(for: BaseItemDto(id: "nine", type: .episode)))
+        var report = PlaybackStopInfo()
+        report.itemID = "other"
+        report.positionTicks = 0
+        try PlaybackCompletion.applyStop(report, didReachEnd: true, to: entry, in: store)
+        XCTAssertNil(entry.snapshot.userData)
+        report.itemID = "nine"
+        try PlaybackCompletion.applyStop(report, didReachEnd: true, to: entry, in: store)
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, true)
+        XCTAssertEqual(entry.snapshot.userData?.playbackPositionTicks, 0)
+    }
 
     func testNaturalEndingWaitsForStaleWatchedStateToSettle() async throws {
         var calls = 0

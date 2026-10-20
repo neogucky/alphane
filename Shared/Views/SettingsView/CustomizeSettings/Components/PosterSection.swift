@@ -110,26 +110,11 @@ extension CustomizeSettingsView {
         var body: some View {
             Form {
                 Section(L10n.preview) {
-                    #if os(iOS)
-                    ScrollView(.horizontal) {
-                        HStack(alignment: .bottom) {
-                            ForEach([PosterDisplayType.portrait, .landscape, .square]) { type in
-                                posterPreview(type: type)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical)
-                    }
-                    .scrollIndicators(.hidden)
-                    #endif
 
                     PlatformPicker(L10n.status, selection: $previewItemState)
                 }
 
                 Section(L10n.labels) {
-                    #if !os(tvOS)
-                    Toggle(L10n.showTitle, isOn: $posterConfiguration.isTitlePresented)
-                    #endif
 
                     PlatformPicker(L10n.subtitle, selection: $posterConfiguration.subtitleField)
                 }
@@ -141,23 +126,6 @@ extension CustomizeSettingsView {
                     Toggle(L10n.progress, isOn: $posterConfiguration.indicators.contains(.progress))
 
                     Toggle(L10n.played, isOn: $posterConfiguration.indicators.contains(.played))
-
-                    #if !os(tvOS)
-                    PlatformPicker(
-                        L10n.unplayed,
-                        selection: Binding {
-                            posterConfiguration.indicators.contains(.unplayed) ? posterConfiguration.unplayedStyle : .none
-                        } set: { newValue in
-                            switch newValue {
-                            case .none:
-                                posterConfiguration.indicators.remove(.unplayed)
-                            case .indicator, .count:
-                                posterConfiguration.indicators.insert(.unplayed)
-                                posterConfiguration.unplayedStyle = newValue
-                            }
-                        }
-                    )
-                    #endif
                 }
 
                 Section {

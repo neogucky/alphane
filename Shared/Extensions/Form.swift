@@ -8,10 +8,41 @@
 
 import SwiftUI
 
+extension EnvironmentValues {
+
+    /// Opt-in styling for the three playback settings pages reviewed as UI-01...UI-03.
+    @Entry
+    var usesPlaybackSettingsStyle = false
+}
+
 extension FocusedValues {
 
     @Entry
     var formLearnMore: AnyView? = nil
+}
+
+extension View {
+
+    func playbackSettingsFooter() -> some View {
+        modifier(PlaybackSettingsFooterStyle())
+    }
+}
+
+private struct PlaybackSettingsFooterStyle: ViewModifier {
+
+    @Environment(\.usesPlaybackSettingsStyle)
+    private var usesPlaybackSettingsStyle
+
+    func body(content: Content) -> some View {
+        if usesPlaybackSettingsStyle {
+            content
+                .font(.system(size: 20))
+                .foregroundStyle(AlphaneTheme.secondaryText)
+                .lineSpacing(5)
+        } else {
+            content
+        }
+    }
 }
 
 // MARK: - Form Overloads
@@ -49,7 +80,10 @@ func Form(
 
 // MARK: - Platform Form
 
-private struct PlatformForm<Image: View, Content: View>: PlatformView {
+private struct PlatformForm<Image: View, Content: View>: View {
+
+    @Environment(\.usesPlaybackSettingsStyle)
+    private var usesPlaybackSettingsStyle
 
     @FocusedValue(\.formLearnMore)
     private var focusedLearnMore
@@ -65,14 +99,7 @@ private struct PlatformForm<Image: View, Content: View>: PlatformView {
         self.image = image()
     }
 
-    var iOSView: some View {
-        Form {
-            content
-        }
-        .toolbarTitleDisplayMode(.inline)
-    }
-
-    var tvOSView: some View {
+    var body: some View {
         HStack {
             descriptionView
                 .frame(maxWidth: .infinity)
@@ -80,32 +107,52 @@ private struct PlatformForm<Image: View, Content: View>: PlatformView {
             Form {
                 content
             }
-            .scrollClipDisabled()
-            .mainNavigationScrollObserver()
-            .mask(extendedBy: .init(vertical: 20, horizontal: 100)) {
-                VStack(spacing: 0) {
-                    LinearGradient(
-                        colors: [.clear, .white],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 20)
-
-                    Color.white
-
-                    LinearGradient(
-                        colors: [.white, .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 20)
-                }
+            #if os(tvOS)
+            .if(usesPlaybackSettingsStyle) { form in
+                form.toggleStyle(TVPlaybackSettingsToggleStyle())
             }
+            #endif
+            .scrollClipDisabled()
+                .mainNavigationScrollObserver()
+                .mask(extendedBy: .init(vertical: 20, horizontal: 100)) {
+                    VStack(spacing: 0) {
+                        LinearGradient(
+                            colors: [.clear, .white],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 20)
+
+                        Color.white
+
+                        LinearGradient(
+                            colors: [.white, .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 20)
+                    }
+                }
         }
     }
 
     @ViewBuilder
     private var descriptionView: some View {
+        Group {
+            if usesPlaybackSettingsStyle {
+                if let focusedLearnMore {
+                    TVPlaybackSettingsDescription(content: focusedLearnMore)
+                } else {
+                    image
+                }
+            } else {
+                legacyDescriptionView
+            }
+        }
+        .animation(.linear(duration: 0.2), value: focusedLearnMore == nil)
+    }
+
+    private var legacyDescriptionView: some View {
         ZStack {
             image
 
@@ -113,7 +160,6 @@ private struct PlatformForm<Image: View, Content: View>: PlatformView {
                 learnMoreModal(focusedLearnMore)
             }
         }
-        .animation(.linear(duration: 0.2), value: focusedLearnMore == nil)
     }
 
     @ViewBuilder

@@ -602,6 +602,10 @@ extension BaseItemDto {
             return progressLabel
         }
 
+        if !isLiveStream, userData?.isPlayed == true {
+            return L10n.playAgain
+        }
+
         return L10n.play
     }
 

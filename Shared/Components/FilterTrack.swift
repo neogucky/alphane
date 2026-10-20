@@ -76,12 +76,12 @@ struct FilterTrack: View {
     @ViewBuilder
     private func buttonIcon(for target: FocusTarget) -> some View {
         Image(systemName: target.systemImage)
-            #if os(tvOS)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 32, height: 32)
-                .padding(.vertical, 8)
-            #endif
+        #if os(tvOS)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 32, height: 32)
+            .padding(.vertical, 8)
+        #endif
     }
 
     @ViewBuilder
@@ -107,16 +107,9 @@ struct FilterTrack: View {
 
     @ViewBuilder
     private var resetButton: some View {
-        #if os(iOS)
-        Menu(FocusTarget.reset.title, systemImage: FocusTarget.reset.systemImage) {
-            Button(L10n.reset, role: .destructive, action: reset)
-        }
-        .labelStyle(.iconOnly)
-        #else
         Button(action: reset) {
             buttonLabel(for: .reset)
         }
-        #endif
     }
 
     @ViewBuilder

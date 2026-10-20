@@ -248,6 +248,25 @@ extension VLCMediaPlayerProxy {
                 videoSurface
                     .task(id: ObjectIdentifier(playbackItem)) {
                         proxy.play(playbackItem, subtitleConfiguration: subtitleConfiguration)
+
+                        // libVLC's .playing event can precede the first decoded frame.
+                        // Poll only during startup, including a first frame loaded while paused.
+                        while !Task.isCancelled,
+                              manager.playbackItem === playbackItem,
+                              manager.state != .stopped,
+                              manager.state != .error,
+                              !manager.hasPresentedVideoFrame
+                        {
+                            if (proxy.player.statistics?.displayedPictures ?? 0) > 0 {
+                                manager.videoFramePresented(for: playbackItem)
+                                break
+                            }
+                            do {
+                                try await Task.sleep(for: .milliseconds(100))
+                            } catch {
+                                return
+                            }
+                        }
                     }
                     .onChange(of: proxy.player.currentTime) { _, newSeconds in
                         // Ignore an initial or already superseded timestamp while

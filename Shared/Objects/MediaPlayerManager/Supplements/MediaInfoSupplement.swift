@@ -22,14 +22,14 @@ struct MediaInfoSupplement: MediaPlayerSupplement {
         "MediaInfo-\(item.id ?? "any")"
     }
 
-    var videoPlayerBody: some PlatformView {
+    var videoPlayerBody: some View {
         InfoOverlay(item: item)
     }
 }
 
 extension MediaInfoSupplement {
 
-    private struct InfoOverlay: PlatformView {
+    private struct InfoOverlay: View {
 
         @Environment(\.safeAreaInsets)
         private var safeAreaInsets: EdgeInsets
@@ -44,6 +44,9 @@ extension MediaInfoSupplement {
 
         @StateObject
         private var recordingViewModel: RecordingTimerViewModel
+
+        @State
+        private var endsAtLabel: String?
 
         init(item: BaseItemDto) {
             self.item = item
@@ -72,6 +75,16 @@ extension MediaInfoSupplement {
                     if let officialRating = item.officialRating {
                         Text(officialRating)
                     }
+
+                    if let endsAtLabel {
+                        Text(endsAtLabel)
+                    }
+                }
+            }
+            .onReceive(manager.secondsBox.$value) { seconds in
+                let newLabel = makeEndsAtLabel(seconds: seconds)
+                if newLabel != endsAtLabel {
+                    endsAtLabel = newLabel
                 }
             }
         }
@@ -118,15 +131,15 @@ extension MediaInfoSupplement {
             }
             .enabled(recordingViewModel.canManageRecordings)
             #if os(tvOS)
-            .focusSection()
+                .focusSection()
             #endif
-            .onAppear {
-                recordingViewModel.refresh()
-            }
-            .onReceive(Notifications[.recordingTimersDidChange].publisher) {
-                recordingViewModel.refresh()
-            }
-            .errorMessage($recordingViewModel.error)
+                .onAppear {
+                    recordingViewModel.refresh()
+                }
+                .onReceive(Notifications[.recordingTimersDidChange].publisher) {
+                    recordingViewModel.refresh()
+                }
+                .errorMessage($recordingViewModel.error)
         }
 
         @ViewBuilder
@@ -146,62 +159,6 @@ extension MediaInfoSupplement {
 
         // TODO: may need to be a layout for correct overview frame
         //       with scrolling if too long
-        var iOSView: some View {
-            CompactOrRegularView(
-                isCompact: viewState.isCompact
-            ) {
-                iOSCompactView
-            } regularView: {
-                regularContent
-                    .edgePadding()
-            }
-            .padding(.leading, safeAreaInsets.leading)
-            .padding(.trailing, safeAreaInsets.trailing)
-            .task(id: item.currentProgram?.endDate) {
-                await updateCurrentProgram()
-            }
-        }
-
-        @ViewBuilder
-        private var iOSCompactView: some View {
-            VStack(alignment: .leading) {
-                Text(item.displayTitle)
-                    .fontWeight(.semibold)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-
-                if let currentProgram = item.currentProgram {
-                    Text(currentProgram.displayTitle)
-                        .fontWeight(.semibold)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .foregroundStyle(.secondary)
-                }
-
-                if let overview = item.overview ?? item.currentProgram?.overview {
-                    Text(overview)
-                        .font(.subheadline)
-                        .fontWeight(.regular)
-                }
-
-                accessoryView
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if !item.isLiveStream {
-                    fromBeginningButton
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .padding(.vertical)
-                } else if item.canBeRecorded {
-                    recordButtons
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .edgePadding()
-        }
 
         @ViewBuilder
         private var regularContent: some View {
@@ -262,7 +219,7 @@ extension MediaInfoSupplement {
             }
         }
 
-        var tvOSView: some View {
+        var body: some View {
             regularContent
                 .edgePadding(.horizontal)
                 .padding(.vertical, EdgeInsets.edgePadding / 2)
@@ -288,6 +245,19 @@ extension MediaInfoSupplement {
 
             _ = try? await userSession.getFullItem(item)
             await recordingViewModel.refresh()
+        }
+
+        private func makeEndsAtLabel(seconds: Duration) -> String? {
+            guard !item.isLiveStream,
+                  item.type != .recording,
+                  let runtime = item.runtime,
+                  runtime > .zero,
+                  manager.rate > 0
+            else { return nil }
+
+            let remaining = max(runtime - seconds, .zero)
+            let endDate = Date.now.addingTimeInterval(remaining.seconds / manager.rate)
+            return L10n.endsAt(endDate.formatted(date: .omitted, time: .shortened))
         }
     }
 }

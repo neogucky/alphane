@@ -31,11 +31,7 @@ struct EpisodeNavigationContentGroup: ContentGroup {
         let seasons: [BaseItemDto]
 
         private var posterWidth: CGFloat {
-            #if os(tvOS)
             max(140, (contentSize.width - 2 * EdgeInsets.edgePadding - 5 * EdgeInsets.itemSpacing) / 6)
-            #else
-            UIDevice.isPad ? 140 : max(120, (contentSize.width - 2 * EdgeInsets.edgePadding - EdgeInsets.itemSpacing) / 2)
-            #endif
         }
 
         private var headerSpacing: CGFloat {
