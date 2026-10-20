@@ -100,6 +100,10 @@ Library toolbar actions have separate rounded hit areas and no joined divider bo
 
 This is intentionally a dark theme. Check desktop, phone, login, details, search, metadata/image dialogs and player controls after Jellyfin updates. CSS selectors are not a versioned extension API, so updates may need small compatibility changes. If there is a regression, restore the previous CSS before investigating.
 
+`src/login.css` styles Jellyfin's native profile picker and manual sign-in within one responsive panel, with the original Alphane mark, larger profile tiles and a clear distinction between the primary sign-in action and recovery/Quick Connect controls. The splash backdrop is suppressed only while the login page is visible. Native form visibility, Remember Me, account selection and the server's login disclaimer remain intact; login does not require a separate web-client fork. `remote-access/check-login-design.cjs` in the media workspace checks desktop/phone layouts and native panel switching without submitting credentials.
+
+Legacy action menus and Identify/metadata dialogs keep the current screen visible through a transparent wrapper with an 8px backdrop blur and Jellyfin's native dimming. The dialog surface stays opaque for readable controls. Browsers without backdrop-filter support retain the visible background without blur.
+
 Optional navigation back to an external landing page can use Jellyfin Web's supported `menuLinks` configuration. An example is in `assets/web-config.example.json`; merge it into your existing web configuration and retain other settings. CSS does not create fake interactive links or hide administration controls.
 
 References: [Custom CSS](https://jellyfin.org/docs/general/clients/css-customization/), [web configuration and menu links](https://jellyfin.org/docs/general/clients/web-config/).

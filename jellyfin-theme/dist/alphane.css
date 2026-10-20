@@ -342,6 +342,10 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 
 /* player.css */
 /* Style controls only. Do not alter the video, subtitles, timing or hit targets. */
+/* The fading player header shares library header classes, but its lower edge
+   must blend into the picture without the library's horizontal divider. */
+.skinHeader.osdHeader { border-bottom: 0; }
+header.MuiAppBar-root:empty { background: transparent !important; border: 0; }
 .videoOsdBottom {
   background: linear-gradient(transparent, #101215e6);
   padding-bottom: max(20px, env(safe-area-inset-bottom));
@@ -392,9 +396,17 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 .MuiButton-root .MuiTouchRipple-ripplePulsate,
 .MuiToggleButton-root .MuiTouchRipple-ripplePulsate { display: none; }
 .MuiPaper-root.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper,
-.dialog, .dialogContainer {
+.dialog {
   background-color: var(--alphane-surface);
   color: var(--alphane-text);
+}
+/* The full-screen wrapper is separate from the readable dialog surface.
+   Keep the current page visible, with native dimming and a soft glass blur.
+   Browsers without backdrop-filter retain the transparent wrapper. */
+.dialogContainer {
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 .MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .dialog {
   border: 1px solid #ffffff1c; border-radius: 14px; box-shadow: 0 18px 70px #0006;
@@ -449,6 +461,124 @@ body:has(header.MuiAppBar-root) .homePage { box-sizing: border-box; margin-top: 
 #loginPage .pageTitle { color: var(--alphane-text); }
 #loginPage .manualLoginForm { padding: 24px; border: 1px solid var(--alphane-line); border-radius: 16px; background: var(--alphane-surface); }
 #loginPage .button-submit { min-height: 44px; }
+
+/* login.css */
+/* Native account picker, manual login and recovery actions share one surface.
+   Visibility still belongs to Jellyfin: never override its .hide states. */
+body:has(#loginPage:not(.hide)) .backdropContainer { opacity: 0 !important; }
+#loginPage:not(.hide) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - 64px);
+  padding: 36px 16px;
+  background: var(--alphane-background);
+}
+#loginPage > .padded-left.padded-right.padded-bottom-page {
+  box-sizing: border-box;
+  width: min(560px, 100%);
+  max-width: 560px;
+  margin: 0 auto !important;
+  padding: 32px !important;
+  border: 1px solid var(--alphane-line);
+  border-radius: 20px;
+  background: var(--alphane-surface);
+  box-shadow: 0 18px 64px #0002;
+}
+#loginPage > .padded-left.padded-right.padded-bottom-page::before {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 48px;
+  margin: 0 auto 20px;
+  background: var(--alphane-text);
+  mask: var(--alphane-symbol) center/contain no-repeat;
+  -webkit-mask: var(--alphane-symbol) center/contain no-repeat;
+}
+#loginPage :is(.visualLoginForm, .manualLoginForm) h1 {
+  margin: 0 0 24px !important;
+  color: var(--alphane-text);
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -.04em;
+  line-height: 1.25;
+  text-align: center;
+}
+#loginPage .manualLoginForm {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+#loginPage .manualLoginForm > .padded-left.padded-right { padding: 0; }
+#loginPage .inputContainer { margin-bottom: 20px; }
+#loginPage .inputLabel {
+  position: static !important;
+  display: block;
+  transform: none !important;
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 13px;
+  color: var(--alphane-secondary);
+}
+#loginPage .emby-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid #ffffff26;
+  background: #ffffff06;
+  border-radius: 10px;
+  font-size: 16px;
+}
+#loginPage .checkboxContainer { margin-block: 4px 22px; font-size: 13px; }
+#loginPage .emby-checkbox:checked ~ .checkboxOutline { background: var(--alphane-control-active); color: #181a1d; border-color: transparent; }
+#loginPage .checkboxOutline .checkboxIcon-checked { color: #181a1d !important; }
+#loginPage .readOnlyContent { max-width: none; margin: 20px 0 0 !important; }
+#loginPage .readOnlyContent > .emby-button { margin: 0 0 8px; }
+#loginPage .emby-button:not(.card) {
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.45;
+}
+#loginPage :is(.button-submit, .btnManual) { background: var(--alphane-control-active); color: #181a1d; }
+#loginPage .btnQuick { background: transparent; color: var(--alphane-text); border-color: #ffffff26; }
+#loginPage :is(.btnForgotPassword, .btnCancel) { background: transparent; color: var(--alphane-secondary); }
+#loginPage .emby-button:not(.card):not(:disabled):focus-visible { background: #fff; color: #181a1d; }
+@media (hover: hover) and (pointer: fine) {
+  #loginPage .emby-button:not(.card):not(:disabled):hover { background: #fff; color: #181a1d; }
+}
+#loginPage #divUsers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 16px;
+  justify-items: center;
+  margin: 0 0 24px;
+  padding: 0;
+}
+#loginPage #divUsers > .card { box-sizing: border-box; width: 100% !important; max-width: 96px; min-width: 0; padding: 0; background: transparent; border: 0; border-radius: 12px; }
+#loginPage #divUsers .cardBox { margin: 0 !important; padding: 0; }
+#loginPage #divUsers :is(.cardScalable, .cardContent, .cardImageContainer) { border-radius: 14px; }
+#loginPage #divUsers .cardText { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; margin-top: 8px; font-size: 13px; line-height: 1.4; }
+#loginPage .loginDisclaimerContainer { margin: 20px 0 0; padding-top: 18px; border-top: 1px solid var(--alphane-line); }
+#loginPage .loginDisclaimer { color: #ffffff99; font-size: 12px; line-height: 1.6; text-align: center; }
+#loginPage .loginDisclaimer p { margin: 0; }
+@media (max-width: 599px) {
+  #loginPage:not(.hide) { padding: 24px 16px; }
+  #loginPage > .padded-left.padded-right.padded-bottom-page { padding: 24px !important; border-radius: 16px; }
+  #loginPage #divUsers { gap: 16px 12px; }
+}
+@media (max-height: 760px) {
+  #loginPage:not(.hide) { align-items: flex-start; }
+}
 
 /* responsive.css */
 /* Respect native layout breakpoints; constrain decorations rather than controls. */

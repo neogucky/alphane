@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 export const root = fileURLToPath(new URL('../', import.meta.url));
-export const sources = ['tokens.css', 'base.css', 'navigation.css', 'cards.css', 'details.css', 'player.css', 'forms.css', 'responsive.css'];
+export const sources = ['tokens.css', 'base.css', 'navigation.css', 'cards.css', 'details.css', 'player.css', 'forms.css', 'login.css', 'responsive.css'];
 
 export async function compile() {
   const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));

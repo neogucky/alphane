@@ -27,9 +27,17 @@
 .MuiButton-root .MuiTouchRipple-ripplePulsate,
 .MuiToggleButton-root .MuiTouchRipple-ripplePulsate { display: none; }
 .MuiPaper-root.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper,
-.dialog, .dialogContainer {
+.dialog {
   background-color: var(--alphane-surface);
   color: var(--alphane-text);
+}
+/* The full-screen wrapper is separate from the readable dialog surface.
+   Keep the current page visible, with native dimming and a soft glass blur.
+   Browsers without backdrop-filter retain the transparent wrapper. */
+.dialogContainer {
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 .MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .dialog {
   border: 1px solid #ffffff1c; border-radius: 14px; box-shadow: 0 18px 70px #0006;

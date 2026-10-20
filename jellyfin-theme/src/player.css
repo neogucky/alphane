@@ -1,4 +1,8 @@
 /* Style controls only. Do not alter the video, subtitles, timing or hit targets. */
+/* The fading player header shares library header classes, but its lower edge
+   must blend into the picture without the library's horizontal divider. */
+.skinHeader.osdHeader { border-bottom: 0; }
+header.MuiAppBar-root:empty { background: transparent !important; border: 0; }
 .videoOsdBottom {
   background: linear-gradient(transparent, #101215e6);
   padding-bottom: max(20px, env(safe-area-inset-bottom));

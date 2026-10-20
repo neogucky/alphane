@@ -116,6 +116,29 @@ test('neutral progress matches the TV cards and essential player controls remain
   await expect(page.getByRole('button', { name: 'Audio', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Subtitles', exact: true })).toBeVisible();
 });
+
+test('player header fades into the picture without a horizontal divider', async ({ page }, testInfo) => {
+  await page.evaluate(() => document.body.insertAdjacentHTML('afterbegin', `
+    <header id="empty-player-appbar" class="MuiAppBar-root"></header>
+    <section id="player-header-preview" style="height:180px;position:relative;background:rgb(90,140,190)">
+      <div class="skinHeader skinHeader-withBackground osdHeader" style="height:90px;position:absolute;inset:0 0 auto;background:linear-gradient(rgba(16,16,16,.75),transparent)"></div>
+    </section>`));
+  const header = page.locator('#player-header-preview .osdHeader');
+  await expect(header).toHaveCSS('border-bottom-width', '0px');
+  await expect(page.locator('#empty-player-appbar')).toHaveCSS('height', '0px');
+  // Library navigation keeps its divider; only the playback overlays lose it.
+  await expect(page.locator('header.MuiAppBar-root').filter({ has: page.locator('.MuiToolbar-root') }).first()).toHaveCSS('border-bottom-width', '1px');
+  const screenshot = await page.locator('#player-header-preview').screenshot({ scale: 'css' });
+  await testInfo.attach('player-header', { body: screenshot, contentType: 'image/png' });
+  const edgeDifference = await page.evaluate(async base64 => {
+    const image = new Image(); image.src = 'data:image/png;base64,' + base64; await image.decode();
+    const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
+    const context = canvas.getContext('2d'); context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(Math.floor(image.width / 2), 89, 1, 2).data;
+    return Math.max(...[0, 1, 2].map(channel => Math.abs(pixels[channel] - pixels[channel + 4])));
+  }, screenshot.toString('base64'));
+  expect(edgeDifference, 'no visible seam at the bottom of the fading header').toBeLessThanOrEqual(3);
+});
 test('colour modes update progress and state cues while focus stays white', async ({ page }) => {
   const fill = page.locator('.itemProgressBarForeground').first();
   const before = await fill.boundingBox();
