@@ -18,9 +18,9 @@ apply_icons() {
         [ ! -d "$web/favicons" ] || cp "$assets/icon-$size.png" "$web/favicons/touchicon$size.png" || return 1
     done
     if [ -f "$web/index.html" ]; then
-        sed -E 's@href="favicon[^\"]*\.ico([?][^\"]*)?"@href="alphane-icons/icon.ico?v=1"@g;s@href="touchicon[^\"]*\.png([?][^\"]*)?"@href="alphane-icons/icon-180.png?v=1"@g' "$web/index.html" > "$web/index.alphane-next.html" || return 1
+        sed -E 's@href="favicon[^\"]*\.ico([?][^\"]*)?"@href="alphane-icons/icon.ico?v=2"@g;s@href="touchicon[^\"]*\.png([?][^\"]*)?"@href="alphane-icons/icon-180.png?v=1"@g;s@(alphane-icons/icon\.(ico|svg))\?v=[^\"]*@\1?v=2@g' "$web/index.html" > "$web/index.alphane-next.html" || return 1
         if ! grep -q 'alphane-icons/icon.svg' "$web/index.alphane-next.html"; then
-            sed 's@</head>@<link rel="icon" type="image/svg+xml" href="alphane-icons/icon.svg?v=1"></head>@' "$web/index.alphane-next.html" > "$web/index.alphane-svg.html" || return 1
+            sed 's@</head>@<link rel="icon" type="image/svg+xml" href="alphane-icons/icon.svg?v=2"></head>@' "$web/index.alphane-next.html" > "$web/index.alphane-svg.html" || return 1
             mv -f "$web/index.alphane-svg.html" "$web/index.alphane-next.html" || return 1
         fi
         mv -f "$web/index.alphane-next.html" "$web/index.html" || return 1
