@@ -358,11 +358,35 @@ header.MuiAppBar-root:empty { background: transparent !important; border: 0; }
   .videoOsdBottom .paper-icon-button-light:hover { background: var(--alphane-control-highlight); color: #181a1d; }
 }
 .videoOsdBottom .sliderContainer { color: var(--alphane-accent); }
-.videoOsdBottom .mdl-slider-background-lower, .videoOsdBottom .sliderBubble,
+.videoOsdBottom .mdl-slider-background-lower,
 .videoOsdBottom .mdl-slider::-webkit-slider-thumb { background: var(--alphane-accent); }
 .videoOsdBottom .mdl-slider::-moz-range-thumb { background: var(--alphane-accent); }
 .videoOsdBottom .mdl-slider-background-upper { background: #ffffff24; }
 .videoOsdBottom .mdl-slider-container { border-radius: 999px; }
+/* Seek bubbles contain chapter artwork, trickplay sprites or just a timestamp.
+   Keep their surface dark so the native white caption stays readable. */
+.videoOsdBottom .sliderBubble {
+  background-color: #181a1d;
+  color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px #0008;
+}
+.videoOsdBottom .sliderBubbleText { font-size: .95rem; font-weight: 500; }
+.videoOsdBottom .chapterThumb {
+  display: block;
+  width: clamp(280px, 26vw, 400px);
+  max-width: calc(100vw - 48px);
+  min-width: 0;
+  height: auto;
+}
+.videoOsdBottom .chapterThumbTextContainer { background: linear-gradient(transparent, #000c); }
+.videoOsdBottom .chapterThumbText { font-size: .95rem; }
+@media (min-width: 800px) {
+  /* Scale the entire sprite viewport: changing its width or background-size
+     would invalidate Jellyfin's inline tile coordinates. */
+  .videoOsdBottom .chapterThumbWrapper { zoom: 1.25; }
+}
 .videoOsdBottom .osdTimeText { font-variant-numeric: tabular-nums; font-size: .85rem; }
 .upNextContainer { background: #282b30f5; border: 1px solid #ffffff20; border-radius: 14px; box-shadow: 0 12px 40px #0005; }
 
