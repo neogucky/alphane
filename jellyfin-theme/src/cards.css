@@ -1,0 +1,82 @@
+.cardBox { margin: 0 12px 0 0; }
+.cardScalable, .cardImageContainer, .cardOverlayContainer, .cardOverlayButton,
+.visualCardBox, .cardContent-shadow { border-radius: var(--alphane-radius); }
+.cardContent-shadow { box-shadow: 0 3px 12px #00000018; }
+.cardOverlayContainer { background: linear-gradient(180deg, transparent 30%, #101215b8); }
+.cardImageContainer { background-color: var(--alphane-raised); }
+/* Collection cards also use an empty full-size link over the actual image. */
+.cardOverlayContainer .cardImageContainer { background-color: transparent; }
+.cardImageContainer::after { border-radius: inherit; }
+.card .cardText { text-align: start !important; padding-inline: 2px; font-size: 1rem; }
+.cardText-first { color: var(--alphane-text); font-weight: 550; padding-top: 8px; }
+.card .cardText-secondary { color: var(--alphane-secondary); font-size: .85rem; padding-top: 3px; }
+.cardTextCentered { text-align: start; }
+/* Jellyfin's bar is the track; its foreground child holds the watched width.
+   Match ProgressIndicator.swift: 6px capsule, inset 5px from the artwork. */
+.card .innerCardFooter:has(> .itemProgressBar) {
+  inset-inline: 5px;
+  bottom: 5px;
+  width: auto;
+  padding: 0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.card .itemProgressBar {
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--alphane-accent-track);
+  box-shadow: inset 0 0 0 .5px #ffffff2e;
+}
+.card .itemProgressBarForeground { height: 100%; border-radius: inherit; background: var(--alphane-accent); }
+.cardImageContainer:has(.itemProgressBar)::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 0;
+  background: linear-gradient(transparent, #000000a6);
+  pointer-events: none;
+}
+/* The permanent footer gradient supplies contrast; don't dim the bar again
+   when Jellyfin reveals its hover controls. */
+.cardImageContainer:has(.itemProgressBar) ~ .cardOverlayContainer { background: transparent; }
+.card .playedIndicator, .card .countIndicator { margin: 7px; box-shadow: none; }
+.card .cardOverlayButton:focus-visible { outline-offset: 3px; }
+/* Draw selection inside the artwork, above its image and action overlay. An
+   outside shadow/outline is clipped by Jellyfin's horizontal scrollers. */
+.cardScalable { position: relative; isolation: isolate; }
+.cardScalable::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3px #00000040;
+  pointer-events: none;
+  opacity: 0;
+}
+.card:is(.show-focus, :focus-visible, :has(:focus-visible)) .cardScalable::after { opacity: 1; }
+.card.show-focus .cardBox:not(.visualCardBox) .cardScalable { border: 0; }
+/* The artwork ring replaces these outlines; action buttons keep their own. */
+.card:has(.cardScalable):focus-visible, .card .cardImageContainer:focus-visible { outline: none !important; }
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .cardScalable::after { opacity: 1; }
+}
+.verticalSection { margin-block-end: 18px; }
+.sectionTitleContainer { margin-block-end: 14px; }
+.itemsContainer { padding-block: 5px 8px; }
+.emby-scroller { scrollbar-color: #ffffff40 transparent; }
+.emby-scroller[data-scroll-mode-x="custom"] { overflow: hidden; }
+.homeSectionsContainer { padding-block: 24px 32px; }
+.homePage .section0 .sectionTitle { color: var(--alphane-secondary); font-size: .85rem; letter-spacing: .015em; }
+/* Keep library shortcuts useful, but give viewing rows more prominence. */
+.homePage .MyMedia .overflowBackdropCard { width: 16%; }
+/* Crop the frame embedded in the library artwork; keep the shortcuts borderless.
+   Hover and keyboard selection use the same white artwork ring as other cards. */
+.homePage .MyMedia .cardImageContainer.coveredImage {
+  box-sizing: border-box;
+  border: 0 !important;
+  background-size: 108% auto;
+  background-origin: padding-box;
+  background-clip: padding-box !important;
+}
+.homePage :is(.ContinueWatching, .NextUp) .overflowBackdropCard { width: 21%; }

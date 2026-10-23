@@ -6,6 +6,8 @@
 
 Alphane is a Jellyfin client for Apple TV, built on Swiftfin and redesigned to look, feel, and behave like a modern streaming app.
 
+The repository also includes an [Alphane theme for Jellyfin Web](./jellyfin-theme/README.md), bringing the same charcoal surfaces, artwork-focused cards and white controls to the browser, with optional Aqua and Amber accents. It includes a standalone preview, browser checks, installation and rollback tools.
+
 Compared with Swiftfin, Alphane focuses on:
 
 - **Discovery:** cinematic Continue artwork and lazy-loaded recommendation rows with randomized categories and titles.

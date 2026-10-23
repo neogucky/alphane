@@ -1,0 +1,94 @@
+.emby-input, .emby-textarea, .emby-select-withcolor,
+.MuiOutlinedInput-root {
+  color: var(--alphane-text);
+  background: #ffffff06;
+  border-color: #ffffff26;
+  border-radius: 9px;
+}
+.emby-input:focus, .emby-textarea:focus, .emby-select:focus { border-color: var(--alphane-control-active); }
+.MuiOutlinedInput-notchedOutline { border-color: #ffffff26; }
+.inputLabel, .selectLabel, .textareaLabel { color: var(--alphane-secondary); font-weight: 550; font-size: .9rem; }
+.inputLabelFocused, .selectLabelFocused, .textareaLabelFocused { color: var(--alphane-text); }
+.raised, .button-submit, .MuiButton-containedPrimary {
+  background: var(--alphane-control-active); color: #181a1d;
+  font-weight: 650; border-radius: 999px; box-shadow: none;
+}
+:is(.raised, .button-submit, .MuiButton-containedPrimary):not(:disabled):not(.Mui-disabled):focus-visible {
+  background: var(--alphane-control-highlight); color: #181a1d; box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  :is(.raised, .button-submit, .MuiButton-containedPrimary):not(:disabled):not(.Mui-disabled):hover {
+    background: var(--alphane-control-highlight); color: #181a1d; box-shadow: none;
+  }
+}
+.button-cancel { border-radius: 999px; }
+/* The white capsule already marks keyboard focus; MUI's dark pulsing ripple
+   would dim that selected state. Keep ordinary press ripples intact. */
+.MuiButton-root .MuiTouchRipple-ripplePulsate,
+.MuiToggleButton-root .MuiTouchRipple-ripplePulsate { display: none; }
+.MuiPaper-root.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper,
+.dialog {
+  background-color: var(--alphane-surface);
+  color: var(--alphane-text);
+}
+/* The full-screen wrapper is separate from the readable dialog surface.
+   Keep the current page visible, with native dimming and a soft glass blur.
+   Browsers without backdrop-filter retain the transparent wrapper. */
+.dialogContainer {
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.MuiDialog-paper, .MuiMenu-paper, .MuiPopover-paper, .dialog {
+  border: 1px solid #ffffff1c; border-radius: 14px; box-shadow: 0 18px 70px #0006;
+}
+.actionSheetMenuItem:hover { background: #ffffff0b; }
+/* Selected menu options and segmented controls follow the TV capsule treatment. */
+.MuiMenuItem-root.Mui-selected {
+  background: var(--alphane-control-active);
+  color: var(--alphane-background);
+}
+.MuiMenuItem-root:is(.Mui-selected, :hover, :focus-visible, .Mui-focusVisible) :is(.MuiListItemIcon-root, .MuiSvgIcon-root, .MuiCheckbox-root, .MuiRadio-root, .MuiTypography-root) { color: inherit; }
+.MuiMenu-paper .MuiMenuItem-root { border-radius: 999px; margin-inline: 4px; }
+.MuiToggleButtonGroup-root.MuiToggleButtonGroup-horizontal { gap: 6px; }
+.MuiToggleButtonGroup-horizontal .MuiToggleButtonGroup-grouped {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: var(--alphane-text);
+  background: transparent;
+}
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root.Mui-selected {
+  background: var(--alphane-control-active);
+  color: var(--alphane-background);
+}
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root .MuiSvgIcon-root { color: inherit; }
+.alphaPicker-fixed-right .MuiToggleButton-root.Mui-selected {
+  background: var(--alphane-control-active);
+  color: var(--alphane-background);
+  border-radius: 6px;
+}
+.MuiMenuItem-root:not(.Mui-disabled):is(:focus-visible, .Mui-focusVisible),
+.MuiToggleButtonGroup-horizontal .MuiToggleButton-root:not(.Mui-disabled):focus-visible,
+.alphaPicker-fixed-right .MuiToggleButton-root:not(.Mui-disabled):focus-visible {
+  background: var(--alphane-control-highlight);
+  color: var(--alphane-background);
+}
+@media (hover: hover) and (pointer: fine) {
+  .MuiMenuItem-root:not(.Mui-disabled):hover,
+  .MuiToggleButtonGroup-horizontal .MuiToggleButton-root:not(.Mui-disabled):hover,
+  .alphaPicker-fixed-right .MuiToggleButton-root:not(.Mui-disabled):hover {
+    background: var(--alphane-control-highlight);
+    color: var(--alphane-background);
+  }
+}
+.checkboxOutline { border-radius: 4px; border-color: #ffffff80; }
+.emby-checkbox:checked + span + .checkboxOutline { background: var(--alphane-accent); color: #181a1d; border-color: var(--alphane-accent); }
+.collapseContent, .paperList, .dashboardSection .cardBox { background: var(--alphane-surface); border-radius: 10px; }
+/* The login view retains its native fields and account selection. */
+#loginPage .readOnlyContent, #loginPage .padded-left.padded-right.padded-bottom-page {
+  max-width: 460px; margin-inline: auto;
+}
+#loginPage .pageTitle { color: var(--alphane-text); }
+#loginPage .manualLoginForm { padding: 24px; border: 1px solid var(--alphane-line); border-radius: 16px; background: var(--alphane-surface); }
+#loginPage .button-submit { min-height: 44px; }
