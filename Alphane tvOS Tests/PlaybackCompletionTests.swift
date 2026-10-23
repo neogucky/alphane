@@ -139,7 +139,7 @@ final class PlaybackCompletionTests: XCTestCase {
         ))
     }
 
-    func testNextFocusRequiresFinishingThisViewingAndAnAvailableNextEpisode() {
+    func testNextFocusRequiresAPlaybackStopAndCompletedStateWithAnAvailableNextEpisode() {
         let watched = item(played: true)
         XCTAssertTrue(PlaybackCompletion.shouldPreferNextEpisode(
             after: watched, stoppedAt: watched.runTimeTicks, nextEpisode: nextEpisode
@@ -148,8 +148,12 @@ final class PlaybackCompletionTests: XCTestCase {
         XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
             after: watched, stoppedAt: nil, nextEpisode: nextEpisode
         ))
-        XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
+        // Jellyfin can complete an episode during its credits, before EOF.
+        XCTAssertTrue(PlaybackCompletion.shouldPreferNextEpisode(
             after: watched, stoppedAt: 1_503_860_000, nextEpisode: nextEpisode
+        ))
+        XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
+            after: watched, stoppedAt: 0, nextEpisode: nextEpisode
         ))
         var resumable = watched
         resumable.userData?.playbackPositionTicks = 1_503_860_000
@@ -163,6 +167,41 @@ final class PlaybackCompletionTests: XCTestCase {
         movie.type = .movie
         XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
             after: movie, stoppedAt: movie.runTimeTicks, nextEpisode: nextEpisode
+        ))
+    }
+
+    func testManualCreditsStopPrefersNextOnlyAfterJellyfinClearsTheResumePoint() throws {
+        let store = ItemStore()
+        let episode = item(played: false)
+        let entry = try ItemEntry(item: store.record(for: episode))
+        var report = PlaybackStopInfo()
+        report.itemID = episode.id
+        report.positionTicks = Duration.seconds(285).ticks
+        XCTAssertFalse(PlaybackCompletion.reachedEnd(of: episode, at: report.positionTicks))
+
+        try PlaybackCompletion.applyStop(report, to: entry, in: store)
+        XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
+            after: entry.snapshot, stoppedAt: report.positionTicks, nextEpisode: nextEpisode
+        ))
+
+        var completed = UserItemDataDto(key: entry.itemID)
+        completed.itemID = entry.itemID
+        completed.isPlayed = true
+        completed.playbackPositionTicks = 0
+        completed.playedPercentage = 100
+        try store.mergeUserData(completed, token: store.beginRequest())
+        XCTAssertEqual(entry.snapshot.playButtonLabel, L10n.playAgain)
+        XCTAssertTrue(PlaybackCompletion.shouldPreferNextEpisode(
+            after: entry.snapshot, stoppedAt: report.positionTicks, nextEpisode: nextEpisode
+        ))
+
+        // A later partial rewatch must return to Resume even though Played stays true.
+        report.positionTicks = Duration.seconds(60).ticks
+        try PlaybackCompletion.applyStop(report, to: entry, in: store)
+        XCTAssertEqual(entry.snapshot.userData?.isPlayed, true)
+        XCTAssertNotNil(entry.snapshot.progressLabel)
+        XCTAssertFalse(PlaybackCompletion.shouldPreferNextEpisode(
+            after: entry.snapshot, stoppedAt: report.positionTicks, nextEpisode: nextEpisode
         ))
     }
 

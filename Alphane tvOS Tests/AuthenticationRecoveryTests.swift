@@ -15,10 +15,84 @@ import Get
 import JellyfinAPI
 import KeychainSwift
 import Security
+import SwiftUI
+import UIKit
 import XCTest
 
 @MainActor
 final class AuthenticationRecoveryTests: XCTestCase {
+
+    func testSessionFailureFocusesSignOutAboveThePersistentMenuOnLaunchAndAfterLoading() async throws {
+        await Container.shared.userSessionManager().start()
+        let factories = Container.shared.manager
+        factories.push()
+        defer { factories.pop() }
+        let id = UUID().uuidString
+        let url = try XCTUnwrap(URL(string: "https://recovery-focus.invalid"))
+        let session = UserSession(
+            server: ServerState(urls: [url], currentURL: url, name: "Focus review", id: id, userIDs: [id]),
+            user: UserState(id: id, serverID: id, username: "Sample profile")
+        )
+        Container.shared.currentUserSession.register { session }
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        defer { previous?.makeKeyAndVisible() }
+
+        for startsWithError in [false, true] {
+            let page = RecoveryFocusPageState()
+            if startsWithError {
+                page.error = APIError.unacceptableStatusCode(401)
+            }
+            let tabs = TabCoordinator {
+                TabItem(id: "home", title: "Home", systemImage: "house") {
+                    RecoveryFocusPage(state: page)
+                }
+                TabItem(id: "movies", title: "Movies", systemImage: "film") {
+                    Text("Sample movies")
+                }
+            }
+            let window = UIWindow(windowScene: scene)
+            window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+            window.rootViewController = UIHostingController(rootView:
+                MainTabView(tabCoordinator: tabs)
+                    .onPreferenceChange(AuthenticationRecoveryPresentedKey.self) { page.recoveryIsPresented = $0 }
+                    .preferredColorScheme(.dark))
+            window.makeKeyAndVisible()
+            defer {
+                window.isHidden = true
+                window.rootViewController = nil
+            }
+            try await Task.sleep(for: .milliseconds(600))
+            if !startsWithError {
+                let focus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
+                let rect = focus.focusItemContainer?.coordinateSpace.convert(focus.frame, to: window) ?? focus.frame
+                XCTAssertLessThan(rect.maxY, 160, "The main menu is focused before the session fails")
+                page.error = APIError.unacceptableStatusCode(401)
+                try await Task.sleep(for: .milliseconds(400))
+            }
+            let focus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
+            let rect = focus.focusItemContainer?.coordinateSpace.convert(focus.frame, to: window) ?? focus.frame
+            XCTAssertGreaterThan(rect.minY, 300, "Focus must leave the persistent main menu")
+            XCTAssertGreaterThan(rect.midX, 960, "Sign out, to the right of Retry, must receive native focus")
+            let capture = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+                window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            }
+            let attachment = XCTAttachment(image: capture)
+            attachment.name = startsWithError ? "session-error-on-launch" : "session-error-after-loading"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            XCTAssertEqual(tabs.selectedTabID, "home", "Presenting recovery must not switch tabs")
+            XCTAssertTrue(page.recoveryIsPresented, "The active error must suspend main navigation")
+
+            page.error = nil
+            try await Task.sleep(for: .milliseconds(400))
+            XCTAssertFalse(page.recoveryIsPresented, "Recovery must release its main-navigation block")
+            let recoveredFocus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
+            let recoveredRect = recoveredFocus.focusItemContainer?.coordinateSpace.convert(recoveredFocus.frame, to: window)
+                ?? recoveredFocus.frame
+            XCTAssertTrue(page.contentIsFocused || recoveredRect.maxY < 160, "Focus must return to content or main navigation")
+        }
+    }
 
     func testRecognizesHTTPAndSocketAuthenticationFailuresIncludingUnderlyingErrors() {
         let failures: [Error] = [
@@ -287,6 +361,31 @@ final class AuthenticationRecoveryTests: XCTestCase {
             throw error
         }
         await manager.signOut(reason: .explicit)
+    }
+}
+
+@MainActor
+private final class RecoveryFocusPageState: ObservableObject {
+    @Published
+    var error: Error?
+    var recoveryIsPresented = false
+    var contentIsFocused = false
+}
+
+private struct RecoveryFocusPage: View {
+    @ObservedObject
+    var state: RecoveryFocusPageState
+    @FocusState
+    private var contentIsFocused: Bool
+
+    var body: some View {
+        RetryableContentView(error: state.error, retry: { state.error }) {
+            Button("Sample item") {}
+                .buttonStyle(.capsule)
+                .focused($contentIsFocused)
+                .onChange(of: contentIsFocused) { state.contentIsFocused = contentIsFocused }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }
 

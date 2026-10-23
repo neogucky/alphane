@@ -19,11 +19,18 @@ struct MainTabView: View {
     @State
     private var loadedTabIDs: Set<String> = []
 
+    @State
+    private var authenticationRecoveryTabIDs: Set<String> = []
+
     @StateObject
     private var scrollController = MainNavigationScrollController()
 
     private var isBrowsingRoot: Bool {
         tabCoordinator.tabs.first(where: { $0.item.id == tabCoordinator.selectedTabID })?.coordinator.path.isEmpty == true
+    }
+
+    private var isAuthenticationRecoveryPresented: Bool {
+        authenticationRecoveryTabIDs.contains(tabCoordinator.selectedTabID)
     }
     #endif
 
@@ -33,8 +40,8 @@ struct MainTabView: View {
     @StateObject
     private var tabCoordinator: TabCoordinator
 
-    init() {
-        _tabCoordinator = StateObject(wrappedValue: Self.defaultTabCoordinator)
+    init(tabCoordinator: TabCoordinator? = nil) {
+        _tabCoordinator = StateObject(wrappedValue: tabCoordinator ?? Self.defaultTabCoordinator)
     }
 
     private static var defaultTabCoordinator: TabCoordinator {
@@ -129,8 +136,18 @@ struct MainTabView: View {
                         let isActive = tab.item.id == tabCoordinator.selectedTabID
                         if isActive || loadedTabIDs.contains(tab.item.id) {
                             tabRoot(tab)
+                                .onPreferenceChange(AuthenticationRecoveryPresentedKey.self) { isPresented in
+                                    if isPresented {
+                                        authenticationRecoveryTabIDs.insert(tab.item.id)
+                                    } else {
+                                        authenticationRecoveryTabIDs.remove(tab.item.id)
+                                    }
+                                }
                                 .environment(\.tabSafeAreaInsets, proxy.safeAreaInsets)
-                                .environment(\.isMainNavigationFocused, focusedTabID != nil && isBrowsingRoot)
+                                .environment(
+                                    \.isMainNavigationFocused,
+                                    focusedTabID != nil && isBrowsingRoot && !isAuthenticationRecoveryPresented
+                                )
                                 .environment(
                                     \.mainNavigationScrollContext,
                                     MainNavigationScrollContext(controller: scrollController, tabID: tab.item.id)
@@ -150,9 +167,9 @@ struct MainTabView: View {
                 }
                 .frame(height: MainNavigationScrollController.headerHeight)
                 .opacity(isBrowsingRoot ? 1 : 0)
-                .disabled(!isBrowsingRoot)
-                .allowsHitTesting(isBrowsingRoot)
-                .accessibilityHidden(!isBrowsingRoot)
+                .disabled(!isBrowsingRoot || isAuthenticationRecoveryPresented)
+                .allowsHitTesting(isBrowsingRoot && !isAuthenticationRecoveryPresented)
+                .accessibilityHidden(!isBrowsingRoot || isAuthenticationRecoveryPresented)
             }
             .clipped()
         }
@@ -160,7 +177,9 @@ struct MainTabView: View {
         .onAppear {
             loadedTabIDs.insert(tabCoordinator.selectedTabID)
             scrollController.activate(tabCoordinator.selectedTabID)
-            focusedTabID = tabCoordinator.selectedTabID
+            if !isAuthenticationRecoveryPresented {
+                focusedTabID = tabCoordinator.selectedTabID
+            }
         }
         .onChange(of: focusedTabID) { _, tabID in
             guard let tabID else { return }
@@ -184,8 +203,13 @@ struct MainTabView: View {
                 focusedTabID = nil
             }
         }
+        .onChange(of: isAuthenticationRecoveryPresented) { _, isPresented in
+            if isPresented {
+                focusedTabID = nil
+            }
+        }
         // Back first returns to the menu. Once there, let tvOS handle Back and show its Home Screen.
-        .onExitCommand(perform: isBrowsingRoot && focusedTabID == nil ? {
+        .onExitCommand(perform: isBrowsingRoot && focusedTabID == nil && !isAuthenticationRecoveryPresented ? {
             focusedTabID = tabCoordinator.selectedTabID
             scrollController.revealHeader()
         } : nil)

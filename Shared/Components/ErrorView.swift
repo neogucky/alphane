@@ -15,6 +15,15 @@ private let buttonHeight: CGFloat = 75
 private let buttonMaxSize: CGFloat = 600
 private let iconSize: CGFloat = 144
 
+/// Inline authentication recovery owns focus while its active page is blocked.
+struct AuthenticationRecoveryPresentedKey: PreferenceKey {
+    static var defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
+    }
+}
+
 struct ErrorView<ErrorType: Error>: View {
 
     @Default(.accentColor)
@@ -25,6 +34,8 @@ struct ErrorView<ErrorType: Error>: View {
 
     @Environment(\.accessibilityReduceMotion)
     private var reduceMotion
+    @Environment(\.isEnabled)
+    private var isEnabled
     @InjectedObject(\.userSessionManager)
     private var userSessionManager
 
@@ -161,6 +172,10 @@ struct ErrorView<ErrorType: Error>: View {
     }
 
     #if os(tvOS)
+    private var preferredButton: String? {
+        requiresSignIn ? "sign-out" : (canRetry ? "retry" : nil)
+    }
+
     private var tvBody: some View {
         VStack(spacing: 24) {
             Image(systemName: systemImage)
@@ -235,13 +250,31 @@ struct ErrorView<ErrorType: Error>: View {
                     .disabled(isBusy || isEndingSession)
                 }
             }
-            .defaultFocus($focusedButton, "retry")
+            .defaultFocus($focusedButton, preferredButton, priority: requiresSignIn ? .userInitiated : .automatic)
             .padding(.top, 6)
         }
         .padding(60)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AlphaneTheme.background.ignoresSafeArea())
         .focusSection()
+        .preference(key: AuthenticationRecoveryPresentedKey.self, value: requiresSignIn && isEnabled)
+        .onAppear {
+            if requiresSignIn, isEnabled {
+                focusedButton = preferredButton
+            }
+        }
+        .onChange(of: requiresSignIn) {
+            if isEnabled {
+                focusedButton = preferredButton
+            }
+        }
+        .onChange(of: isEnabled) {
+            if !isEnabled {
+                focusedButton = nil
+            } else if requiresSignIn {
+                focusedButton = preferredButton
+            }
+        }
     }
     #endif
 

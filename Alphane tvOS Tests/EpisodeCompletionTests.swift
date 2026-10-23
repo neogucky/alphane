@@ -61,7 +61,15 @@ final class EpisodeCompletionTests: XCTestCase {
         XCTAssertTrue(provider.item.presentPlayButton)
         let initialItemRecord = provider.$item.item
 
-        for finished in [true, false, true] {
+        let stops = [
+            (name: "natural-end", naturalEnd: true, serverCompletes: false, delayed: false),
+            (name: "partial-rewatch", naturalEnd: false, serverCompletes: false, delayed: false),
+            (name: "credits-before-dismissal", naturalEnd: false, serverCompletes: true, delayed: false),
+            (name: "partial-rewatch-again", naturalEnd: false, serverCompletes: false, delayed: false),
+            (name: "credits-after-dismissal", naturalEnd: false, serverCompletes: true, delayed: true),
+            (name: "natural-end-again", naturalEnd: true, serverCompletes: false, delayed: false),
+        ]
+        for stop in stops {
             // The real player uses this same full-screen route. No stream,
             // server progress report or real watch history is needed here.
             coordinator.push(NavigationRoute(id: "focus-test-player", style: .fullscreen) {
@@ -70,20 +78,39 @@ final class EpisodeCompletionTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(700))
             var report = PlaybackStopInfo()
             report.itemID = "episode"
-            report.positionTicks = Duration.seconds(finished ? 120 : 38).ticks
-            XCTAssertTrue(provider.prepareForPlaybackStop(report, didReachEnd: finished))
-            XCTAssertEqual(provider.shouldFocusNextEpisode, finished)
+            report.positionTicks = Duration.seconds(stop.naturalEnd ? 120 : stop.serverCompletes ? 110 : 38).ticks
+            XCTAssertTrue(provider.prepareForPlaybackStop(report, didReachEnd: stop.naturalEnd))
+            XCTAssertEqual(provider.shouldFocusNextEpisode, stop.naturalEnd)
+            func serverCompletesEpisode() throws {
+                var data = UserItemDataDto(key: "episode")
+                data.itemID = "episode"
+                data.isPlayed = true
+                data.playbackPositionTicks = 0
+                data.playedPercentage = 100
+                try session.items.mergeUserData(data, token: session.items.beginRequest())
+            }
+            if stop.serverCompletes, !stop.delayed {
+                try serverCompletesEpisode()
+            }
             coordinator.presentedFullScreen = nil
             try await Task.sleep(for: .milliseconds(900))
+            if stop.serverCompletes, stop.delayed {
+                let focus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
+                let rect = focus.focusItemContainer?.coordinateSpace.convert(focus.frame, to: window) ?? focus.frame
+                XCTAssertLessThan(rect.maxX, 1000, "Resume stays focused until Jellyfin confirms completion")
+                try serverCompletesEpisode()
+                try await Task.sleep(for: .milliseconds(300))
+            }
+            XCTAssertEqual(provider.shouldFocusNextEpisode, stop.naturalEnd || stop.serverCompletes, stop.name)
             let focus = try XCTUnwrap(UIFocusSystem.focusSystem(for: window)?.focusedItem)
             let rect = focus.focusItemContainer?.coordinateSpace.convert(focus.frame, to: window) ?? focus.frame
             let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
             let capture = renderer.image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
             let attachment = XCTAttachment(image: capture)
-            attachment.name = finished ? "completed-next-focus" : "unfinished-resume-focus"
+            attachment.name = stop.name
             attachment.lifetime = .keepAlways
             add(attachment)
-            if finished {
+            if stop.naturalEnd || stop.serverCompletes {
                 XCTAssertGreaterThan(rect.minX, 1400, "The next-episode thumbnail must actually receive native focus after dismissal")
                 XCTAssertEqual(provider.mediaPlayerItemProvider?.item.playButtonLabel, L10n.playAgain)
             } else {
@@ -96,15 +123,22 @@ final class EpisodeCompletionTests: XCTestCase {
     }
 
     func testAutomaticEndingPreparesNextBeforeAcknowledgementWithoutReloadingThePage() async {
+        // This can be the first test in a scoped run; host startup must not
+        // reset the fixture's session injection while its requests are running.
+        await FactoryKit.Container.shared.userSessionManager().start()
+        let factories = FactoryKit.Container.shared.manager
+        factories.push()
+        defer { factories.pop() }
         let previous = Defaults[.sendProgressReports]
         Defaults[.sendProgressReports] = true
         defer { Defaults[.sendProgressReports] = previous }
         let session = makeStubSession()
+        FactoryKit.Container.shared.currentUserSession.register { session }
         let provider = ItemContentGroupProvider(item: episode("episode"))
         provider.userSession = session
         let viewModel = ContentGroupViewModel(provider: provider)
         await viewModel.refresh()
-        XCTAssertEqual(viewModel.state, .content)
+        XCTAssertEqual(viewModel.state, .content, String(describing: viewModel.error))
         XCTAssertEqual(provider.nextEpisodeItemProvider?.item.id, "next")
         XCTAssertFalse(provider.shouldFocusNextEpisode)
         let groups = viewModel.groups.map(\.id)

@@ -66,8 +66,9 @@ enum PlaybackCompletion {
         return positionTicks >= runtime - 10_000_000
     }
 
-    /// Prefer Next only after this viewing reached the end, never when opening
-    /// an episode or stopping partway through a rewatch.
+    /// A stop must belong to this viewing, but Jellyfin can confirm completion
+    /// during credits before EOF. Its watched/no-resume state also permits Next.
+    /// Opening a watched episode or stopping a resumable rewatch keeps Play/Resume.
     static func shouldPreferNextEpisode(
         after item: BaseItemDto,
         stoppedAt positionTicks: Int?,
@@ -75,7 +76,7 @@ enum PlaybackCompletion {
         nextEpisode: BaseItemDto?
     ) -> Bool {
         item.type == .episode
-            && (didReachEnd || reachedEnd(of: item, at: positionTicks))
+            && (didReachEnd || (positionTicks ?? 0) > 0)
             && item.userData?.isPlayed == true
             && (item.userData?.playbackPositionTicks ?? 0) == 0
             && nextEpisode?.type == .episode
