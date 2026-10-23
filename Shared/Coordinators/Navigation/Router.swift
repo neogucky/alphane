@@ -26,6 +26,10 @@ extension NavigationCoordinator {
             route.transitionType = transition ?? route.transitionType
             navigationCoordinator?.push(route)
         }
+
+        func replace(with route: NavigationRoute) {
+            navigationCoordinator?.replaceLast(with: route)
+        }
     }
 }
 
@@ -39,6 +43,10 @@ struct Router: DynamicProperty {
 
         var isRootOfPath: Bool {
             router.isRootOfPath
+        }
+
+        func replace(with route: NavigationRoute) {
+            router.replace(with: route)
         }
 
         func route(

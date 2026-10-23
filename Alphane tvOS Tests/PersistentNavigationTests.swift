@@ -8,6 +8,7 @@
 
 @testable import Alphane
 import SwiftUI
+import UIKit
 import XCTest
 
 @MainActor
@@ -32,6 +33,131 @@ final class PersistentNavigationTests: XCTestCase {
         XCTAssertEqual(coordinator.path.map(\.id), ["episode"])
         XCTAssertEqual(coordinator.presentedFullScreen?.route.id, "player")
         XCTAssertNil(coordinator.presentedSheet)
+    }
+
+    func testContinuingEpisodesReturnsBackToHomeWithoutRevisitingFinishedEpisodes() {
+        let coordinator = NavigationCoordinator(usesNavigationStack: true)
+        let router = NavigationCoordinator.Router(navigationCoordinator: coordinator, isRootOfPath: false)
+        let homeTarget = NavigationFocusStore.Target(scope: "continue", item: "episode-1")
+        coordinator.focusStore.remember(homeTarget, on: "root")
+        router.route(to: route("episode-1"))
+
+        for episode in ["episode-2", "episode-3"] {
+            router.replace(with: route(episode))
+            router.route(to: route("player", style: .fullscreen))
+            XCTAssertEqual(coordinator.path.map(\.id), [episode])
+            XCTAssertEqual(coordinator.presentedFullScreen?.route.id, "player")
+            coordinator.presentedFullScreen = nil
+            coordinator.fullScreenDidDismiss()
+            XCTAssertEqual(coordinator.path.map(\.id), [episode])
+        }
+
+        coordinator.path.removeLast()
+        XCTAssertTrue(coordinator.path.isEmpty)
+        XCTAssertEqual(coordinator.focusStore.request?.pageID, "root")
+        XCTAssertEqual(coordinator.focusStore.request?.target, homeTarget)
+    }
+
+    func testContinuingEpisodesPreservesTheOriginatingSeriesPageAndItsSelection() {
+        let coordinator = NavigationCoordinator(usesNavigationStack: true)
+        coordinator.push(route("series"))
+        let seriesTarget = NavigationFocusStore.Target(scope: "episodes", item: "episode-1")
+        coordinator.focusStore.remember(seriesTarget, on: "series")
+        coordinator.push(route("episode-1"))
+        coordinator.focusStore.restore("series")
+
+        coordinator.replaceLast(with: route("episode-2"))
+        XCTAssertEqual(coordinator.path.map(\.id), ["series", "episode-2"])
+        XCTAssertNil(coordinator.focusStore.request, "Replacement must clear a stale focus-restoration request")
+        coordinator.replaceLast(with: route("episode-3"))
+        coordinator.path.removeLast()
+
+        XCTAssertEqual(coordinator.path.map(\.id), ["series"])
+        XCTAssertEqual(coordinator.focusStore.request?.pageID, "series")
+        XCTAssertEqual(coordinator.focusStore.request?.target, seriesTarget)
+    }
+
+    func testReplacementWithoutAStackEntryFallsBackToNormalRouting() {
+        let stack = NavigationCoordinator(usesNavigationStack: true)
+        stack.replaceLast(with: route("episode"))
+        XCTAssertEqual(stack.path.map(\.id), ["episode"])
+
+        let modal = NavigationCoordinator()
+        modal.replaceLast(with: route("episode"))
+        XCTAssertTrue(modal.path.isEmpty)
+        XCTAssertEqual(modal.presentedSheet?.route.id, "episode")
+    }
+
+    func testReplacementPreservesModalPresentationStylesAndRoutesInsideTheActivePresentation() {
+        let coordinator = NavigationCoordinator(usesNavigationStack: true)
+        coordinator.push(route("episode"))
+        coordinator.replaceLast(with: route("player", style: .fullscreen))
+        XCTAssertEqual(coordinator.path.map(\.id), ["episode"])
+        XCTAssertEqual(coordinator.presentedFullScreen?.route.id, "player")
+
+        coordinator.replaceLast(with: route("tracks", style: .sheet))
+        XCTAssertEqual(coordinator.path.map(\.id), ["episode"])
+        XCTAssertEqual(coordinator.presentedFullScreen?.route.id, "player")
+        XCTAssertEqual(coordinator.presentedFullScreen?.coordinator.presentedSheet?.route.id, "tracks")
+    }
+
+    func testNativeStackShowsTheReplacementAndBackReturnsToTheOriginalView() async throws {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        let coordinator = NavigationCoordinator(usesNavigationStack: true)
+        let window = UIWindow(windowScene: scene)
+        func detail(_ id: String) -> NavigationRoute {
+            NavigationRoute(id: id) { NavigationReplacementPage(id: id) }
+        }
+        func navigationController(in controller: UIViewController) -> UINavigationController? {
+            (controller as? UINavigationController) ?? controller.children.lazy.compactMap { navigationController(in: $0) }.first
+        }
+        func visiblePageID(in view: UIView) -> String? {
+            guard !view.isHidden, view.alpha > 0 else { return nil }
+
+            if let id = view.accessibilityIdentifier, id.hasPrefix("navigation-probe-") {
+                return id
+            }
+            return view.subviews.lazy.compactMap { visiblePageID(in: $0) }.first
+        }
+        func waitForPage(_ id: String, phase: String) async throws {
+            var visibleID: String?
+            for _ in 0 ..< 60 {
+                let navigation = window.rootViewController.flatMap { navigationController(in: $0) }
+                visibleID = navigation?.visibleViewController?.view.flatMap { visiblePageID(in: $0) }
+                if visibleID == "navigation-probe-\(id)", navigation?.transitionCoordinator == nil {
+                    return
+                }
+                try await Task.sleep(for: .milliseconds(50))
+            }
+            XCTFail("\(phase): expected visible page \(id), got \(visibleID ?? "none"); path: \(coordinator.path.map(\.id))")
+        }
+        window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        window.rootViewController = UIHostingController(rootView:
+            NavigationInjectionView(coordinator: coordinator) { NavigationReplacementPage(id: "home") })
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previous?.makeKeyAndVisible()
+        }
+        try await waitForPage("home", phase: "Initial presentation")
+
+        for origin in ["home", "series"] {
+            if origin == "series" {
+                coordinator.push(detail(origin))
+                try await waitForPage(origin, phase: "Opening the series")
+            }
+            coordinator.push(detail("episode-1"))
+            try await waitForPage("episode-1", phase: "Opening the first episode from \(origin)")
+            for episode in ["episode-2", "episode-3"] {
+                coordinator.replaceLast(with: detail(episode))
+                try await waitForPage(episode, phase: "Continuing from \(origin)")
+            }
+            coordinator.path.removeLast()
+            try await waitForPage(origin, phase: "Back to \(origin)")
+            XCTAssertEqual(coordinator.path.map(\.id), origin == "home" ? [] : ["series"])
+        }
     }
 
     func testExplicitModalStillPresentsAboveBrowsingStack() {
@@ -175,5 +301,36 @@ final class PersistentNavigationTests: XCTestCase {
         style: NavigationRoute.TransitionStyle = .push(.automatic)
     ) -> NavigationRoute {
         NavigationRoute(id: id, style: style) { EmptyView() }
+    }
+}
+
+/// State mirrors a detail page's retained provider: replacement must create a new identity.
+private struct NavigationReplacementPage: View {
+
+    @State
+    private var itemID: String
+
+    init(id: String) {
+        _itemID = State(initialValue: id)
+    }
+
+    var body: some View {
+        Button(itemID) {}
+            .buttonStyle(.capsule)
+            .background { NavigationReplacementProbe(id: itemID) }
+            .toolbarVisibility(.hidden, for: .navigationBar)
+    }
+}
+
+private struct NavigationReplacementProbe: UIViewRepresentable {
+
+    let id: String
+
+    func makeUIView(context: Context) -> UIView {
+        UIView()
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        uiView.accessibilityIdentifier = "navigation-probe-\(id)"
     }
 }

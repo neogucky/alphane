@@ -81,4 +81,22 @@ final class NavigationCoordinator: ObservableObject {
             )
         }
     }
+
+    /// Continue within the current detail destination without adding a Back step.
+    func replaceLast(with route: NavigationRoute) {
+        if let presentedCoordinator = presentedFullScreen?.coordinator ?? presentedSheet?.coordinator {
+            presentedCoordinator.replaceLast(with: route)
+            return
+        }
+
+        guard case .push = route.transitionStyle, usesNavigationStack, !path.isEmpty else {
+            push(route)
+            return
+        }
+
+        #if os(tvOS)
+        focusStore.beginNavigation()
+        #endif
+        path[path.count - 1] = route
+    }
 }

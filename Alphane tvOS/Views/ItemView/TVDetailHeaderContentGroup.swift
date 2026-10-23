@@ -169,7 +169,7 @@ extension ItemView {
                        let next = provider.nextEpisodeItemProvider?.item
                     {
                         NextEpisodeCard(item: next) {
-                            router.route(to: .item(item: next, startPlayback: true))
+                            router.replace(with: .item(item: next, startPlayback: true))
                         }
                     }
                 }

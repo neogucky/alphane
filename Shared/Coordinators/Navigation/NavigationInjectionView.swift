@@ -44,7 +44,9 @@ struct NavigationInjectionView: View {
         NavigationStack(path: $coordinator.path) {
             content
                 .navigationDestination(for: NavigationRoute.self) { route in
+                    // Replacement at the same depth must create a fresh page and playback provider.
                     route.destination
+                        .id(route.id)
                         .environment(
                             \.router,
                             .init(
