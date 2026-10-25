@@ -44,6 +44,8 @@ struct ItemView: View {
     private var initialFocusSelection: String?
     @EnvironmentObject
     private var navigationCoordinator: NavigationCoordinator
+    @Environment(\.navigationFocusPageID)
+    private var navigationFocusPageID
     @State
     private var restoredPlaybackStopRevision = 0
     @State
@@ -56,7 +58,9 @@ struct ItemView: View {
     private func restorePlaybackFocus(when focusedIDs: Set<String>) {
         // Dismissal can complete before UIKit restores the covered page's focus.
         // Wait for that focus event, otherwise UIKit can overwrite our request.
-        guard isPlaybackFocusPending, !focusedIDs.subtracting([Component.header]).isEmpty else { return }
+        guard isPlaybackFocusPending,
+              (navigationCoordinator.path.last?.id ?? "root") == navigationFocusPageID,
+              !focusedIDs.subtracting([Component.header]).isEmpty else { return }
 
         isPlaybackFocusPending = false
         restoredPlaybackStopRevision = provider.playbackStopRevision

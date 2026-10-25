@@ -322,17 +322,25 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
 
         switch selection {
         case let .mediaSource(source):
+            guard source != mediaSource else { return }
+
             mediaSource = source
             audioStreamIndex = nil
             subtitleStreamIndex = nil
 
         case let .audioStreamIndex(index):
+            guard index != audioStreamIndex else { return }
+
             audioStreamIndex = index
 
         case let .subtitleStreamIndex(index):
+            guard index != subtitleStreamIndex else { return }
+
             subtitleStreamIndex = index
 
         case let .bitrate(bitrate):
+            guard bitrate != requestedBitrate else { return }
+
             requestedBitrate = bitrate
         }
 

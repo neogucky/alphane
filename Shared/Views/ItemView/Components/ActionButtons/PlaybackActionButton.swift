@@ -131,40 +131,49 @@ extension ItemActionButtons {
                 ItemActionButton.playback.displayTitle,
                 systemImage: ItemActionButton.playback.systemImage
             ) {
-                Section(L10n.source) {
-                    if mediaSources.count > 1 {
-                        versionPicker
-                    }
-                    qualityPicker
-                }
-
-                if audioStreams.isNotEmpty || subtitleStreams.isNotEmpty || canFindSubtitles {
-                    Section(L10n.tracks) {
-                        if audioStreams.isNotEmpty {
-                            trackPicker(
-                                L10n.audio,
-                                streams: audioStreams,
-                                selection: audioStreamSelection
-                            )
-                        }
-
-                        if subtitleStreams.isNotEmpty {
-                            trackPicker(
-                                L10n.subtitles,
-                                streams: subtitleStreams.prepending(.none),
-                                selection: subtitleStreamSelection
-                            )
-                        }
-                        #if os(tvOS)
-                        if provider.item.canEditSubtitles {
-                            Subtitles(title: L10n.findSubtitles)
-                        }
-                        #endif
-                    }
-                }
+                menuContent
+                    // Native popup choices must not inherit the trigger's animated stencil style.
+                        .buttonStyle(.automatic)
+                        .labelStyle(.titleAndIcon)
+                        .menuStyle(.automatic)
             }
             .if(!isInMenu && UIDevice.isTV) { menu in
                 menu.menuStyle(.button)
+            }
+        }
+
+        @ViewBuilder
+        private var menuContent: some View {
+            Section(L10n.source) {
+                if mediaSources.count > 1 {
+                    versionPicker
+                }
+                qualityPicker
+            }
+
+            if audioStreams.isNotEmpty || subtitleStreams.isNotEmpty || canFindSubtitles {
+                Section(L10n.tracks) {
+                    if audioStreams.isNotEmpty {
+                        trackPicker(
+                            L10n.audio,
+                            streams: audioStreams,
+                            selection: audioStreamSelection
+                        )
+                    }
+
+                    if subtitleStreams.isNotEmpty {
+                        trackPicker(
+                            L10n.subtitles,
+                            streams: subtitleStreams.prepending(.none),
+                            selection: subtitleStreamSelection
+                        )
+                    }
+                    #if os(tvOS)
+                    if provider.item.canEditSubtitles {
+                        Subtitles(title: L10n.findSubtitles)
+                    }
+                    #endif
+                }
             }
         }
     }

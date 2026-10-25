@@ -134,6 +134,16 @@ final class NavigationFocusStore: ObservableObject {
         request = nil
     }
 
+    /// A watched Continue card may disappear while details/player cover the row.
+    func reconcileItems(_ items: [AnyHashable], scope: String, on pageID: String) {
+        guard let request, request.pageID == pageID, request.target.scope == scope,
+              !items.contains(request.target.item), let first = items.first else { return }
+
+        let replacement = Target(scope: scope, item: first)
+        targets[pageID] = replacement
+        self.request = Request(pageID: pageID, target: replacement)
+    }
+
     func didRestore(_ target: Target, on pageID: String) {
         guard request?.pageID == pageID, request?.target == target else { return }
 

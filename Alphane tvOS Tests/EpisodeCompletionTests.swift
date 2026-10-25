@@ -19,10 +19,41 @@ import XCTest
 @MainActor
 final class EpisodeCompletionTests: XCTestCase {
 
+    func testRepeatedTrackAndSourceSelectionsDoNotRepublishThePlaybackProvider() async {
+        let session = makeStubSession(userID: "tracks-\(UUID().uuidString)")
+        let provider = ItemContentGroupProvider(item: episode("episode"))
+        provider.userSession = session
+        let model = ContentGroupViewModel(provider: provider)
+        await model.refresh()
+        XCTAssertEqual(model.state, .content)
+        var publications = 0
+        let subscription = provider.$mediaPlayerItemProvider.dropFirst().sink { _ in publications += 1 }
+        defer { subscription.cancel() }
+
+        provider.select(.audioStreamIndex(2))
+        provider.select(.audioStreamIndex(2))
+        provider.select(.subtitleStreamIndex(3))
+        provider.select(.subtitleStreamIndex(3))
+        XCTAssertEqual(publications, 2)
+        provider.select(.mediaSource(provider.mediaPlayerItemProvider?.mediaSource))
+        XCTAssertEqual(provider.mediaPlayerItemProvider?.audioStreamIndex, 2)
+        XCTAssertEqual(provider.mediaPlayerItemProvider?.subtitleStreamIndex, 3)
+        XCTAssertEqual(publications, 2, "Picker writeback of the current source must not reset tracks")
+        if let bitrate = provider.mediaPlayerItemProvider?.requestedBitrate {
+            provider.select(.bitrate(bitrate))
+        }
+        XCTAssertEqual(publications, 2)
+        provider.select(.subtitleStreamIndex(-1))
+        provider.select(.subtitleStreamIndex(-1))
+        XCTAssertEqual(publications, 3)
+        XCTAssertEqual(provider.mediaPlayerItemProvider?.subtitleStreamIndex, -1)
+    }
+
     func testRetainedDetailPageFocusesNextAfterCompletionAndResumeAfterPartialRewatch() async throws {
         // Finish the host app's session initialization before overriding its
         // factories; a later startup reset would otherwise discard this fixture.
-        await FactoryKit.Container.shared.userSessionManager().start()
+        let sessionManager = FactoryKit.Container.shared.userSessionManager()
+        await sessionManager.start()
         let factories = FactoryKit.Container.shared.manager
         factories.push()
         defer { factories.pop() }
@@ -35,6 +66,13 @@ final class EpisodeCompletionTests: XCTestCase {
         FactoryKit.Container.shared.currentUserSession.register { session }
         let provider = ItemContentGroupProvider(item: episode("episode"))
         provider.userSession = session
+        // The host's concurrent launch/foreground transition can reset Factory
+        // after start() returns. Keep this native fixture on its isolated session.
+        let sessionSubscription = sessionManager.$state.dropFirst().sink { _ in
+            FactoryKit.Container.shared.currentUserSession.register { session }
+            provider.userSession = session
+        }
+        defer { sessionSubscription.cancel() }
         let coordinator = NavigationCoordinator(usesNavigationStack: true)
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let previous = scene.windows.first(where: \.isKeyWindow)
@@ -59,6 +97,8 @@ final class EpisodeCompletionTests: XCTestCase {
         XCTAssertNotNil(provider.mediaPlayerItemProvider)
         XCTAssertNotNil(provider.nextEpisodeItemProvider)
         XCTAssertTrue(provider.item.presentPlayButton)
+        XCTAssertTrue(provider.userSession === session, "The native fixture must retain its fake session")
+        XCTAssertTrue(provider.$item.item === session.items["episode"], "Playback must update the displayed session record")
         let initialItemRecord = provider.$item.item
 
         let stops = [
@@ -79,8 +119,11 @@ final class EpisodeCompletionTests: XCTestCase {
             var report = PlaybackStopInfo()
             report.itemID = "episode"
             report.positionTicks = Duration.seconds(stop.naturalEnd ? 120 : stop.serverCompletes ? 110 : 38).ticks
+            XCTAssertTrue(provider.userSession === session, stop.name)
+            XCTAssertTrue(session.items.isActive, stop.name)
+            XCTAssertTrue(provider.$item.item === session.items["episode"], stop.name)
             XCTAssertTrue(provider.prepareForPlaybackStop(report, didReachEnd: stop.naturalEnd))
-            XCTAssertEqual(provider.shouldFocusNextEpisode, stop.naturalEnd)
+            XCTAssertEqual(provider.shouldFocusNextEpisode, stop.naturalEnd, stop.name)
             func serverCompletesEpisode() throws {
                 var data = UserItemDataDto(key: "episode")
                 data.itemID = "episode"
@@ -111,7 +154,11 @@ final class EpisodeCompletionTests: XCTestCase {
             attachment.lifetime = .keepAlways
             add(attachment)
             if stop.naturalEnd || stop.serverCompletes {
-                XCTAssertGreaterThan(rect.minX, 1400, "The next-episode thumbnail must actually receive native focus after dismissal")
+                XCTAssertGreaterThan(
+                    rect.minX,
+                    1400,
+                    "\(stop.name): the next-episode thumbnail must actually receive native focus after dismissal"
+                )
                 XCTAssertEqual(provider.mediaPlayerItemProvider?.item.playButtonLabel, L10n.playAgain)
             } else {
                 XCTAssertLessThan(rect.maxX, 1000, "An unfinished rewatch must focus Resume instead of Next")

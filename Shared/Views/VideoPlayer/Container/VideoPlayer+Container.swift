@@ -881,7 +881,7 @@ extension VideoPlayer {
             super.pressesCancelled(presses, with: event)
         }
 
-        private func handlePlayPauseEnded() {
+        func handlePlayPauseEnded() {
             if viewState.isScrubbing {
                 viewState.cancelScrub()
                 return
@@ -899,6 +899,7 @@ extension VideoPlayer {
                 case .paused:
                     manager.setPlaybackRequestStatus(status: .playing)
                 }
+                viewState.showControls()
             }
 
             viewState.refreshAutoDismiss()
@@ -910,24 +911,33 @@ extension VideoPlayer {
                 return
             }
 
+            if !handlePlaybackSelection(isProgressFocused: viewState.isProgressBarFocused) {
+                forwardPressesEnded([press], event: event)
+            }
+        }
+
+        /// Select on the playhead toggles playback, including after clickpad touch revealed progress only.
+        @discardableResult
+        func handlePlaybackSelection(isProgressFocused: Bool) -> Bool {
             if viewState.presentation == .hidden {
                 viewState.showControls()
-                return
+                return true
             }
 
             if viewState.isScrubbing {
                 viewState.commitScrub()
-            } else if viewState.isProgressBarFocused {
+            } else if isProgressFocused {
                 switch manager.playbackRequestStatus {
                 case .playing:
                     manager.setPlaybackRequestStatus(status: .paused)
                 case .paused:
                     manager.setPlaybackRequestStatus(status: .playing)
                 }
-                viewState.refreshAutoDismiss()
+                viewState.showControls()
             } else {
-                forwardPressesEnded([press], event: event)
+                return false
             }
+            return true
         }
 
         private var canHandleBack: Bool {

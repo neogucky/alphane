@@ -27,13 +27,16 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
     private let action: (Item) -> Void
     private let items: [Item]
     private let topContent: (Item) -> TopContent
+    private let showsDownCue: Bool
 
     init(
         items: [Item],
+        showsDownCue: Bool = false,
         action: @escaping (Item) -> Void,
         @ViewBuilder topContent: @escaping (Item) -> TopContent
     ) {
         self.items = items
+        self.showsDownCue = showsDownCue
         self.action = action
         self.topContent = topContent
     }
@@ -73,6 +76,16 @@ struct CinematicItemSelector<Item: Poster, TopContent: View>: View {
                 .frame(height: 350)
             }
             .padding(.bottom, 32)
+        }
+        .overlay(alignment: .bottom) {
+            if showsDownCue {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(AlphaneTheme.secondaryText)
+                    .padding(.bottom, 14)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
         }
         .background(alignment: .top) {
             FadeContentTransitionView(

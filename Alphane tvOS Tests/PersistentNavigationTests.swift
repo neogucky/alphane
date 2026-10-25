@@ -283,6 +283,21 @@ final class PersistentNavigationTests: XCTestCase {
         XCTAssertEqual(store.request?.target, target)
     }
 
+    func testACompletedContinueCardFallsBackWithinItsOwnRow() {
+        let store = NavigationFocusStore()
+        store.remember(.init(scope: "continue", item: "completed"), on: "root")
+        store.restore("root")
+        store.reconcileItems(["unrelated"], scope: "new-movies", on: "root")
+        XCTAssertEqual(store.request?.target.item, AnyHashable("completed"))
+        store.reconcileItems([], scope: "continue", on: "root")
+        XCTAssertNotNil(store.request)
+        store.reconcileItems(["next", "other"], scope: "continue", on: "root")
+        XCTAssertEqual(store.request?.target, .init(scope: "continue", item: "next"))
+        store.didRestore(.init(scope: "continue", item: "next"), on: "root")
+        store.reconcileItems(["other"], scope: "continue", on: "root")
+        XCTAssertNil(store.request, "Ordinary refresh after restoration must not steal focus")
+    }
+
     func testDetailDefaultFocusRemainsAvailableDuringNavigationTransition() {
         let coordinator = FocusCoordinator(initial: "play")
         XCTAssertNil(coordinator.request)

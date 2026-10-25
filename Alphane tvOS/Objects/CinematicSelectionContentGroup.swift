@@ -100,12 +100,14 @@ struct CinematicSelectionContentGroup: ContentGroup {
                 .elements
 
             CinematicItemSelector(
-                items: items
+                items: items,
+                showsDownCue: true
             ) { item in
                 router.route(to: .item(item: item.snapshot))
             } topContent: { item in
                 itemInformation(item.snapshot)
             }
+            .environment(\.navigationFocusScopeID, "cinematic-selection")
             .preference(
                 key: ContentGroupCustomizationKey.self,
                 value: .ignoreSafeAreaTop

@@ -7,6 +7,7 @@
 //
 
 import CollectionHStack
+import Combine
 import SwiftUI
 
 struct PosterHStack<
@@ -23,6 +24,19 @@ struct PosterHStack<
 
     @State
     private var focusScopeID = UUID().uuidString
+
+    private var restorationRequests: AnyPublisher<NavigationFocusStore.Request?, Never> {
+        navigationFocusStore?.$request.eraseToAnyPublisher()
+            ?? Combine.Empty<NavigationFocusStore.Request?, Never>().eraseToAnyPublisher()
+    }
+
+    private func reconcileRestoration() {
+        navigationFocusStore?.reconcileItems(
+            elements.map { AnyHashable($0.id) },
+            scope: navigationFocusScopeID.isEmpty ? focusScopeID : navigationFocusScopeID,
+            on: navigationFocusPageID
+        )
+    }
     #endif
 
     let elements: Data
@@ -67,5 +81,11 @@ struct PosterHStack<
         .itemSpacing(EdgeInsets.itemSpacing)
         .scrollBehavior(.continuousLeadingEdge)
         .withViewContext(.isThumb)
+        .onAppear { reconcileRestoration() }
+        .onChange(of: elements.map(\.id)) { reconcileRestoration() }
+        // Published values arrive before storage updates; reconcile on the next main-queue turn.
+        .onReceive(restorationRequests.receive(on: DispatchQueue.main)) { _ in
+            reconcileRestoration()
+        }
     }
 }
