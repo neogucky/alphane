@@ -59,6 +59,7 @@ struct MediaPlayerItemProvider {
         guard let item = $item.value else { throw ItemStore.StoreError.itemUnavailable }
 
         let playbackItem = try await resolver(item, modifyItem)
+        try Task.checkCancellation()
         guard $item.value != nil else { throw ItemStore.StoreError.itemUnavailable }
 
         return playbackItem

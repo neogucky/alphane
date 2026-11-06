@@ -20,7 +20,12 @@ import XCTest
 final class EpisodeCompletionTests: XCTestCase {
 
     func testRepeatedTrackAndSourceSelectionsDoNotRepublishThePlaybackProvider() async {
+        await FactoryKit.Container.shared.userSessionManager().start()
+        let factories = FactoryKit.Container.shared.manager
+        factories.push()
+        defer { factories.pop() }
         let session = makeStubSession(userID: "tracks-\(UUID().uuidString)")
+        FactoryKit.Container.shared.currentUserSession.register { session }
         let provider = ItemContentGroupProvider(item: episode("episode"))
         provider.userSession = session
         let model = ContentGroupViewModel(provider: provider)
@@ -80,7 +85,9 @@ final class EpisodeCompletionTests: XCTestCase {
         window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
         window.rootViewController = UIHostingController(rootView:
             NavigationInjectionView(coordinator: coordinator) { ItemView(provider: provider) }
-                .preferredColorScheme(.dark))
+                .preferredColorScheme(.dark)
+                .recoveringMissingFocus()
+                .environment(\.scenePhase, .active))
         window.makeKeyAndVisible()
         defer {
             window.isHidden = true
@@ -184,6 +191,11 @@ final class EpisodeCompletionTests: XCTestCase {
         let provider = ItemContentGroupProvider(item: episode("episode"))
         provider.userSession = session
         let viewModel = ContentGroupViewModel(provider: provider)
+        let sessionSubscription = FactoryKit.Container.shared.userSessionManager().$state.dropFirst().sink { _ in
+            FactoryKit.Container.shared.currentUserSession.register { session }
+            provider.userSession = session
+        }
+        defer { sessionSubscription.cancel() }
         await viewModel.refresh()
         XCTAssertEqual(viewModel.state, .content, String(describing: viewModel.error))
         XCTAssertEqual(provider.nextEpisodeItemProvider?.item.id, "next")

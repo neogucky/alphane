@@ -183,11 +183,15 @@ final class ContentGroupViewModel<Provider: ContentGroupProvider>: ViewModel {
         }
     }
 
-    private func refreshViewModels(in groups: [any ContentGroup], inBackground: Bool) async {
+    private func refreshViewModels(
+        in groups: [any ContentGroup],
+        inBackground: Bool,
+        preserving retained: Set<ObjectIdentifier> = []
+    ) async {
         await withTaskGroup(of: Void.self) { group in
             for viewModel in uniqueViewModels(in: groups) {
                 group.addTask {
-                    if inBackground {
+                    if inBackground || retained.contains(ObjectIdentifier(viewModel as AnyObject)) {
                         await viewModel.background.refresh()
                     } else {
                         await viewModel.refresh()
@@ -198,10 +202,11 @@ final class ContentGroupViewModel<Provider: ContentGroupProvider>: ViewModel {
     }
 
     private func fullRefresh() async throws {
+        let retained = Set(uniqueViewModels(in: candidateGroups).map { ObjectIdentifier($0 as AnyObject) })
         let newGroups = try await provider.makeGroups(environment: provider.environment)
         try Task.checkCancellation()
 
-        await refreshViewModels(in: newGroups, inBackground: false)
+        await refreshViewModels(in: newGroups, inBackground: false, preserving: retained)
         try Task.checkCancellation()
 
         candidateGroups = newGroups

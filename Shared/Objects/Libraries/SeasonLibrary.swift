@@ -11,6 +11,16 @@ import JellyfinAPI
 
 struct SeasonViewModelLibrary: PagingLibrary {
 
+    // The library belongs to one paging model/session. Keep each season's loaded
+    // episodes when a refreshed season list contains the same IDs.
+    private let models = EpisodeModels()
+
+    @MainActor
+    private final class EpisodeModels {
+        weak var session: UserSession?
+        var bySeason: [String: Element] = [:]
+    }
+
     let hasNextPage = false
     @SharedBaseItem
     var parent: BaseItemDto
@@ -28,9 +38,22 @@ struct SeasonViewModelLibrary: PagingLibrary {
     }
 
     func materialize(_ page: [ItemPatch], pageState: LibraryPageState) throws -> [Element] {
-        try SeasonLibrary(parent: parent).materialize(page, pageState: pageState).map {
-            PagingLibraryViewModel(library: EpisodeLibrary(season: $0.snapshot), userSession: pageState.userSession)
+        if models.session !== pageState.userSession {
+            models.bySeason.removeAll()
+            models.session = pageState.userSession
         }
+        let seasons = try SeasonLibrary(parent: parent).materialize(page, pageState: pageState)
+        let result = seasons.map { season in
+            if let model = models.bySeason[season.itemID] {
+                return model
+            }
+            let model = Element(library: EpisodeLibrary(season: season.snapshot), userSession: pageState.userSession)
+            models.bySeason[season.itemID] = model
+            return model
+        }
+        let available = Set(seasons.map(\.itemID))
+        models.bySeason = models.bySeason.filter { available.contains($0.key) }
+        return result
     }
 }
 

@@ -36,7 +36,7 @@ struct EpisodeLibrary: BaseItemKindLibrary {
         parameters.userID = pageState.userSession.user.id
 
         let request = Paths.getEpisodes(
-            seriesID: seasonID,
+            seriesID: parent.seriesID ?? seasonID,
             parameters: parameters
         )
         let response = try await pageState.userSession.client.send(request)

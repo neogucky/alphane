@@ -20,6 +20,17 @@ extension SelectUserView {
             let id: String
         }
 
+        @Environment(\.scenePhase)
+        private var scenePhase
+        @Environment(\.resetFocus)
+        private var resetFocus
+
+        @State
+        private var isVisible = false
+
+        @Namespace
+        private var profileFocusScope
+
         @Router
         private var router
 
@@ -50,6 +61,11 @@ extension SelectUserView {
         private var requestKey: String {
             visibleServers.map { "\($0.id):\($0.effectiveServerURL.absoluteString)" }.joined(separator: "|")
                 + userItems.map { Self.profileID(userID: $0.user.id, serverID: $0.server.id) }.joined(separator: "|")
+        }
+
+        private var availableProfileIDs: Set<String> {
+            Set(userItems.map { Self.profileID(userID: $0.user.id, serverID: $0.server.id) }
+                + publicProfiles.map(\.id) + ["add-user"])
         }
 
         private var preferredProfileID: String {
@@ -149,6 +165,8 @@ extension SelectUserView {
             }
             .buttonStyle(ArtworkButtonStyle())
             .focused($focusedProfileID, equals: id)
+            .prefersDefaultFocus(id == preferredProfileID, in: profileFocusScope)
+            .accessibilityIdentifier("saved-profile-\(id)")
             .accessibilityHint(item.user.requiresServerSignIn ? String(localized: "Enter your server password to sign in again.") : "")
             .contextMenu {
                 Button(L10n.delete, role: .destructive) { onDelete(item.user) }
@@ -170,6 +188,8 @@ extension SelectUserView {
             }
             .buttonStyle(ArtworkButtonStyle())
             .focused($focusedProfileID, equals: profile.id)
+            .prefersDefaultFocus(profile.id == preferredProfileID, in: profileFocusScope)
+            .accessibilityIdentifier("public-profile-\(profile.id)")
             .accessibilityHint(L10n.profileSignInRequired)
         }
 
@@ -285,6 +305,7 @@ extension SelectUserView {
                                     HStack(spacing: 24) {
                                         ForEach(publicProfiles) { profile in publicProfile(profile) }
                                         addUser
+                                            .prefersDefaultFocus(preferredProfileID == "add-user", in: profileFocusScope)
                                     }
                                     .frame(minWidth: proxy.size.width - 144)
                                     .padding(.vertical, 12)
@@ -302,8 +323,29 @@ extension SelectUserView {
                     .scrollClipDisabled()
                 }
             }
+            .focusScope(profileFocusScope)
             .defaultFocus($focusedProfileID, preferredProfileID, priority: .userInitiated)
-            .onAppear { focusedProfileID = preferredProfileID }
+            .onAppear {
+                isVisible = true
+                focusedProfileID = preferredProfileID
+            }
+            .onDisappear { isVisible = false }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active, isVisible,
+                      let navigation = router.router.navigationCoordinator,
+                      navigation.path.isEmpty, navigation.presentedSheet == nil, navigation.presentedFullScreen == nil else { return }
+
+                // Wake can retain this page without another appearance. Reset its
+                // real default focus even if the old FocusState value survived.
+                resetFocus(in: profileFocusScope)
+            }
+            .onChange(of: availableProfileIDs) {
+                // Nil can also mean the server/settings controls own focus.
+                // Only replace a profile target that actually disappeared.
+                if let id = focusedProfileID, !availableProfileIDs.contains(id) {
+                    focusedProfileID = preferredProfileID
+                }
+            }
             .task(id: requestKey) { await loadPublicUsers() }
         }
     }

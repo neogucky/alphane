@@ -36,7 +36,9 @@ final class HomeFocusReturnTests: XCTestCase {
         window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
         window.rootViewController = UIHostingController(rootView:
             NavigationInjectionView(coordinator: navigation) { HomeFocusFixtureView(model: fixture) }
-                .preferredColorScheme(.dark))
+                .preferredColorScheme(.dark)
+                .recoveringMissingFocus()
+                .environment(\.scenePhase, .active))
         window.makeKeyAndVisible()
         defer {
             window.isHidden = true

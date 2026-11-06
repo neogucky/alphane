@@ -26,6 +26,7 @@ struct AlphaneApp: App {
             }
             .background(AlphaneTheme.background.ignoresSafeArea())
             .preferredColorScheme(.dark)
+            .recoveringMissingFocus()
         }
     }
 }

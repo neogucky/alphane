@@ -943,6 +943,12 @@ extension VideoPlayer {
         private var canHandleBack: Bool {
             guard !viewState.isPresentingCloseConfirmation else { return false }
 
+            // Startup deliberately has no focusable controls. Focus can still
+            // belong to the covered detail page while preparation is pending.
+            if manager.loadingPresentation == .startup {
+                return true
+            }
+
             if viewState.presentation == .hidden {
                 return true
             }
@@ -964,7 +970,10 @@ extension VideoPlayer {
             // System menus and alerts own Back while their content has focus.
             guard canHandleBack else { return }
 
-            if viewState.isScrubbing {
+            if manager.loadingPresentation == .startup {
+                // There is no visible control layer to dismiss before leaving.
+                manager.stop()
+            } else if viewState.isScrubbing {
                 viewState.cancelScrub()
             } else if viewState.isPresentingSupplement {
                 viewState.selectedSupplementID = nil

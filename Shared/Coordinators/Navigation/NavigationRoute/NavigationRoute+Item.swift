@@ -11,6 +11,13 @@ import SwiftUI
 
 extension NavigationRoute {
 
+    @MainActor
+    static func seasons(episode: BaseItemDto) -> NavigationRoute {
+        NavigationRoute(id: "seasons-\(episode.seriesID ?? episode.id ?? "Unknown")") {
+            SeriesSeasonsView(episode: episode)
+        }
+    }
+
     // MARK: - Item Editing
 
     @MainActor

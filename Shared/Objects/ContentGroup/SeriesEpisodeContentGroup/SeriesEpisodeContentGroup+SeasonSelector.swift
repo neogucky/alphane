@@ -19,6 +19,7 @@ extension SeriesEpisodeContentGroup {
         var selection: PagingLibraryViewModel<EpisodeLibrary>.ID?
 
         let preferredSelection: PagingLibraryViewModel<EpisodeLibrary>.ID?
+        var focusesSelectionOnEntry = false
 
         @FocusState
         private var focusedSeason: PagingLibraryViewModel<EpisodeLibrary>.ID?
@@ -58,6 +59,11 @@ extension SeriesEpisodeContentGroup {
                 .scrollIndicators(.hidden)
                 .scrollClipDisabled()
                 .activeSelectionFocus($focusedSeason, selection: selection ?? preferredSelection)
+                .onFirstAppear {
+                    if focusesSelectionOnEntry {
+                        focusedSeason = selection ?? preferredSelection
+                    }
+                }
                 .onChange(of: focusedSeason) { _, seasonID in
                     guard let seasonID,
                           seasonID != selection,

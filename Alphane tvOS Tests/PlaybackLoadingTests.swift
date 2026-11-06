@@ -7,12 +7,118 @@
 //
 
 @testable import Alphane
+import Defaults
+import FactoryKit
 import JellyfinAPI
 import SwiftUI
 import XCTest
 
 @MainActor
 final class PlaybackLoadingTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        await FactoryKit.Container.shared.userSessionManager().start()
+        FactoryKit.Container.shared.manager.push()
+        FactoryKit.Container.shared.currentUserSession.register { nil }
+    }
+
+    override func tearDown() async throws {
+        FactoryKit.Container.shared.manager.pop()
+        try await super.tearDown()
+    }
+
+    func testBackStopsAnInitialStreamWaitingForItsFirstFrame() async throws {
+        let previous = Defaults[.confirmClose]
+        Defaults[.confirmClose] = true
+        defer { Defaults[.confirmClose] = previous }
+        let manager = MediaPlayerManager(playbackItem: item())
+        let proxy = TestProxy()
+        manager.proxy = proxy
+        let state = VideoPlayer.ViewState()
+        let controller = VideoPlayer.UIContainerViewController(
+            viewState: state, manager: manager, videoSize: .init(initialValue: .zero),
+            player: { _ in AnyView(Color.black) }, playbackControls: AnyView(EmptyView())
+        )
+        state.showControls()
+        XCTAssertEqual(manager.state, .playback)
+        XCTAssertEqual(manager.loadingPresentation, .startup)
+        XCTAssertTrue(state.visibleElements.isEmpty)
+        let action = NSSelectorFromString("handleMenuEnded")
+        XCTAssertTrue(controller.responds(to: action))
+        controller.perform(action)
+        try await settle()
+        XCTAssertEqual(manager.state, .stopped)
+        XCTAssertEqual(proxy.stopCount, 1)
+        XCTAssertFalse(state.isPresentingCloseConfirmation)
+    }
+
+    func testCancelledInitialAndNextEpisodePreparationCannotPublishLateResults() async throws {
+        for isNextEpisode in [false, true] {
+            let prepared = item()
+            let loader = DelayedItemLoader()
+            let provider = MediaPlayerItemProvider(item: prepared.baseItem) { _, _ in
+                try await loader.load()
+            }
+            let manager = isNextEpisode ? MediaPlayerManager(playbackItem: item()) : MediaPlayerManager(provider: provider)
+            let original = manager.playbackItem
+            let start = Task {
+                if isNextEpisode {
+                    await manager.playNewItem(provider: provider)
+                } else {
+                    await manager.start()
+                }
+            }
+            for _ in 0 ..< 100 {
+                if loader.isWaiting {
+                    break
+                }
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            XCTAssertTrue(loader.isWaiting)
+            let warning = XCTExpectedFailure.Options()
+            warning.isStrict = false
+            warning.issueMatcher = {
+                $0.compactDescription
+                    .contains("State warning: A new transition action started while another transition action is in progress!")
+            }
+            XCTExpectFailure("Stop supersedes preparation while its resolver is waiting.", options: warning)
+            await manager.stop()
+            XCTAssertEqual(manager.state, .stopped)
+            // Model a response whose resolver completes despite cancellation.
+            loader.complete(with: prepared)
+            await start.value
+            XCTAssertTrue(manager.playbackItem === original)
+            XCTAssertFalse(manager.playbackItem === prepared)
+            XCTAssertEqual(manager.state, .stopped)
+            XCTAssertNil(manager.error)
+        }
+    }
+
+    func testBackAfterTheFirstFrameRetainsTheCloseConfirmationPreference() async throws {
+        let previous = Defaults[.confirmClose]
+        defer { Defaults[.confirmClose] = previous }
+        for shouldConfirm in [true, false] {
+            Defaults[.confirmClose] = shouldConfirm
+            let playbackItem = item()
+            let manager = MediaPlayerManager(provider: .init(item: playbackItem.baseItem) { _, _ in playbackItem })
+            await manager.start()
+            manager.videoFramePresented(for: playbackItem)
+            let state = VideoPlayer.ViewState()
+            let controller = VideoPlayer.UIContainerViewController(
+                viewState: state, manager: manager, videoSize: .init(initialValue: .zero),
+                player: { _ in AnyView(Color.black) }, playbackControls: AnyView(EmptyView())
+            )
+            state.hideControls()
+            controller.perform(NSSelectorFromString("handleMenuEnded"))
+            try await settle()
+            XCTAssertEqual(state.isPresentingCloseConfirmation, shouldConfirm)
+            XCTAssertEqual(manager.state, shouldConfirm ? .playback : .stopped)
+            if shouldConfirm {
+                await manager.stop()
+            }
+        }
+    }
+
     func testPreparationAndAResumePositionStillWaitForAnActualFrame() {
         let item = item()
         let manager = MediaPlayerManager(playbackItem: item)
@@ -185,9 +291,30 @@ private final class TestProxy: MediaPlayerProxy {
     let isBuffering = PublishedBox(initialValue: false)
     func play() {}
     func pause() {}
-    func stop() {}
+    private(set) var stopCount = 0
+    func stop() {
+        stopCount += 1
+    }
+
     func jumpForward(_ seconds: Duration) {}
     func jumpBackward(_ seconds: Duration) {}
     func setRate(_ rate: Double) {}
     func setSeconds(_ seconds: Duration) {}
+}
+
+@MainActor
+private final class DelayedItemLoader {
+    private var continuation: CheckedContinuation<MediaPlayerItem, Error>?
+    var isWaiting: Bool {
+        continuation != nil
+    }
+
+    func load() async throws -> MediaPlayerItem {
+        try await withCheckedThrowingContinuation { continuation = $0 }
+    }
+
+    func complete(with item: MediaPlayerItem) {
+        continuation?.resume(returning: item)
+        continuation = nil
+    }
 }

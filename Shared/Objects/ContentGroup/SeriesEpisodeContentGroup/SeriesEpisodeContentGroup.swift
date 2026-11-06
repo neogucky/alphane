@@ -25,11 +25,12 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
 
     init(
         parent: BaseItemDto,
-        playButtonItem: BaseItemDto? = nil
+        playButtonItem: BaseItemDto? = nil,
+        viewModel: PagingLibraryViewModel<SeasonViewModelLibrary>? = nil
     ) {
         self.id = "\(parent.id ?? "parent")-episode-selector"
         self.playButtonItem = playButtonItem
-        self.viewModel = .init(library: SeasonViewModelLibrary(parent: parent), pageSize: 100)
+        self.viewModel = viewModel ?? .init(library: SeasonViewModelLibrary(parent: parent), pageSize: 100)
     }
 
     func body(with viewModel: PagingLibraryViewModel<SeasonViewModelLibrary>) -> Body {
@@ -46,9 +47,23 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
 
         @OptionalSharedBaseItem
         var playButtonItem: BaseItemDto?
+        let focusesCurrentSeasonOnEntry: Bool
 
         @State
         private var selection: PagingLibraryViewModel<EpisodeLibrary>.ID?
+
+        init(
+            viewModel: PagingLibraryViewModel<SeasonViewModelLibrary>,
+            playButtonItem: BaseItemDto?,
+            focusesCurrentSeasonOnEntry: Bool = false
+        ) {
+            self.viewModel = viewModel
+            self.playButtonItem = playButtonItem
+            self.focusesCurrentSeasonOnEntry = focusesCurrentSeasonOnEntry
+            // Install the intended choice before the season buttons become
+            // focusable. An onChange after rendering can first activate Season 1.
+            _selection = State(initialValue: playButtonItem?.seasonID)
+        }
 
         private var selectedSeasonViewModel: PagingLibraryViewModel<EpisodeLibrary>? {
             viewModel.elements.first { $0.id == selection }
@@ -58,7 +73,8 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
             SeasonSelector(
                 seasons: Array(viewModel.elements),
                 selection: $selection,
-                preferredSelection: selection ?? preferredSeasonSelection()
+                preferredSelection: selection ?? preferredSeasonSelection(),
+                focusesSelectionOnEntry: focusesCurrentSeasonOnEntry
             )
         }
 
@@ -73,6 +89,8 @@ struct SeriesEpisodeContentGroup: ContentGroup, Identifiable {
         }
 
         private func selectPreferredSeasonIfNeeded() {
+            guard !viewModel.elements.isEmpty else { return }
+
             if selection == nil || !viewModel.elements.contains(where: { $0.id == selection }) {
                 selection = preferredSeasonSelection()
             }

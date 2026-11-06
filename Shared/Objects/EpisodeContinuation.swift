@@ -76,6 +76,71 @@ enum EpisodeContinuation {
         return nextEpisode.type == .episode && nextEpisode.isPlayable ? nextEpisode : nil
     }
 
+    /// A complete catalogue is required for a season-end/count claim. An
+    /// adjacent response cannot distinguish the season's end from its page end.
+    static func allAvailableEpisodes(
+        for item: BaseItemDto,
+        userID: String,
+        client: JellyfinClient
+    ) async throws -> [BaseItemDto] {
+        guard let seriesID = item.seriesID else { return [] }
+
+        var episodes: [BaseItemDto] = []
+        var seen = Set<String>()
+        let pageSize = 200
+        var offset = 0
+        while true {
+            try Task.checkCancellation()
+            var parameters = Paths.GetEpisodesParameters()
+            parameters.userID = userID
+            parameters.enableUserData = true
+            parameters.fields = PosterSubtitleField.itemFields
+            parameters.isMissing = false
+            parameters.startIndex = offset
+            parameters.limit = pageSize
+            let response = try await client.send(Paths.getEpisodes(seriesID: seriesID, parameters: parameters))
+            let page = response.value.items ?? []
+            let previousCount = seen.count
+            for episode in page {
+                guard let id = episode.id, seen.insert(id).inserted else { continue }
+
+                episodes.append(episode)
+            }
+            offset += page.count
+            if !page.isEmpty, seen.count == previousCount {
+                throw ErrorMessage(L10n.unknownError)
+            }
+            if let total = response.value.totalRecordCount {
+                if offset >= total {
+                    guard episodes.count >= total else { throw ErrorMessage(L10n.unknownError) }
+
+                    break
+                }
+            } else if page.count < pageSize {
+                break
+            }
+            // A server ignoring startIndex must not loop, or falsely report a finale.
+            guard !page.isEmpty, seen.count > previousCount else { throw ErrorMessage(L10n.unknownError) }
+        }
+        return orderedEpisodes(episodes)
+    }
+
+    static func remainingInSeason(after item: BaseItemDto, in episodes: [BaseItemDto]) -> Int? {
+        guard let itemID = item.id else { return nil }
+
+        let season = orderedEpisodes(episodes).filter { episode in
+            if let seasonID = item.seasonID {
+                return episode.seasonID == seasonID
+            }
+            guard let seasonNumber = item.parentIndexNumber else { return false }
+
+            return episode.parentIndexNumber == seasonNumber
+        }
+        guard let current = season.firstIndex(where: { $0.id == itemID }) else { return nil }
+
+        return season.dropFirst(current + 1).count(where: { $0.type == .episode && $0.isPlayable })
+    }
+
     /// Jellyfin's Next Up ordering can disagree with its episode-list ordering
     /// when episode numbers are missing. Prefer the unwatched episode directly
     /// after the latest watched episode, using numeric episode order.

@@ -80,6 +80,17 @@ extension ItemView {
                     MetadataHStack(item: provider.item)
                         .font(.system(size: 22))
                         .foregroundStyle(AlphaneTheme.secondaryText)
+
+                    if let remaining = provider.remainingSeasonEpisodes {
+                        Text(remaining == 0
+                            ? String(localized: "Last available episode this season")
+                            : remaining == 1
+                            ? String(localized: "1 more episode this season")
+                            : String(localized: "\(remaining) more episodes this season"))
+                            .font(.system(size: 20))
+                            .foregroundStyle(AlphaneTheme.secondaryText)
+                            .accessibilityIdentifier("item-remaining-episodes")
+                    }
                 }
             }
 
@@ -106,15 +117,11 @@ extension ItemView {
 
             @ViewBuilder
             private var seasonsButton: some View {
-                if !provider.episodeSeasons.isEmpty {
-                    Menu {
-                        ForEach(provider.episodeSeasons, id: \.id) { season in
-                            Button(season.displayTitle) {
-                                router.route(to: .item(item: season))
-                            }
-                        }
+                if provider.item.type == .episode, provider.item.seriesID != nil {
+                    Button {
+                        router.route(to: .seasons(episode: provider.item))
                     } label: {
-                        Label(L10n.seasons, systemImage: "chevron.down")
+                        Label(L10n.seasons, systemImage: "chevron.right")
                             .labelStyle(.trailingIcon)
                     }
                     .buttonStyle(.capsule)
@@ -128,7 +135,7 @@ extension ItemView {
                 HStack(spacing: 28) {
                     ActionBar(provider: provider, alignment: .leading)
 
-                    if !provider.episodeSeasons.isEmpty {
+                    if provider.item.type == .episode, provider.item.seriesID != nil {
                         Rectangle()
                             .fill(.white.opacity(0.2))
                             .frame(width: 1, height: 28)

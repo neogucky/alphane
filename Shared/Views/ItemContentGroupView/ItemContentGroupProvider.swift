@@ -23,7 +23,10 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
     @Published
     private(set) var nextEpisodeItemProvider: MediaPlayerItemProvider?
     @Published
-    private(set) var episodeSeasons: [BaseItemDto] = []
+    private(set) var remainingSeasonEpisodes: Int?
+
+    private var seasonViewModel: PagingLibraryViewModel<SeasonViewModelLibrary>?
+    private weak var seasonViewModelSession: UserSession?
     @OptionalSharedBaseItem
     private(set) var randomBackdropItem: BaseItemDto?
 
@@ -151,6 +154,16 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         let newLocalTrailers = try? await localTrailers(for: fullItem)
         let newRandomBackdropItem = try? await randomBackdropItem(for: fullItem)
 
+        if fullItem.type == .series || fullItem.type == .season {
+            if seasonViewModel == nil || seasonViewModelSession !== userSession {
+                seasonViewModel = .init(
+                    library: SeasonViewModelLibrary(parent: fullItem),
+                    userSession: userSession
+                )
+                seasonViewModelSession = userSession
+            }
+        }
+
         guard $item.value != nil, refreshedEntry.value != nil else { throw ItemStore.StoreError.itemUnavailable }
 
         $item = refreshedEntry
@@ -158,11 +171,6 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         mediaPlayerItemProvider = newMediaPlayerItemProvider
         nextEpisodeItemProvider = nextEpisode?
             .getPlaybackItemProvider(userSession: userSession)
-        episodeSeasons = if fullItem.type == .episode {
-            await (try? seasons(for: fullItem)) ?? season(for: fullItem).map { [$0] } ?? []
-        } else {
-            []
-        }
         randomBackdropItem = newRandomBackdropItem
 
         return try await _makeGroups(
@@ -199,7 +207,8 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         case .season, .series:
             SeriesEpisodeContentGroup(
                 parent: item,
-                playButtonItem: mediaPlayerItemProvider?.item
+                playButtonItem: mediaPlayerItemProvider?.item,
+                viewModel: seasonViewModel
             )
 
         default:
@@ -412,41 +421,9 @@ final class ItemContentGroupProvider: ViewModel, ContentGroupProvider {
         else { return nil }
 
         let session = try requireUserSession()
-        let episodes = try await EpisodeContinuation.episodes(around: item, userID: session.user.id, client: session.client)
+        let episodes = try await EpisodeContinuation.allAvailableEpisodes(for: item, userID: session.user.id, client: session.client)
+        remainingSeasonEpisodes = EpisodeContinuation.remainingInSeason(after: item, in: episodes)
         return Self.nextEpisode(after: item, in: episodes)
-    }
-
-    private func seasons(for item: BaseItemDto) async throws -> [BaseItemDto] {
-        guard let seriesID = item.seriesID else { return season(for: item).map { [$0] } ?? [] }
-
-        let session = try requireUserSession()
-        let series = BaseItemDto(id: seriesID, name: item.seriesName, type: .series)
-        let patches = try await SeasonLibrary(parent: series).retrievePage(
-            environment: .default,
-            pageState: .init(pageOffset: 0, pageSize: 100, userSession: session)
-        )
-        return patches.map(\.value)
-    }
-
-    private func season(for item: BaseItemDto) -> BaseItemDto? {
-        guard let seasonID = item.seasonID else { return nil }
-
-        return BaseItemDto(
-            id: seasonID,
-            imageTags: item.parentPrimaryImageItemID == seasonID
-                ? item.parentPrimaryImageTag.map { [ImageType.primary.rawValue: $0] }
-                : nil,
-            name: item.seasonName,
-            parentBackdropImageTags: item.parentBackdropImageTags,
-            parentBackdropItemID: item.parentBackdropItemID,
-            parentThumbImageTag: item.parentThumbImageTag,
-            parentThumbItemID: item.parentThumbItemID,
-            seriesID: item.seriesID,
-            seriesName: item.seriesName,
-            seriesPrimaryImageTag: item.seriesPrimaryImageTag,
-            seriesThumbImageTag: item.seriesThumbImageTag,
-            type: .season
-        )
     }
 
     static func nextEpisode(after item: BaseItemDto, in episodes: [BaseItemDto]) -> BaseItemDto? {
