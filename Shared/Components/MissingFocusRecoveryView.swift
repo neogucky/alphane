@@ -112,16 +112,20 @@ final class MissingFocusRecoveryObserver: UIView {
     }
 
     private func updateWaitingState() {
-        guard focusSystemNeedingRecovery != nil else {
+        // Wake notifications can precede key-window/scene readiness, and focus
+        // can disappear later without another notification. Keep checking while
+        // this active SwiftUI surface is attached, even if a check is premature
+        // or currently finds a valid selection.
+        guard isRecoveryEnabled, window != nil else {
             retryTimer?.invalidate()
             retryTimer = nil
             return
         }
         guard retryTimer == nil else { return }
 
-        // Give native/default and page-specific requests the first opportunity.
-        // Poll only while no usable item exists, so delayed controls can join the focus
-        // graph without needing another remote press or an arbitrary load delay.
+        // Only recoverIfNeeded requests focus. Healthy focus, inactive scenes,
+        // non-key windows and native dialogs cause no focus/layout updates.
+        // The check stays alive to catch silent loss and late readiness.
         let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
             self?.recoverIfNeeded()
         }

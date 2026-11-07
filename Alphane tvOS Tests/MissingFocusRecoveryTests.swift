@@ -14,6 +14,23 @@ import XCTest
 
 @MainActor
 final class MissingFocusRecoveryTests: XCTestCase {
+    func testRecoverySurvivesWindowEligibilityArrivingAfterTheWakeNotification() async throws {
+        try await withFixture { controller, window in
+            let delayedWindow = try XCTUnwrap(window as? FocusRecoveryTestWindow)
+            delayedWindow.reportsKeyWindowReady = false
+            controller.allowsControlsToFocus = false
+            window.makeKeyAndVisible()
+            try await Task.sleep(for: .milliseconds(1200))
+            XCTAssertNil(UIFocusSystem(for: window)?.focusedItem)
+
+            // Model wake's late window/focus readiness without a second activation,
+            // key-window notification, appearance or remote input.
+            controller.allowsControlsToFocus = true
+            delayedWindow.reportsKeyWindowReady = true
+            try await waitForFocus(controller.first, in: window)
+        }
+    }
+
     func testDelayedFirstControlReceivesFocusWithoutRemoteInput() async throws {
         try await withFixture { controller, window in
             controller.first.isEnabled = false
@@ -125,7 +142,7 @@ final class MissingFocusRecoveryTests: XCTestCase {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let previous = scene.windows.first(where: \.isKeyWindow)
         let controller = FocusRecoveryFixtureController()
-        let window = UIWindow(windowScene: scene)
+        let window = FocusRecoveryTestWindow(windowScene: scene)
         window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
         window.rootViewController = controller
         controller.loadViewIfNeeded()
@@ -147,6 +164,14 @@ final class MissingFocusRecoveryTests: XCTestCase {
         XCTFail(
             "The available control never received native focus; expected \(item), actual \(String(describing: UIFocusSystem(for: window)?.focusedItem)); key window \(window.isKeyWindow)"
         )
+    }
+}
+
+@MainActor
+private final class FocusRecoveryTestWindow: UIWindow {
+    var reportsKeyWindowReady = true
+    override var isKeyWindow: Bool {
+        reportsKeyWindowReady && super.isKeyWindow
     }
 }
 

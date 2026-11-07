@@ -15,6 +15,71 @@ import XCTest
 
 @MainActor
 final class TVProfilePickerTests: XCTestCase {
+    func testWakeRestoresTheSavedProfileWhenReadinessArrivesWithoutAnotherEvent() async throws {
+        await FactoryKit.Container.shared.userSessionManager().start()
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:1"))
+        let serverID = "wake-profile-\(UUID())"
+        let server = ServerState(urls: [url], currentURL: url, name: "Offline sample server", id: serverID, userIDs: [])
+        let users = [
+            UserState(id: "first-\(UUID())", serverID: server.id, username: "First saved profile"),
+            UserState(id: "second-\(UUID())", serverID: server.id, username: "Second saved profile")
+        ]
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        let window = ProfileWakeWindow(windowScene: scene)
+        let readiness = ProfileReadinessModel()
+        let controller = ProfileWakeHostingController(rootView: ProfileReadinessView(users: users, server: server, model: readiness))
+        controller.acceptsFocus = false
+        window.reportsKeyWindowReady = false
+        window.rootViewController = controller
+        window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previous?.makeKeyAndVisible()
+        }
+        readiness.isReady = true
+        readiness.phase = .active
+        try await Task.sleep(for: .milliseconds(1200))
+        controller.acceptsFocus = true
+        window.reportsKeyWindowReady = true
+
+        func waitForFirstSavedProfile() async throws {
+            for _ in 0 ..< 100 {
+                if let focus = UIFocusSystem(for: window)?.focusedItem, window.contains(focus), focus.canBecomeFocused,
+                   focus.frame.width > 200, focus.frame.height > 230, focus.frame.midX < window.bounds.midX
+                {
+                    return
+                }
+                try await Task.sleep(for: .milliseconds(25))
+            }
+            XCTFail("Late wake readiness must focus the first saved profile without a remote press")
+        }
+        try await waitForFirstSavedProfile()
+        let appearances = readiness.appearances
+        for _ in 0 ..< 3 {
+            controller.acceptsFocus = false
+            window.reportsKeyWindowReady = false
+            readiness.phase = .inactive
+            readiness.isReady = false
+            try await Task.sleep(for: .milliseconds(150))
+            readiness.isReady = true
+            readiness.phase = .active
+            try await Task.sleep(for: .milliseconds(1200))
+            // No SwiftUI update, activation notification or input accompanies this.
+            controller.acceptsFocus = true
+            window.reportsKeyWindowReady = true
+            try await waitForFirstSavedProfile()
+        }
+        XCTAssertEqual(readiness.appearances, appearances, "Wake must recover the retained page, not recreate it")
+        let attachment = XCTAttachment(image: UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        })
+        attachment.name = "Saved profiles after repeated late wake readiness"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 
     func testSavedProfilesAreExcludedFromOtherUsersWithoutHidingUsersOnAnotherServer() {
         let server = makeServer("one")
@@ -139,5 +204,21 @@ private struct ProfileReadinessView: View {
         .preferredColorScheme(.dark)
         .recoveringMissingFocus()
         .environment(\.scenePhase, model.phase)
+    }
+}
+
+@MainActor
+private final class ProfileWakeWindow: UIWindow {
+    var reportsKeyWindowReady = true
+    override var isKeyWindow: Bool {
+        reportsKeyWindowReady && super.isKeyWindow
+    }
+}
+
+@MainActor
+private final class ProfileWakeHostingController: UIHostingController<ProfileReadinessView> {
+    var acceptsFocus = true
+    override func shouldUpdateFocus(in context: UIFocusUpdateContext) -> Bool {
+        acceptsFocus && super.shouldUpdateFocus(in: context)
     }
 }
