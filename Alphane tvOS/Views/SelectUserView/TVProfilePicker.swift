@@ -9,10 +9,16 @@
 import JellyfinAPI
 import OrderedCollections
 import SwiftUI
+import UIKit
 
 extension SelectUserView {
 
     struct TVProfilePicker: View {
+
+        private struct ProfileFocusRequest: Equatable {
+            let id: String
+            let revision = UUID()
+        }
 
         struct PublicProfile: Identifiable {
             let user: UserDto
@@ -36,6 +42,16 @@ extension SelectUserView {
 
         @FocusState
         private var focusedProfileID: String?
+
+        @State
+        private var profileFocusRequest: ProfileFocusRequest?
+        @State
+        private var confirmedProfileIDs: Set<String> = []
+        @State
+        private var focusContext = ProfileFocusContext()
+
+        @EnvironmentObject
+        private var navigation: NavigationCoordinator
 
         @State
         private var publicProfiles: [PublicProfile] = []
@@ -76,6 +92,62 @@ extension SelectUserView {
             return Self.profileID(userID: item.user.id, serverID: item.server.id)
         }
 
+        private var isCurrentProfilePage: Bool {
+            isVisible && scenePhase == .active && navigation.path.isEmpty
+                && navigation.presentedSheet == nil && navigation.presentedFullScreen == nil
+        }
+
+        private var hasConfirmedProfileFocus: Bool {
+            guard let window = focusContext.window, window.isKeyWindow, !window.isHidden,
+                  let item = UIFocusSystem(for: window)?.focusedItem,
+                  item.canBecomeFocused, window.contains(item) else { return false }
+
+            if userItems.isEmpty {
+                return confirmedProfileIDs.contains(preferredProfileID)
+            }
+            return userItems.contains { confirmedProfileIDs.contains(Self.profileID(userID: $0.user.id, serverID: $0.server.id)) }
+        }
+
+        private func requestDefaultProfileFocus() {
+            guard isCurrentProfilePage else { return }
+
+            profileFocusRequest = ProfileFocusRequest(id: preferredProfileID)
+        }
+
+        private func applyProfileFocus(_ request: ProfileFocusRequest?) async {
+            guard let request else { return }
+
+            var didRequestFocus = false
+            while !Task.isCancelled, isCurrentProfilePage, request.id == preferredProfileID {
+                // Readiness can arrive after appearance/activation. Keep the request
+                // pending, but never direct it through a native PIN/menu/dialog.
+                if let window = focusContext.window, window.isKeyWindow, !window.isHidden,
+                   window.windowScene?.activationState == .foregroundActive,
+                   window.rootViewController?.presentedViewController == nil
+                {
+                    // A requested FocusState value is not proof of native focus.
+                    // Clear an old value before requesting the now-mounted card.
+                    focusedProfileID = nil
+                    await Task.yield()
+                    guard !Task.isCancelled, isCurrentProfilePage else { return }
+
+                    focusedProfileID = request.id
+                    resetFocus(in: profileFocusScope)
+                    didRequestFocus = true
+                }
+
+                do {
+                    try await Task.sleep(for: .milliseconds(200))
+                } catch { return }
+
+                // The label's native isFocused environment acknowledges success;
+                // assigning the binding above must not acknowledge its own request.
+                if didRequestFocus, hasConfirmedProfileFocus {
+                    return
+                }
+            }
+        }
+
         static func profileID(userID: String, serverID: String) -> String {
             "\(serverID):\(userID)"
         }
@@ -109,9 +181,6 @@ extension SelectUserView {
             }
             publicProfiles = profiles
             isLoadingPublicUsers = false
-            if !showsChrome, userItems.isEmpty, focusedProfileID == "add-user" {
-                focusedProfileID = preferredProfileID
-            }
         }
 
         private var cornerControls: some View {
@@ -154,14 +223,14 @@ extension SelectUserView {
             return Button {
                 action(item.user)
             } label: {
-                profileLabel(
+                ProfileFocusLabel(id: id) { isFocused in profileLabel(
                     userID: item.user.id,
                     source: item.user.profileImageSource(client: item.server.client),
                     name: item.user.username,
                     subtitle: item.user.requiresServerSignIn ? L10n.signIn : (visibleServers.count > 1 ? item.server.name : nil),
-                    id: id,
-                    saved: true
-                )
+                    saved: true,
+                    isFocused: isFocused
+                ) }
             }
             .buttonStyle(ArtworkButtonStyle())
             .focused($focusedProfileID, equals: id)
@@ -177,14 +246,14 @@ extension SelectUserView {
             Button {
                 router.route(to: .userSignIn(server: profile.server, profile: UserSignInProfile(user: profile.user)))
             } label: {
-                profileLabel(
+                ProfileFocusLabel(id: profile.id) { isFocused in profileLabel(
                     userID: profile.user.id,
                     source: profile.user.profileImageSource(client: profile.server.client, maxWidth: 240),
                     name: profile.user.name ?? .emptyDash,
                     subtitle: visibleServers.count > 1 ? profile.server.name : L10n.signIn,
-                    id: profile.id,
-                    saved: false
-                )
+                    saved: false,
+                    isFocused: isFocused
+                ) }
             }
             .buttonStyle(ArtworkButtonStyle())
             .focused($focusedProfileID, equals: profile.id)
@@ -198,11 +267,10 @@ extension SelectUserView {
             source: ImageSource,
             name: String,
             subtitle: String?,
-            id: String,
-            saved: Bool
+            saved: Bool,
+            isFocused: Bool
         ) -> some View {
-            let isFocused = focusedProfileID == id
-            return VStack(spacing: 18) {
+            VStack(spacing: 18) {
                 UserProfileImage(userID: userID, source: source, pipeline: .Alphane.local)
                     .frame(width: saved ? 180 : 112, height: saved ? 180 : 112)
                     .saturation(saved || isFocused ? 1 : 0.2)
@@ -242,24 +310,26 @@ extension SelectUserView {
         }
 
         private var addUserLabel: some View {
-            VStack(spacing: 18) {
-                Circle()
-                    .fill(AlphaneTheme.surface)
-                    .overlay {
-                        Image(systemName: "plus")
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundStyle(.white.opacity(focusedProfileID == "add-user" ? 1 : 0.8))
+            ProfileFocusLabel(id: "add-user") { isFocused in
+                VStack(spacing: 18) {
+                    Circle()
+                        .fill(AlphaneTheme.surface)
+                        .overlay {
+                            Image(systemName: "plus")
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundStyle(.white.opacity(isFocused ? 1 : 0.8))
+                        }
+                        .frame(width: 112, height: 112)
+                        .tvFocusBorder(isFocused: isFocused, shape: Circle())
+                    VStack(spacing: 6) {
+                        Text(L10n.addUser)
+                            .font(.system(size: 22, weight: .semibold))
+                        Color.clear.frame(height: 22)
                     }
-                    .frame(width: 112, height: 112)
-                    .tvFocusBorder(isFocused: focusedProfileID == "add-user", shape: Circle())
-                VStack(spacing: 6) {
-                    Text(L10n.addUser)
-                        .font(.system(size: 22, weight: .semibold))
-                    Color.clear.frame(height: 22)
+                    .foregroundStyle(.white.opacity(isFocused ? 1 : 0.8))
                 }
-                .foregroundStyle(.white.opacity(focusedProfileID == "add-user" ? 1 : 0.8))
+                .frame(width: 180)
             }
-            .frame(width: 180)
         }
 
         var body: some View {
@@ -324,21 +394,26 @@ extension SelectUserView {
                 }
             }
             .focusScope(profileFocusScope)
+            .background(ProfileFocusWindowReader(focusContext: focusContext).allowsHitTesting(false))
             .defaultFocus($focusedProfileID, preferredProfileID, priority: .userInitiated)
             .onAppear {
                 isVisible = true
-                focusedProfileID = preferredProfileID
+                requestDefaultProfileFocus()
             }
-            .onDisappear { isVisible = false }
+            .onDisappear {
+                isVisible = false
+                profileFocusRequest = nil
+            }
             .onChange(of: scenePhase) { _, phase in
-                guard phase == .active, isVisible,
-                      let navigation = router.router.navigationCoordinator,
-                      navigation.path.isEmpty, navigation.presentedSheet == nil, navigation.presentedFullScreen == nil else { return }
-
-                // Wake can retain this page without another appearance. Reset its
-                // real default focus even if the old FocusState value survived.
-                resetFocus(in: profileFocusScope)
+                if phase == .active {
+                    requestDefaultProfileFocus()
+                } else {
+                    profileFocusRequest = nil
+                }
             }
+            .onChange(of: preferredProfileID) { requestDefaultProfileFocus() }
+            .onPreferenceChange(ProfileFocusPreference.self) { confirmedProfileIDs = $0 }
+            .task(id: profileFocusRequest) { await applyProfileFocus(profileFocusRequest) }
             .onChange(of: availableProfileIDs) {
                 // Nil can also mean the server/settings controls own focus.
                 // Only replace a profile target that actually disappeared.
@@ -348,5 +423,58 @@ extension SelectUserView {
             }
             .task(id: requestKey) { await loadPublicUsers() }
         }
+    }
+}
+
+@MainActor
+private final class ProfileFocusContext {
+    weak var window: UIWindow?
+}
+
+/// Identify this page's window, including when a native keyboard owns another one.
+private struct ProfileFocusWindowReader: UIViewRepresentable {
+    let focusContext: ProfileFocusContext
+
+    func makeUIView(context: Context) -> WindowView {
+        let view = WindowView()
+        view.focusContext = focusContext
+        view.isUserInteractionEnabled = false
+        view.accessibilityElementsHidden = true
+        return view
+    }
+
+    func updateUIView(_ uiView: WindowView, context: Context) {
+        focusContext.window = uiView.window
+    }
+
+    final class WindowView: UIView {
+        var focusContext: ProfileFocusContext?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            focusContext?.window = window
+        }
+    }
+}
+
+struct ProfileFocusPreference: PreferenceKey {
+    static let defaultValue: Set<String> = []
+
+    static func reduce(value: inout Set<String>, nextValue: () -> Set<String>) {
+        value.formUnion(nextValue())
+    }
+}
+
+/// The native focus environment is separate from a binding used to request focus.
+private struct ProfileFocusLabel<Content: View>: View {
+    @Environment(\.isFocused)
+    private var isFocused
+    let id: String
+    @ViewBuilder
+    let content: (Bool) -> Content
+
+    var body: some View {
+        content(isFocused)
+            .preference(key: ProfileFocusPreference.self, value: isFocused ? [id] : [])
     }
 }

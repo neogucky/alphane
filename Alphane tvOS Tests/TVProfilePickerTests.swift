@@ -8,13 +8,178 @@
 
 @testable import Alphane
 import FactoryKit
+import Foundation
 import JellyfinAPI
+import os
 import SwiftUI
 import UIKit
 import XCTest
 
 @MainActor
 final class TVProfilePickerTests: XCTestCase {
+    func testDelayedPublicProfilesAcquireFocusDuringSetup() async throws {
+        let protocols = URLSessionConfiguration.alphane.protocolClasses
+        URLSessionConfiguration.alphane.protocolClasses = [ProfileDirectoryProtocol.self] + (protocols ?? [])
+        defer { URLSessionConfiguration.alphane.protocolClasses = protocols }
+        let url = try XCTUnwrap(URL(string: "https://profile-focus.invalid"))
+        let server = ServerState(urls: [url], currentURL: url, name: "Sample directory", id: "public-\(UUID())", userIDs: [])
+        try await withProfilePage(server: server, users: [], showsChrome: false) { window, model in
+            let expected = SelectUserView.TVProfilePicker.profileID(userID: "public-one", serverID: server.id)
+            var received = false
+            for _ in 0 ..< 160 {
+                if model.confirmedIDs.contains(expected), let focused = UIFocusSystem(for: window)?.focusedItem,
+                   window.contains(focused), focused.canBecomeFocused
+                {
+                    received = true
+                    break
+                }
+                try await Task.sleep(for: .milliseconds(25))
+            }
+            XCTAssertTrue(received, "Setup must focus the first public profile when its delayed directory response arrives")
+            try await Task.sleep(for: .milliseconds(300))
+            XCTAssertTrue(model.confirmedIDs.contains(expected))
+            capture(window, name: "First public profile after delayed setup directory response")
+        }
+    }
+
+    func testSavedProfilesArrivingAfterThePickerAppearsReceiveDefaultFocus() async throws {
+        await FactoryKit.Container.shared.userSessionManager().start()
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:1"))
+        let server = ServerState(urls: [url], currentURL: url, name: "Offline sample", id: "delayed-\(UUID())", userIDs: [])
+        let users = [
+            UserState(id: "saved-\(UUID())", serverID: server.id, username: "First saved profile"),
+            UserState(id: "second-\(UUID())", serverID: server.id, username: "Second saved profile")
+        ]
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        let window = UIWindow(windowScene: scene)
+        let model = ProfileReadinessModel()
+        model.isReady = true
+        model.phase = .active
+        model.loadedUsers = []
+        window.rootViewController = UIHostingController(rootView: ProfileReadinessView(users: users, server: server, model: model))
+        window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previous?.makeKeyAndVisible()
+        }
+        try await Task.sleep(for: .milliseconds(1200))
+        let appearances = model.appearances
+        model.loadedUsers = users
+        try await waitForSavedProfile(in: window)
+        XCTAssertEqual(model.appearances, appearances)
+        try await Task.sleep(for: .milliseconds(300))
+        try await waitForSavedProfile(in: window)
+        capture(window, name: "Saved profile after delayed account arrival")
+
+        for delay in [30, 280, 1200] {
+            model.loadedUsers = []
+            try await Task.sleep(for: .milliseconds(delay))
+            model.loadedUsers = users
+            try await waitForSavedProfile(in: window)
+        }
+        XCTAssertEqual(model.appearances, appearances, "Data refresh must not recreate the picker")
+    }
+
+    func testLoadingFinishesAfterActivationAndFocusLeavesThePreviousPage() async throws {
+        try await withProfilePage { window, model in
+            model.showsPreviousPage = true
+            try await Task.sleep(for: .milliseconds(400))
+            XCTAssertNotNil(UIFocusSystem(for: window)?.focusedItem)
+            model.phase = .inactive
+            try await Task.sleep(for: .milliseconds(150))
+            model.showsLoading = true
+            model.showsPreviousPage = false
+            model.phase = .active
+            try await Task.sleep(for: .milliseconds(700))
+            model.showsLoading = false
+            try await waitForSavedProfile(in: window)
+            try await Task.sleep(for: .milliseconds(300))
+            try await waitForSavedProfile(in: window)
+            capture(window, name: "Profile focused after animated loading transition")
+        }
+    }
+
+    func testWakeBehindANativeDialogDoesNotTakeItsFocusAndRestoresProfilesAfterDismissal() async throws {
+        try await withProfilePage { window, model in
+            try await waitForSavedProfile(in: window)
+            let controller = try XCTUnwrap(window.rootViewController)
+            let dialog = UIAlertController(title: "Sample PIN dialog", message: nil, preferredStyle: .alert)
+            dialog.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            controller.present(dialog, animated: false)
+            defer { controller.dismiss(animated: false) }
+            for _ in 0 ..< 80 {
+                if let focused = UIFocusSystem(for: window)?.focusedItem as? UIView, focused.isDescendant(of: dialog.view) {
+                    break
+                }
+                try await Task.sleep(for: .milliseconds(25))
+            }
+            model.phase = .inactive
+            try await Task.sleep(for: .milliseconds(150))
+            model.phase = .active
+            try await Task.sleep(for: .milliseconds(700))
+            let focused = UIFocusSystem(for: window)?.focusedItem as? UIView
+            XCTAssertTrue(focused?.isDescendant(of: dialog.view) == true, "Wake must not focus the profile page underneath a native dialog")
+            controller.dismiss(animated: false)
+            try await waitForSavedProfile(in: window)
+        }
+    }
+
+    private func withProfilePage(
+        server suppliedServer: ServerState? = nil,
+        users suppliedUsers: [UserState]? = nil,
+        showsChrome: Bool = true,
+        _ body: (UIWindow, ProfileReadinessModel) async throws -> Void
+    ) async throws {
+        await FactoryKit.Container.shared.userSessionManager().start()
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:1"))
+        let server = suppliedServer ?? ServerState(urls: [url], currentURL: url, name: "Offline sample", id: "page-\(UUID())", userIDs: [])
+        let users = suppliedUsers ?? [UserState(id: "saved-\(UUID())", serverID: server.id, username: "Saved profile")]
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let previous = scene.windows.first(where: \.isKeyWindow)
+        let window = UIWindow(windowScene: scene)
+        let model = ProfileReadinessModel()
+        model.isReady = true
+        model.phase = .active
+        window.rootViewController = UIHostingController(rootView: ProfileReadinessView(
+            users: users,
+            server: server,
+            model: model,
+            showsChrome: showsChrome
+        ))
+        window.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previous?.makeKeyAndVisible()
+        }
+        try await body(window, model)
+    }
+
+    private func waitForSavedProfile(in window: UIWindow) async throws {
+        for _ in 0 ..< 120 {
+            if let focus = UIFocusSystem(for: window)?.focusedItem, window.contains(focus), focus.canBecomeFocused,
+               focus.frame.width > 200, focus.frame.height > 230, focus.frame.midX < window.bounds.midX
+            {
+                return
+            }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        XCTFail("The mounted saved profile must receive usable native focus without a remote press")
+    }
+
+    private func capture(_ window: UIWindow, name: String) {
+        let attachment = XCTAttachment(image: UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        })
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testWakeRestoresTheSavedProfileWhenReadinessArrivesWithoutAnotherEvent() async throws {
         await FactoryKit.Container.shared.userSessionManager().start()
         let url = try XCTUnwrap(URL(string: "http://127.0.0.1:1"))
@@ -179,6 +344,14 @@ final class TVProfilePickerTests: XCTestCase {
 @MainActor
 private final class ProfileReadinessModel: ObservableObject {
     @Published
+    var showsPreviousPage = false
+    @Published
+    var showsLoading = false
+    var selectedUserID: String?
+    var confirmedIDs: Set<String> = []
+    @Published
+    var loadedUsers: [UserState]?
+    @Published
     var isReady = false
     @Published
     var phase: ScenePhase = .inactive
@@ -190,20 +363,71 @@ private struct ProfileReadinessView: View {
     let server: ServerState
     @ObservedObject
     var model: ProfileReadinessModel
+    var showsChrome = true
     var body: some View {
         NavigationInjectionView(coordinator: .init()) {
-            SelectUserView.TVProfilePicker(
-                userItems: users.map { (user: $0, server: server) }, servers: [server], serverSelection: .all,
-                action: { _ in }, onDelete: { _ in }
-            )
-            .disabled(!model.isReady)
-            .opacity(model.isReady ? 1 : 0)
-            .allowsHitTesting(model.isReady)
-            .onAppear { model.appearances += 1 }
+            Group {
+                if model.showsPreviousPage {
+                    Button("Previous page") {}
+                } else if model.showsLoading {
+                    ProgressView()
+                } else {
+                    SelectUserView.TVProfilePicker(
+                        userItems: (model.loadedUsers ?? users).map { (user: $0, server: server) }, servers: [server],
+                        serverSelection: .all,
+                        action: { model.selectedUserID = $0.id }, onDelete: { _ in }, showsChrome: showsChrome
+                    )
+                    .disabled(!model.isReady)
+                    .opacity(model.isReady ? 1 : 0)
+                    .allowsHitTesting(model.isReady)
+                    .onAppear { model.appearances += 1 }
+                }
+            }
+            .animation(.linear(duration: 0.1), value: model.showsLoading)
+            .animation(.linear(duration: 0.1), value: model.showsPreviousPage)
         }
         .preferredColorScheme(.dark)
+        .background(AlphaneTheme.background.ignoresSafeArea())
+        .onPreferenceChange(ProfileFocusPreference.self) { model.confirmedIDs = $0 }
         .recoveringMissingFocus()
         .environment(\.scenePhase, model.phase)
+    }
+}
+
+private final class ProfileDirectoryProtocol: URLProtocol, @unchecked Sendable {
+    private let stopped = OSAllocatedUnfairLock(initialState: false)
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        request.url?.host == "profile-focus.invalid"
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        let isDirectory = request.url?.path.lowercased().hasSuffix("/users/public") == true
+        DispatchQueue.global().asyncAfter(deadline: .now() + (isDirectory ? 0.7 : 0)) { [weak self] in
+            guard let self, !stopped.withLock({ $0 }), let url = request.url,
+                  let response = HTTPURLResponse(
+                      url: url,
+                      statusCode: isDirectory ? 200 : 404,
+                      httpVersion: nil,
+                      headerFields: ["Content-Type": "application/json"]
+                  ) else { return }
+
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            if isDirectory, let data = try? JSONEncoder().encode([
+                UserDto(id: "public-one", name: "First public profile"), UserDto(id: "public-two", name: "Second public profile")
+            ]) {
+                client?.urlProtocol(self, didLoad: data)
+            }
+            client?.urlProtocolDidFinishLoading(self)
+        }
+    }
+
+    override func stopLoading() {
+        stopped.withLock { $0 = true }
     }
 }
 
